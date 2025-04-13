@@ -27,13 +27,13 @@ const NewsTable: React.FC = () => {
     <div className="overflow-x-auto">
       <FilterBar />
       <table className="min-w-full bg-white mt-4">
-        <thead>
+        <thead className="bg-gray-100 text-sm font-semibold text-gray-700">
           <tr>
-            <th className="py-2 px-4 border-b">Başlık</th>
-            <th className="py-2 px-4 border-b">Kaynak</th>
-            <th className="py-2 px-4 border-b">Kaynak Türü</th>
-            <th className="py-2 px-4 border-b">Tarih</th>
-            <th className="py-2 px-4 border-b">İşlemler</th>
+            <th className="py-2 px-4 border-b text-left">Başlık</th>
+            <th className="py-2 px-4 border-b text-left">Kaynak</th>
+            <th className="py-2 px-4 border-b text-left">Kaynak Türü</th>
+            <th className="py-2 px-4 border-b text-left">Tarih</th>
+            <th className="py-2 px-4 border-b text-left">İşlemler</th>
           </tr>
         </thead>
         <tbody>

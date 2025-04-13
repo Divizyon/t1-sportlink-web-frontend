@@ -25,12 +25,12 @@ const AnalyzesPage = () => {
         <div className="mt-8">
           <h2 className="text-xl font-semibold mb-2">Özet Tablosu</h2>
           <table className="min-w-full bg-white">
-            <thead>
+            <thead className="bg-gray-100 text-sm font-semibold text-gray-700">
               <tr>
-                <th className="py-2 px-4 border-b">Başlık</th>
-                <th className="py-2 px-4 border-b">Tarih</th>
-                <th className="py-2 px-4 border-b">Tür</th>
-                <th className="py-2 px-4 border-b">Katılım Sayısı</th>
+                <th className="py-2 px-4 border-b text-left">Başlık</th>
+                <th className="py-2 px-4 border-b text-left">Tarih</th>
+                <th className="py-2 px-4 border-b text-left">Tür</th>
+                <th className="py-2 px-4 border-b text-left">Katılım Sayısı</th>
               </tr>
             </thead>
             <tbody>

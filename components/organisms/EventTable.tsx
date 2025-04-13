@@ -28,14 +28,14 @@ const EventTable: React.FC = () => {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white">
-        <thead>
+        <thead className="bg-gray-100 text-sm font-semibold text-gray-700">
           <tr>
-            <th className="py-2 px-4 border-b">Etkinlik Adı</th>
-            <th className="py-2 px-4 border-b">Organizatör</th>
-            <th className="py-2 px-4 border-b">Tarih</th>
-            <th className="py-2 px-4 border-b">Katılımcı Sayısı</th>
-            <th className="py-2 px-4 border-b">Durum</th>
-            <th className="py-2 px-4 border-b">İşlemler</th>
+            <th className="py-2 px-4 border-b text-left">Etkinlik Adı</th>
+            <th className="py-2 px-4 border-b text-left">Organizatör</th>
+            <th className="py-2 px-4 border-b text-left">Tarih</th>
+            <th className="py-2 px-4 border-b text-left">Katılımcı Sayısı</th>
+            <th className="py-2 px-4 border-b text-left">Durum</th>
+            <th className="py-2 px-4 border-b text-left">İşlemler</th>
           </tr>
         </thead>
         <tbody>

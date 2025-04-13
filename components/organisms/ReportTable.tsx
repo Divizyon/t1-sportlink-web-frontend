@@ -28,14 +28,14 @@ const ReportTable: React.FC = () => {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white">
-        <thead>
+        <thead className="bg-gray-100 text-sm font-semibold text-gray-700">
           <tr>
-            <th className="py-2 px-4 border-b">Kullanıcı</th>
-            <th className="py-2 px-4 border-b">Sebep</th>
-            <th className="py-2 px-4 border-b">Rapor Kaynağı</th>
-            <th className="py-2 px-4 border-b">Tarih</th>
-            <th className="py-2 px-4 border-b">Durum</th>
-            <th className="py-2 px-4 border-b">İşlemler</th>
+            <th className="py-2 px-4 border-b text-left">Kullanıcı</th>
+            <th className="py-2 px-4 border-b text-left">Sebep</th>
+            <th className="py-2 px-4 border-b text-left">Rapor Kaynağı</th>
+            <th className="py-2 px-4 border-b text-left">Tarih</th>
+            <th className="py-2 px-4 border-b text-left">Durum</th>
+            <th className="py-2 px-4 border-b text-left">İşlemler</th>
           </tr>
         </thead>
         <tbody>

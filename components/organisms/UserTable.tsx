@@ -28,14 +28,16 @@ const UserTable: React.FC = () => {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white">
-        <thead>
+        <thead className="bg-gray-100 text-sm font-semibold text-gray-700">
           <tr>
-            <th className="py-2 px-4 border-b">Ad</th>
-            <th className="py-2 px-4 border-b">Etkinlik Sayısı</th>
-            <th className="py-2 px-4 border-b">Katıldığı Etkinlik Sayısı</th>
-            <th className="py-2 px-4 border-b">Son Aktivite</th>
-            <th className="py-2 px-4 border-b">Durum</th>
-            <th className="py-2 px-4 border-b">İşlemler</th>
+            <th className="py-2 px-4 border-b text-left">Ad</th>
+            <th className="py-2 px-4 border-b text-left">Etkinlik Sayısı</th>
+            <th className="py-2 px-4 border-b text-left">
+              Katıldığı Etkinlik Sayısı
+            </th>
+            <th className="py-2 px-4 border-b text-left">Son Aktivite</th>
+            <th className="py-2 px-4 border-b text-left">Durum</th>
+            <th className="py-2 px-4 border-b text-left">İşlemler</th>
           </tr>
         </thead>
         <tbody>
