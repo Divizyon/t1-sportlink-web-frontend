@@ -9,20 +9,53 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
         <div className="p-4">
           <h2 className="text-xl font-bold">SportLink Admin</h2>
           <nav className="mt-4">
-            <ul>
-              <li className="py-2">
-                <a href="#" className="text-gray-700">
-                  Dashboard
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a
+                  href="/dashboard"
+                  className="flex items-center gap-2 text-gray-700"
+                >
+                  📊 Panel
                 </a>
               </li>
-              <li className="py-2">
-                <a href="#" className="text-gray-700">
-                  Events
+              <li>
+                <a
+                  href="/events"
+                  className="flex items-center gap-2 text-gray-700"
+                >
+                  🏃‍♂️ Etkinlikler
                 </a>
               </li>
-              <li className="py-2">
-                <a href="#" className="text-gray-700">
-                  Users
+              <li>
+                <a
+                  href="/users"
+                  className="flex items-center gap-2 text-gray-700"
+                >
+                  👤 Kullanıcılar
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/news"
+                  className="flex items-center gap-2 text-gray-700"
+                >
+                  📰 Haberler
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/reports"
+                  className="flex items-center gap-2 text-gray-700"
+                >
+                  🛡️ Raporlar
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/analyzes"
+                  className="flex items-center gap-2 text-gray-700"
+                >
+                  📈 Analizler
                 </a>
               </li>
             </ul>
