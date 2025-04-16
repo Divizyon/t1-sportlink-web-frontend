@@ -1,84 +1,113 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Calendar, Clock, MapPin, Users, Plus } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export function NewEventModal() {
-  const [date, setDate] = useState<Date>()
-  const [open, setOpen] = useState(false)
+interface NewEventModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
+}
+
+export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalProps) {
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    
+    // Simüle edilmiş işlem
+    setTimeout(() => {
+      setLoading(false)
+      if (onSuccess) onSuccess()
+    }, 1000)
+  }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          Yeni Etkinlik
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Yeni Etkinlik Oluştur</DialogTitle>
+          <DialogDescription>
+            Etkinlik detaylarını girerek yeni bir spor etkinliği oluşturun.
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">Etkinlik Adı</Label>
-            <Input id="name" placeholder="Etkinlik adını girin" />
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Etkinlik Adı</Label>
+            <Input id="title" placeholder="Örnek: Futbol Turnuvası" required />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="description">Açıklama</Label>
-            <Textarea id="description" placeholder="Etkinlik açıklamasını girin" />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Tarih</Label>
+              <div className="relative">
+                <Input id="date" type="date" className="pl-9" required />
+                <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="time">Saat</Label>
+              <div className="relative">
+                <Input id="time" type="time" className="pl-9" required />
+                <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
           </div>
-          <div className="grid gap-2">
-            <Label>Tarih</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Tarih seçin</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="grid gap-2">
+          
+          <div className="space-y-2">
             <Label htmlFor="location">Konum</Label>
-            <Input id="location" placeholder="Etkinlik konumunu girin" />
+            <div className="relative">
+              <Input id="location" placeholder="Konum" className="pl-9" required />
+              <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            </div>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="capacity">Katılımcı Kapasitesi</Label>
-            <Input id="capacity" type="number" placeholder="Maksimum katılımcı sayısı" />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="capacity">Kapasite</Label>
+              <div className="relative">
+                <Input id="capacity" type="number" min="1" className="pl-9" required />
+                <Users className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            İptal
-          </Button>
-          <Button onClick={() => setOpen(false)}>
-            Oluştur
-          </Button>
-        </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="description">Açıklama</Label>
+            <Textarea 
+              id="description" 
+              placeholder="Etkinlik detayları..." 
+              className="resize-none"
+              rows={4}
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button type="submit" disabled={loading} className="w-full gap-1">
+              {loading ? "Oluşturuluyor..." : (
+                <>
+                  <Plus className="h-4 w-4" /> Etkinlik Oluştur
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
