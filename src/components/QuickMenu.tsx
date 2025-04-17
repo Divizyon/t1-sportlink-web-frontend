@@ -5,11 +5,17 @@ import { Button } from "@/components/ui/button"
 import {
   ClipboardCheck,
   MessageSquare,
-  FileText
+  FileText,
+  Users,
+  Calendar,
+  Bell,
+  Newspaper
 } from "lucide-react"
 import { ApprovalModal } from "@/components/modals/ApprovalModal"
 import { ContactModal } from "@/components/modals/ContactModal"
 import { ReportsModal } from "@/components/modals/ReportsModal"
+import { NewsModal } from "@/components/modals/NewsModal"
+import { NewEventModal } from "@/components/modals/NewEventModal"
 
 export interface QuickMenuItem {
   id: string
@@ -19,7 +25,7 @@ export interface QuickMenuItem {
   action: () => void
 }
 
-type ModalType = 'approval' | 'contact' | 'reports' | null;
+type ModalType = 'approval' | 'contact' | 'reports' | 'news' | 'newEvent' | null;
 
 export function QuickMenu() {
   // Tek bir modal state ile tüm modalları yönetme
@@ -27,6 +33,26 @@ export function QuickMenu() {
   
   // Hızlı erişim menü öğeleri
   const menuItems: QuickMenuItem[] = [
+    {
+      id: "participants",
+      label: "Katılımcılar",
+      icon: <Users className="h-5 w-5" />,
+      count: 573,
+      action: () => {
+        console.log("Katılımcılar listesini aç")
+        // Alternatif olarak router.push("/dashboard/participants") kullanılabilir
+      }
+    },
+    {
+      id: "events",
+      label: "Etkinlikler",
+      icon: <Calendar className="h-5 w-5" />,
+      count: 18,
+      action: () => {
+        console.log("Etkinlikler listesini aç")
+        // Alternatif olarak router.push("/dashboard/events") kullanılabilir
+      }
+    },
     {
       id: "approvals",
       label: "Etkinlik Onayları",
@@ -52,27 +78,47 @@ export function QuickMenu() {
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-sm border p-4">
+      <div className="bg-white rounded-xl shadow-lg border p-4">
         <h2 className="text-lg font-semibold mb-3">Hızlı Erişim</h2>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           {menuItems.map((item) => (
             <Button
               key={item.id}
               variant="outline"
-              className="h-auto p-4 flex flex-col items-center justify-center gap-2 hover:bg-slate-50 hover:border-slate-300 transition-all"
+              className="h-auto p-4 flex flex-row items-center justify-start gap-2 hover:bg-slate-50 hover:border-slate-300 transition-all"
               onClick={item.action}
             >
               <div className="relative">
                 {item.icon}
                 {item.count && (
-                  <span className="absolute -top-2 -right-2 bg-primary text-white text-xs font-medium rounded-full h-5 w-5 flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-[10px] font-medium rounded-full h-4 w-4 flex items-center justify-center">
                     {item.count}
                   </span>
                 )}
               </div>
-              <span className="text-sm font-medium">{item.label}</span>
+              <span className="text-sm font-medium truncate">{item.label}</span>
             </Button>
           ))}
+          
+          {/* Duyuru ve Haber Butonları */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+            <Button
+              variant="default"
+              className="flex items-center gap-2"
+              onClick={() => setActiveModal('news')}
+            >
+              <Bell className="h-4 w-4" />
+              <span>Duyuru Yayınla</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => setActiveModal('newEvent')}
+            >
+              <Newspaper className="h-4 w-4" />
+              <span>Etkinlik Ekle</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -90,6 +136,16 @@ export function QuickMenu() {
       <ReportsModal 
         open={activeModal === 'reports'} 
         onOpenChange={(open) => setActiveModal(open ? 'reports' : null)} 
+      />
+      
+      <NewsModal
+        open={activeModal === 'news'}
+        onOpenChange={(open) => setActiveModal(open ? 'news' : null)}
+      />
+      
+      <NewEventModal
+        open={activeModal === 'newEvent'}
+        onOpenChange={(open) => setActiveModal(open ? 'newEvent' : null)}
       />
     </>
   )

@@ -2,140 +2,130 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { PlusCircle, FileText, Users, MessageSquare, ArrowRight, Newspaper, Clock } from "lucide-react"
-import { ApprovalModal } from "@/components/modals/ApprovalModal"
-import { ContactModal } from "@/components/modals/ContactModal"
-import { NewsModal } from "@/components/modals/NewsModal" 
-import { EventDetailModal } from "@/components/modals/EventDetailModal"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Plus, Bell, Calendar, Users, BarChart3, FileText } from "lucide-react"
+import { NewsModal } from "@/components/modals/NewsModal"
 import { NewEventModal } from "@/components/modals/NewEventModal"
-import { useRouter } from "next/navigation"
 
-interface QuickMenuItem {
+export interface QuickMenuItem {
   id: string
-  title: string
-  description: string
+  label: string
   icon: React.ReactNode
   count?: number
   action: () => void
 }
 
 export function QuickMenu() {
-  const router = useRouter()
-  const [openModal, setOpenModal] = useState<string | null>(null)
-  
-  const handleOpenModal = (modalId: string) => {
-    setOpenModal(modalId)
-  }
-  
-  const handleCloseModal = () => {
-    setOpenModal(null)
-  }
+  const [newsModalOpen, setNewsModalOpen] = useState(false)
+  const [newEventModalOpen, setNewEventModalOpen] = useState(false)
 
-  // Menü öğeleri ve eylemlerini tanımla
   const menuItems: QuickMenuItem[] = [
     {
-      id: "approval",
-      title: "Etkinlik Onayları",
-      description: "Onay bekleyen etkinlikler",
-      icon: <Clock className="h-5 w-5 text-blue-500" />,
+      id: "participants",
+      label: "Katılımcılar",
+      icon: <Users className="h-4 w-4" />,
+      count: 253,
+      action: () => {
+        console.log("Katılımcılar modülüne git")
+        // Burada katılımcılar sayfasına yönlendirme yapılabilir
+        // router.push('/dashboard/participants')
+      }
+    },
+    {
+      id: "events",
+      label: "Etkinlikler",
+      icon: <Calendar className="h-4 w-4" />,
+      count: 18,
+      action: () => {
+        console.log("Etkinlikler modülüne git")
+        // Burada etkinlikler sayfasına yönlendirme yapılabilir
+        // router.push('/dashboard/events')
+      }
+    },
+    {
+      id: "reports",
+      label: "Raporlar",
+      icon: <BarChart3 className="h-4 w-4" />,
       count: 5,
-      action: () => handleOpenModal("approval")
+      action: () => {
+        console.log("Raporlar modülüne git")
+        // Burada raporlar sayfasına yönlendirme yapılabilir
+        // router.push('/dashboard/reports')
+      }
     },
     {
-      id: "contact",
-      title: "İletişim Talepleri",
-      description: "Cevaplanmamış iletişim talepleri",
-      icon: <MessageSquare className="h-5 w-5 text-green-500" />,
-      count: 3,
-      action: () => handleOpenModal("contact")
-    },
-    {
-      id: "new-event",
-      title: "Yeni Etkinlik",
-      description: "Yeni bir etkinlik oluştur",
-      icon: <PlusCircle className="h-5 w-5 text-purple-500" />,
-      action: () => handleOpenModal("new-event")
-    },
-    {
-      id: "users",
-      title: "Kullanıcıları Yönet",
-      description: "Kullanıcı yönetimi",
-      icon: <Users className="h-5 w-5 text-orange-500" />,
-      action: () => router.push("/dashboard/users")
-    },
-    {
-      id: "news",
-      title: "Haber Yayınla",
-      description: "Yeni bir haber yayınla",
-      icon: <Newspaper className="h-5 w-5 text-cyan-500" />,
-      action: () => handleOpenModal("news")
-    },
-    {
-      id: "last-events",
-      title: "Son Etkinlikler",
-      description: "Düzenlenen son etkinlikler",
-      icon: <FileText className="h-5 w-5 text-yellow-500" />,
-      action: () => handleOpenModal("event-detail")
+      id: "documents",
+      label: "Belgeler",
+      icon: <FileText className="h-4 w-4" />,
+      count: 12,
+      action: () => {
+        console.log("Belgeler modülüne git")
+        // Burada belgeler sayfasına yönlendirme yapılabilir
+        // router.push('/dashboard/documents')
+      }
     }
   ]
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {menuItems.map((item) => (
-          <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow duration-300">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <div className="p-2 rounded-full bg-slate-100">{item.icon}</div>
-                {item.count !== undefined && (
-                  <Badge variant="secondary" className="font-semibold">
-                    {item.count}
-                  </Badge>
-                )}
-              </div>
-              <CardTitle className="text-lg mt-2">{item.title}</CardTitle>
-              <CardDescription>{item.description}</CardDescription>
-            </CardHeader>
-            <CardFooter className="pt-0">
-              <Button 
-                variant="ghost" 
-                className="p-0 h-auto font-semibold text-blue-600 hover:text-blue-800"
+      <Card className="w-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Hızlı Erişim</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Ana hızlı erişim butonları */}
+          <div className="grid grid-cols-2 gap-2">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => setNewsModalOpen(true)}
+            >
+              <Bell className="mr-2 h-4 w-4" />
+              Duyuru Yayınla
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => setNewEventModalOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Etkinlik Ekle
+            </Button>
+          </div>
+          
+          {/* Menü öğeleri */}
+          <div className="space-y-1">
+            {menuItems.map((item) => (
+              <Button
+                key={item.id}
+                variant="ghost"
+                className="w-full justify-between"
                 onClick={item.action}
               >
-                <span>İncele</span>
-                <ArrowRight className="ml-1 h-4 w-4" />
+                <span className="flex items-center">
+                  {item.icon}
+                  <span className="ml-2">{item.label}</span>
+                </span>
+                {item.count !== undefined && (
+                  <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                    {item.count}
+                  </span>
+                )}
               </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      
       {/* Modallar */}
-      <ApprovalModal 
-        open={openModal === "approval"} 
-        onOpenChange={(open) => open ? handleOpenModal("approval") : handleCloseModal()} 
+      <NewsModal
+        open={newsModalOpen}
+        onOpenChange={setNewsModalOpen}
       />
       
-      <ContactModal 
-        open={openModal === "contact"} 
-        onOpenChange={(open) => open ? handleOpenModal("contact") : handleCloseModal()} 
-      />
-      
-      <NewsModal 
-        open={openModal === "news"} 
-        onOpenChange={(open) => open ? handleOpenModal("news") : handleCloseModal()} 
-      />
-      
-      <EventDetailModal 
-        open={openModal === "event-detail"} 
-        onOpenChange={(open) => open ? handleOpenModal("event-detail") : handleCloseModal()} 
-      />
-      
-      <NewEventModal 
-        open={openModal === "new-event"} 
-        onOpenChange={(open) => open ? handleOpenModal("new-event") : handleCloseModal()} 
+      <NewEventModal
+        open={newEventModalOpen}
+        onOpenChange={setNewEventModalOpen}
       />
     </>
   )

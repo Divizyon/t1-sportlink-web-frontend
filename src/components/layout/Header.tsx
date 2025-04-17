@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -43,15 +41,9 @@ export function Header({ toggleSidebar }: HeaderProps) {
               <Menu className="h-5 w-5" />
             </Button>
           )}
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Image
-              src="/logo.png"
-              alt="SportLink Logo"
-              width={150}
-              height={40}
-              className="object-contain"
-            />
-          </Link>
+          <a className="flex items-center gap-2" href="/">
+            <span className="text-xl font-semibold">Spor Yönetim Sistemi</span>
+          </a>
         </div>
         
         <div className="flex items-center gap-4">

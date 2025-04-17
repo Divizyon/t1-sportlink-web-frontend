@@ -1,190 +1,262 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { tr } from "date-fns/locale"
-import { CalendarIcon, ImageIcon, Save, X } from "lucide-react"
-import { toast } from "sonner"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/components/ui/use-toast"
+import { Upload, Image as ImageIcon, Bell } from "lucide-react"
 
 interface NewsModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
-export function NewsModal({ open, onOpenChange }: NewsModalProps) {
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
-  const [image, setImage] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [publishDate, setPublishDate] = useState<Date | undefined>(new Date())
+const NEWS_TYPES = [
+  { id: "announcement", name: "Duyuru" },
+  { id: "news", name: "Haber" },
+  { id: "event", name: "Etkinlik Haberi" },
+  { id: "update", name: "Güncelleme" },
+]
+
+export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState("announcement")
+  
+  const [formData, setFormData] = useState({
+    title: "",
+    content: "",
+    type: "announcement",
+    image: null as File | null,
+    sendNotification: true,
+  })
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      content: "",
+      type: "announcement",
+      image: null,
+      sendNotification: true,
+    })
+    setActiveTab("announcement")
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleTypeChange = (value: string) => {
+    setFormData(prev => ({ ...prev, type: value }))
+  }
+
+  const handleNotificationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({ ...prev, sendNotification: e.target.checked }))
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setImage(file)
-      
-      // Resim önizlemesi için
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+      setFormData(prev => ({ ...prev, image: e.target.files![0] }))
     }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!title) {
-      toast.error("Lütfen bir başlık girin.")
+
+    // Form doğrulama
+    if (!formData.title.trim()) {
+      toast({
+        title: "Hata",
+        description: "Başlık alanı zorunludur.",
+        variant: "destructive",
+      })
       return
     }
-    
-    if (!content) {
-      toast.error("Lütfen haber içeriği girin.")
+
+    if (!formData.content.trim()) {
+      toast({
+        title: "Hata",
+        description: "İçerik alanı zorunludur.",
+        variant: "destructive",
+      })
       return
     }
-    
-    // Burada API çağrısı yapılabilir
-    toast.success("Haber başarıyla kaydedildi!")
-    
-    // Formu temizle
-    resetForm()
-    
-    // Modalı kapat
-    onOpenChange(false)
-  }
-  
-  const resetForm = () => {
-    setTitle("")
-    setContent("")
-    setImage(null)
-    setImagePreview(null)
-    setPublishDate(new Date())
+
+    // Form gönderme
+    setLoading(true)
+
+    // API çağrısı simülasyonu
+    setTimeout(() => {
+      setLoading(false)
+      
+      toast({
+        title: "Başarılı",
+        description: `${activeTab === "announcement" ? "Duyuru" : "Haber"} başarıyla yayınlandı.`,
+      })
+      
+      resetForm()
+      onOpenChange(false)
+      
+      if (onSuccess) {
+        onSuccess()
+      }
+    }, 1000)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Haber Ekle</DialogTitle>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Başlık</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Haber başlığı girin"
-            />
-          </div>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen && !loading) {
+        resetForm()
+      }
+      onOpenChange(isOpen)
+    }}>
+      <DialogContent className="sm:max-w-[500px]">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>
+              {activeTab === "announcement" ? "Duyuru Yayınla" : "Haber Ekle"}
+            </DialogTitle>
+            <DialogDescription>
+              {activeTab === "announcement" 
+                ? "Katılımcılara önemli duyurular yapın." 
+                : "Platformda yayınlanacak haber oluşturun."}
+            </DialogDescription>
+          </DialogHeader>
           
-          <div className="space-y-2">
-            <Label htmlFor="content">İçerik</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Haber içeriği girin"
-              rows={5}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="image">Kapak Görseli</Label>
-            <div className="flex items-center gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-32 flex flex-col items-center justify-center border-dashed"
-                onClick={() => document.getElementById("image")?.click()}
-              >
-                <ImageIcon className="h-8 w-8 mb-2 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Görsel seçmek için tıklayın</span>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="announcement">
+                <Bell className="mr-2 h-4 w-4" />
+                Duyuru
+              </TabsTrigger>
+              <TabsTrigger value="news">
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Haber
+              </TabsTrigger>
+            </TabsList>
+            
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Başlık</Label>
                 <Input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageChange}
+                  id="title"
+                  name="title"
+                  placeholder="Duyuru/Haber başlığı"
+                  value={formData.title}
+                  onChange={handleInputChange}
                 />
-              </Button>
+              </div>
               
-              {imagePreview && (
-                <div className="relative w-32 h-32">
-                  <img 
-                    src={imagePreview} 
-                    alt="Önizleme" 
-                    className="w-full h-full object-cover rounded" 
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute -top-2 -right-2 h-6 w-6"
-                    onClick={() => {
-                      setImage(null)
-                      setImagePreview(null)
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+              <div className="space-y-2">
+                <Label htmlFor="content">İçerik</Label>
+                <Textarea
+                  id="content"
+                  name="content"
+                  placeholder="Duyuru/Haber içeriği"
+                  rows={5}
+                  value={formData.content}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="type">Tür</Label>
+                <Select 
+                  value={formData.type} 
+                  onValueChange={handleTypeChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tür seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NEWS_TYPES.map(type => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {activeTab === "news" && (
+                <div className="space-y-2">
+                  <Label htmlFor="image">Görsel</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="image"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="flex-1"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => document.getElementById("image")?.click()}
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {formData.image && (
+                    <p className="text-xs text-muted-foreground">
+                      Seçilen dosya: {formData.image.name}
+                    </p>
+                  )}
                 </div>
               )}
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="publishDate">Yayın Tarihi</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="publishDate"
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !publishDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {publishDate ? (
-                    format(publishDate, "PPP", { locale: tr })
-                  ) : (
-                    <span>Tarih seçin</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={publishDate}
-                  onSelect={setPublishDate}
-                  initialFocus
-                  locale={tr}
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="sendNotification"
+                  checked={formData.sendNotification}
+                  onChange={handleNotificationChange}
+                  className="h-4 w-4 rounded border-gray-300"
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
+                <Label htmlFor="sendNotification" className="text-sm font-normal">
+                  Bildirim olarak gönder
+                </Label>
+              </div>
+            </div>
+          </Tabs>
           
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="mt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
               İptal
             </Button>
-            <Button type="submit">
-              <Save className="mr-2 h-4 w-4" />
-              Kaydet
+            <Button 
+              type="submit" 
+              disabled={loading}
+            >
+              {loading ? "Gönderiliyor..." : "Yayınla"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

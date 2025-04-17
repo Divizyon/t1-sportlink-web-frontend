@@ -2,9 +2,19 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar, Users, Newspaper, Shield, Settings, LayoutDashboard } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserNav } from "@/components/nav/user-nav"
+
+// Demo kullanıcılar
+const demoUsers = [
+  { id: 1, name: "Ahmet Koç", email: "ahmet@example.com", role: "üye", status: "aktif", joinDate: "2023-01-15" },
+  { id: 2, name: "Ayşe Yılmaz", email: "ayse@example.com", role: "üye", status: "aktif", joinDate: "2023-02-20" },
+  { id: 3, name: "Mehmet Can", email: "mehmet@example.com", role: "üye", status: "aktif", joinDate: "2023-03-10" },
+]
 
 const routes = [
   {
@@ -47,13 +57,13 @@ const routes = [
 
 export function Sidebar() {
   const pathname = usePathname()
-
+  
   return (
     <div className="flex h-full flex-col">
       <div className="flex-1">
         <Link href="/dashboard" className="mb-8 flex items-center">
           <h1 className="text-xl font-semibold">
-            Admin Panel
+            SportLink
           </h1>
         </Link>
         <nav className="space-y-1">
@@ -81,6 +91,20 @@ export function Sidebar() {
             </Link>
           ))}
         </nav>
+      </div>
+      
+      {/* Kullanıcı Avatar ve Bilgileri */}
+      <div className="mt-auto pt-6 border-t">
+        <div className="flex items-center gap-3 p-3">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src="/avatars/01.png" alt="@admin" />
+            <AvatarFallback>AD</AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">Yönetici</span>
+            <span className="text-xs text-muted-foreground">admin@sportlink.com</span>
+          </div>
+        </div>
       </div>
     </div>
   )

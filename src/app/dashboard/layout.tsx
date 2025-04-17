@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { CalendarDateRangePicker } from "@/components/date-range-picker";
+import { CategoryFilterDropdown } from "@/components/dashboard/category-filter";
+import { UserNav } from "@/components/nav/user-nav";
 
 export default function DashboardLayout({
   children,
@@ -10,21 +12,21 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+  
+  const handleCategoryChange = (categories: string[]) => {
+    setSelectedCategories(categories);
   };
 
   return (
     <div className="min-h-screen bg-gray-50/50">
       {/* Container */}
       <div className="mx-auto max-w-[1800px] px-2 sm:px-4 lg:px-6">
-        <div className="flex min-h-screen flex-col gap-4 py-4">
-          {/* Header */}
-          <div className="rounded-lg bg-white shadow-sm">
-            <Header toggleSidebar={toggleSidebar} />
-          </div>
-          
+        <div className="flex min-h-screen flex-col gap-4 py-4">          
           {/* Main Content */}
           <div className="flex flex-1 gap-4">
             {/* Sidebar - Mobil için */}
@@ -50,9 +52,24 @@ export default function DashboardLayout({
             </div>
             
             {/* Main */}
-            <main className="flex-1 rounded-lg bg-white p-6 shadow-sm">
-              {children}
-            </main>
+            <div className="flex-1 flex flex-col">
+              <header className="flex h-14 items-center justify-between border-b px-6 rounded-t-lg bg-white shadow-sm mb-2">
+                <h2 className="text-lg font-semibold">SportLink Yönetim Paneli</h2>
+                <div className="flex items-center space-x-4">
+                  <CalendarDateRangePicker />
+                  <CategoryFilterDropdown 
+                    onSelectCategories={handleCategoryChange}
+                    selectedCategories={selectedCategories}
+                  />
+                  <div className="pl-2 border-l">
+                    <UserNav />
+                  </div>
+                </div>
+              </header>
+              <main className="flex-1 rounded-lg bg-white p-6 shadow-sm">
+                {children}
+              </main>
+            </div>
           </div>
         </div>
       </div>

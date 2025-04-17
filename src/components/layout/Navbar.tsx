@@ -16,7 +16,7 @@ export function Navbar() {
               src="/logo.png"
               alt="SportLink Logo"
               width={100}
-              height={20}
+              height={0}
               className="object-contain"
             />
           </Link>
