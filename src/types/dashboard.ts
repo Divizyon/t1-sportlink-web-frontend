@@ -92,6 +92,7 @@ export interface RecentParticipantsProps {
 
 export interface TodaysEventsProps {
   onEventSelect?: (event: Event) => void;
+  onUserSelect?: (participant: Participant) => void;
   categories?: string[];
 }
 
@@ -117,10 +118,7 @@ export type ModalType =
   | null;
 
 // Dashboard Tab Types
-export type DashboardTabValue =
-  | "overview"
-  | "analytics"
-  | "reports";
+export type DashboardTabValue = "overview" | "analytics" | "reports";
 
 // Filter Types
 export type ReportFilterType = "all" | "users" | "events";
