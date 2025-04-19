@@ -8,41 +8,97 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Shield, AlertTriangle, Lock, Eye, EyeOff } from "lucide-react"
 import { toast } from "sonner"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface SecurityLog {
   id: string
-  type: "login" | "logout" | "failed_attempt" | "password_change"
-  user: string
+  type: "login" | "logout" | "failed_attempt" | "password_change" | "user_update" | "role_change" | "permission_change"
+  admin: string
   ip: string
   date: string
+  time: string
   status: "success" | "warning" | "error"
+  action: string
 }
 
 export default function SecurityPage() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [dateFilter, setDateFilter] = useState("")
   const [showLogs, setShowLogs] = useState(true)
+  const [selectedAction, setSelectedAction] = useState<string | null>(null)
   const [logs, setLogs] = useState<SecurityLog[]>([
     {
       id: "1",
       type: "login",
-      user: "admin",
+      admin: "admin1",
       ip: "192.168.1.100",
-      date: "2024-03-15 10:30",
-      status: "success"
+      date: "2024-03-15",
+      time: "10:30",
+      status: "success",
+      action: "Sisteme giriş yaptı"
     },
     {
       id: "2",
       type: "failed_attempt",
-      user: "unknown",
+      admin: "admin2",
       ip: "192.168.1.101",
-      date: "2024-03-15 11:45",
-      status: "error"
+      date: "2024-03-15",
+      time: "11:45",
+      status: "error",
+      action: "Başarısız giriş denemesi"
+    },
+    {
+      id: "3",
+      type: "role_change",
+      admin: "admin1",
+      ip: "192.168.1.102",
+      date: "2024-03-15",
+      time: "12:00",
+      status: "success",
+      action: "user123 kullanıcısının rolünü User'dan Admin'e değiştirdi"
+    },
+    {
+      id: "4",
+      type: "permission_change",
+      admin: "admin2",
+      ip: "192.168.1.102",
+      date: "2024-03-15",
+      time: "12:15",
+      status: "success",
+      action: "user456 kullanıcısına etkinlik düzenleme izni verdi"
+    },
+    {
+      id: "5",
+      type: "user_update",
+      admin: "admin3",
+      ip: "192.168.1.103",
+      date: "2024-03-15",
+      time: "14:20",
+      status: "warning",
+      action: "user789 kullanıcısını uygunsuz davranış sebebiyle raporladı"
+    },
+    {
+      id: "6",
+      type: "permission_change",
+      admin: "admin1",
+      ip: "192.168.1.100",
+      date: "2024-03-15",
+      time: "15:45",
+      status: "success",
+      action: "Spor salonu yöneticisi user567'nin tüm spor salonlarındaki rezervasyon yönetimi, etkinlik oluşturma ve düzenleme, kullanıcı raporlama ve engelleme izinlerini güncelledi"
     }
   ])
 
   const filteredLogs = logs.filter(log => 
-    log.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    log.ip.includes(searchQuery)
+    (log.admin.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    log.ip.includes(searchQuery) ||
+    log.action.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (dateFilter === "" || log.date === dateFilter)
   )
 
   const getStatusIcon = (status: string) => {
@@ -61,6 +117,11 @@ export default function SecurityPage() {
   const handleToggleLogs = () => {
     setShowLogs(!showLogs)
     toast.success(`Loglar ${showLogs ? "gizlendi" : "gösterildi"}`)
+  }
+
+  const truncateText = (text: string, maxLength: number = 50) => {
+    if (text.length <= maxLength) return text
+    return text.slice(0, maxLength) + "..."
   }
 
   return (
@@ -85,12 +146,19 @@ export default function SecurityPage() {
       </div>
 
       <Card className="p-4">
-        <div className="mb-4">
+        <div className="mb-4 flex gap-4">
           <Input 
-            placeholder="Kullanıcı veya IP ara..." 
+            placeholder="Admin, IP veya İşlem ara..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-sm"
+          />
+          <Input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="max-w-[200px]"
+            placeholder="Tarih seç"
           />
         </div>
 
@@ -99,11 +167,13 @@ export default function SecurityPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tip</TableHead>
-                  <TableHead>Kullanıcı</TableHead>
-                  <TableHead>IP Adresi</TableHead>
-                  <TableHead>Tarih</TableHead>
-                  <TableHead>Durum</TableHead>
+                  <TableHead className="w-[150px]">Tip</TableHead>
+                  <TableHead className="w-[100px]">Admin</TableHead>
+                  <TableHead className="w-[150px]">IP Adresi</TableHead>
+                  <TableHead className="w-[120px]">Tarih</TableHead>
+                  <TableHead className="w-[100px]">Saat</TableHead>
+                  <TableHead className="w-[300px]">İşlem</TableHead>
+                  <TableHead className="w-[120px]">Durum</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -113,11 +183,23 @@ export default function SecurityPage() {
                       {log.type === "login" ? "Giriş" : 
                        log.type === "logout" ? "Çıkış" : 
                        log.type === "failed_attempt" ? "Başarısız Giriş" : 
-                       "Şifre Değişikliği"}
+                       log.type === "password_change" ? "Şifre Değişikliği" :
+                       log.type === "user_update" ? "Kullanıcı Güncelleme" :
+                       log.type === "role_change" ? "Rol Değişikliği" :
+                       "İzin Değişikliği"}
                     </TableCell>
-                    <TableCell>{log.user}</TableCell>
+                    <TableCell>{log.admin}</TableCell>
                     <TableCell>{log.ip}</TableCell>
                     <TableCell>{log.date}</TableCell>
+                    <TableCell>{log.time}</TableCell>
+                    <TableCell>
+                      <button 
+                        onClick={() => setSelectedAction(log.action)}
+                        className="text-left hover:underline cursor-pointer text-blue-600"
+                      >
+                        {truncateText(log.action)}
+                      </button>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {getStatusIcon(log.status)}
@@ -137,6 +219,17 @@ export default function SecurityPage() {
           </div>
         )}
       </Card>
+
+      <Dialog open={!!selectedAction} onOpenChange={() => setSelectedAction(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>İşlem Detayı</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            <p className="text-sm text-gray-600">{selectedAction}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
