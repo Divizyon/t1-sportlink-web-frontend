@@ -6,23 +6,7 @@ import { tr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, MapPin, Users } from "lucide-react";
-
-interface Event {
-  id: string;
-  title: string;
-  date: Date;
-  time: string;
-  location: string;
-  participants: number;
-  maxParticipants: number;
-  category: string;
-  status: "pending" | "approved" | "rejected" | "completed";
-}
-
-interface TodaysEventsProps {
-  onEventSelect?: (event: Event) => void;
-  categories?: string[];
-}
+import { Event, EventStatus, TodaysEventsProps } from "@/types/dashboard";
 
 export function TodaysEvents({
   onEventSelect,

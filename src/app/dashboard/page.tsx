@@ -34,12 +34,11 @@ import {
   Newspaper,
   SendHorizontal,
 } from "lucide-react";
-import { MonthlyEventsChart } from "@/components/dashboard/charts/MonthlyEventsChart";
-import { TodaysEvents } from "@/components/dashboard/TodaysEvents";
-import { RecentParticipants } from "@/components/dashboard/RecentParticipants";
-import { UserTable } from "@/components/dashboard/tables/UserTable";
-import { EventParticipationChart } from "@/components/dashboard/charts/EventParticipationChart";
-import { CategoryFilterDropdown } from "@/components/dashboard/filters/CategoryFilterDropdown";
+import { MonthlyEventsChart } from "@/components/dashboard/analytics/MonthlyEventsChart";
+import { TodaysEvents } from "@/components/dashboard/home/TodaysEvents";
+import { RecentParticipants } from "@/components/dashboard/home/RecentParticipants";
+import { UserTable } from "@/components/dashboard/users/UserTable";
+import { EventParticipationChart } from "@/components/dashboard/analytics/EventParticipationChart";
 import { EventDetailModal } from "@/components/modals/EventDetailModal";
 import { UserDetailModal } from "@/components/modals/UserDetailModal";
 import { NewEventModal } from "@/components/modals/NewEventModal";
@@ -63,21 +62,18 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-
-type ModalType =
-  | "event"
-  | "newEvent"
-  | "newNews"
-  | "newAnnouncement"
-  | "user"
-  | "users"
-  | "dailyEvents"
-  | "activeUsers"
-  | "totalParticipants"
-  | "reportedUsers"
-  | "reportedEvents"
-  | "orgEvents"
-  | null;
+import {
+  DASHBOARD_TAB_LABELS,
+  DASHBOARD_TABS,
+  ENTITY_TYPE_LABELS,
+  REPORT_PRIORITY_LABELS,
+  REPORT_STATUS_LABELS,
+  UI_TEXT,
+  MODAL_TYPES,
+  REPORT_FILTER_LABELS,
+  REPORT_FILTERS,
+} from "@/constants/dashboard";
+import { ReportPriority, ReportStatus, ModalType } from "@/types";
 
 // Raporlar için demo verileri
 type Priority = "high" | "medium" | "low";
@@ -187,16 +183,17 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [activeTab, setActiveTab] = useState<string>("overview");
+  const [activeTab, setActiveTab] = useState<string>(DASHBOARD_TABS.overview);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [preferredReportFilter, setPreferredReportFilter] =
-    useState<string>("all");
+  const [preferredReportFilter, setPreferredReportFilter] = useState<string>(
+    REPORT_FILTERS.all
+  );
 
   // Raporlar için filtre state'leri
   const [reportFilter, setReportFilter] = useState<"all" | "users" | "events">(
-    "all"
+    REPORT_FILTERS.all
   );
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
@@ -247,14 +244,18 @@ export default function DashboardPage() {
   ];
 
   const openModal = (type: ModalType, entityData: any = null) => {
-    if (type === "event" || type === "dailyEvents" || type === "orgEvents") {
+    if (
+      type === MODAL_TYPES.EVENT ||
+      type === MODAL_TYPES.DAILY_EVENTS ||
+      type === MODAL_TYPES.ORG_EVENTS
+    ) {
       setSelectedEvent(entityData);
-    } else if (type === "user") {
+    } else if (type === MODAL_TYPES.USER) {
       setSelectedUser(entityData);
-    } else if (type === "reportedUsers") {
-      setPreferredReportFilter("users");
-    } else if (type === "reportedEvents") {
-      setPreferredReportFilter("events");
+    } else if (type === MODAL_TYPES.REPORTED_USERS) {
+      setPreferredReportFilter(REPORT_FILTERS.users);
+    } else if (type === MODAL_TYPES.REPORTED_EVENTS) {
+      setPreferredReportFilter(REPORT_FILTERS.events);
     }
     setActiveModal(type);
   };
@@ -267,8 +268,8 @@ export default function DashboardPage() {
 
   const handleNewEventSuccess = (event: Event) => {
     toast({
-      title: "Etkinlik oluşturuldu",
-      description: `"${event.title}" etkinliği başarıyla oluşturuldu.`,
+      title: UI_TEXT.TOAST.EVENT_CREATED.TITLE,
+      description: UI_TEXT.TOAST.EVENT_CREATED.DESCRIPTION(event.title),
     });
     closeModal();
   };
@@ -285,7 +286,7 @@ export default function DashboardPage() {
   const filteredReports = DEMO_REPORTS.filter((report) => {
     // Tür filtreleme
     if (
-      reportFilter !== "all" &&
+      reportFilter !== REPORT_FILTERS.all &&
       report.entityType !== reportFilter.slice(0, -1)
     ) {
       return false;
@@ -307,24 +308,40 @@ export default function DashboardPage() {
   const getPriorityBadge = (priority: Priority) => {
     switch (priority) {
       case "high":
-        return <Badge variant="destructive">Yüksek</Badge>;
+        return (
+          <Badge variant="destructive">{REPORT_PRIORITY_LABELS.high}</Badge>
+        );
       case "medium":
-        return <Badge variant="default">Orta</Badge>;
+        return <Badge variant="default">{REPORT_PRIORITY_LABELS.medium}</Badge>;
       case "low":
-        return <Badge variant="outline">Düşük</Badge>;
+        return <Badge variant="outline">{REPORT_PRIORITY_LABELS.low}</Badge>;
     }
   };
 
   const getStatusBadge = (status: Status) => {
     switch (status) {
       case "pending":
-        return <Badge className="bg-yellow-500">Beklemede</Badge>;
+        return (
+          <Badge className="bg-yellow-500">
+            {REPORT_STATUS_LABELS.pending}
+          </Badge>
+        );
       case "reviewing":
-        return <Badge className="bg-blue-500">İnceleniyor</Badge>;
+        return (
+          <Badge className="bg-blue-500">
+            {REPORT_STATUS_LABELS.reviewing}
+          </Badge>
+        );
       case "resolved":
-        return <Badge className="bg-green-500">Çözüldü</Badge>;
+        return (
+          <Badge className="bg-green-500">
+            {REPORT_STATUS_LABELS.resolved}
+          </Badge>
+        );
       case "rejected":
-        return <Badge className="bg-gray-500">Reddedildi</Badge>;
+        return (
+          <Badge className="bg-gray-500">{REPORT_STATUS_LABELS.rejected}</Badge>
+        );
     }
   };
 
@@ -335,8 +352,10 @@ export default function DashboardPage() {
       )
     );
     toast({
-      title: "Rapor durumu güncellendi",
-      description: `Rapor durumu ${newStatus} olarak değiştirildi.`,
+      title: UI_TEXT.TOAST.REPORT_STATUS_UPDATED.TITLE,
+      description: UI_TEXT.TOAST.REPORT_STATUS_UPDATED.DESCRIPTION(
+        REPORT_STATUS_LABELS[newStatus]
+      ),
     });
   };
 
@@ -346,39 +365,54 @@ export default function DashboardPage() {
 
       {/* Hızlı Erişim Butonları */}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => openModal("newEvent")}>
+        <Button onClick={() => openModal(MODAL_TYPES.NEW_EVENT)}>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Yeni Etkinlik
+          {UI_TEXT.BUTTON_TEXT.NEW_EVENT}
         </Button>
-        <Button variant="outline" onClick={() => openModal("newAnnouncement")}>
+        <Button
+          variant="outline"
+          onClick={() => openModal(MODAL_TYPES.ANNOUNCEMENT)}
+        >
           <BellRing className="mr-2 h-4 w-4" />
-          Duyuru Yayınla
+          {UI_TEXT.BUTTON_TEXT.PUBLISH_ANNOUNCEMENT}
         </Button>
-        <Button variant="outline" onClick={() => openModal("newNews")}>
+        <Button variant="outline" onClick={() => openModal(MODAL_TYPES.NEWS)}>
           <Newspaper className="mr-2 h-4 w-4" />
-          Haber Yayınla
+          {UI_TEXT.BUTTON_TEXT.PUBLISH_NEWS}
         </Button>
       </div>
 
       <Tabs
-        defaultValue="overview"
+        defaultValue={DASHBOARD_TABS.overview}
         value={activeTab}
         onValueChange={handleTabChange}
       >
         <TabsList className="grid grid-cols-5 w-[600px]">
-          <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
-          <TabsTrigger value="analytics">İstatistikler</TabsTrigger>
-          <TabsTrigger value="events">Etkinlikler</TabsTrigger>
-          <TabsTrigger value="reports">Raporlar</TabsTrigger>
-          <TabsTrigger value="messages">Mesajlaşma</TabsTrigger>
+          <TabsTrigger value={DASHBOARD_TABS.overview}>
+            {DASHBOARD_TAB_LABELS.overview}
+          </TabsTrigger>
+          <TabsTrigger value={DASHBOARD_TABS.analytics}>
+            {DASHBOARD_TAB_LABELS.analytics}
+          </TabsTrigger>
+          <TabsTrigger value={DASHBOARD_TABS.events}>
+            {DASHBOARD_TAB_LABELS.events}
+          </TabsTrigger>
+          <TabsTrigger value={DASHBOARD_TABS.reports}>
+            {DASHBOARD_TAB_LABELS.reports}
+          </TabsTrigger>
+          <TabsTrigger value={DASHBOARD_TABS.messages}>
+            {DASHBOARD_TAB_LABELS.messages}
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value={DASHBOARD_TABS.overview} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-4">
               <CardHeader>
-                <CardTitle>Haftalık Etkinlik Katılımı</CardTitle>
+                <CardTitle>
+                  {UI_TEXT.SECTION_TITLES.WEEKLY_PARTICIPATION}
+                </CardTitle>
                 <CardDescription>
-                  Son 7 gündeki etkinliklere katılım ve durum oranları
+                  {UI_TEXT.SECTION_DESCRIPTIONS.WEEKLY_PARTICIPATION}
                 </CardDescription>
               </CardHeader>
               <CardContent className="pl-2">
@@ -387,18 +421,20 @@ export default function DashboardPage() {
             </Card>
             <Card className="col-span-3">
               <CardHeader>
-                <CardTitle>Bugünkü Etkinlikler</CardTitle>
+                <CardTitle>{UI_TEXT.SECTION_TITLES.TODAY_EVENTS}</CardTitle>
                 <CardDescription>
-                  {new Date().toLocaleDateString("tr-TR", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
+                  {UI_TEXT.SECTION_DESCRIPTIONS.TODAY_EVENTS(
+                    new Date().toLocaleDateString("tr-TR", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                    })
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <TodaysEvents
-                  onEventSelect={(event) => openModal("event", event)}
+                  onEventSelect={(event) => openModal(MODAL_TYPES.EVENT, event)}
                   categories={selectedCategories}
                 />
               </CardContent>
@@ -406,10 +442,10 @@ export default function DashboardPage() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => openModal("orgEvents")}
+                  onClick={() => openModal(MODAL_TYPES.ORG_EVENTS)}
                 >
                   <Calendar className="mr-2 h-4 w-4" />
-                  Organizasyon Etkinlikleri
+                  {UI_TEXT.BUTTON_TEXT.ORG_EVENTS}
                 </Button>
               </CardFooter>
             </Card>
@@ -421,24 +457,26 @@ export default function DashboardPage() {
             <div className="space-y-4">
               <Card className="h-[500px]">
                 <CardHeader>
-                  <CardTitle>Son Katılımcılar</CardTitle>
+                  <CardTitle>
+                    {UI_TEXT.SECTION_TITLES.RECENT_PARTICIPANTS}
+                  </CardTitle>
                   <CardDescription>
-                    Son etkinliklere katılan spor tutkunları
+                    {UI_TEXT.SECTION_DESCRIPTIONS.RECENT_PARTICIPANTS}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="h-[380px] overflow-y-auto">
                   <RecentParticipants
-                    onUserSelect={(user) => openModal("user", user)}
+                    onUserSelect={(user) => openModal(MODAL_TYPES.USER, user)}
                   />
                 </CardContent>
                 <CardFooter>
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => openModal("users")}
+                    onClick={() => openModal(MODAL_TYPES.USERS)}
                   >
                     <Users className="mr-2 h-4 w-4" />
-                    Tüm Kullanıcıları Yönet
+                    {UI_TEXT.BUTTON_TEXT.MANAGE_ALL_USERS}
                   </Button>
                 </CardFooter>
               </Card>
@@ -448,9 +486,9 @@ export default function DashboardPage() {
             <div className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Platform İstatistikleri</CardTitle>
+                  <CardTitle>{UI_TEXT.SECTION_TITLES.PLATFORM_STATS}</CardTitle>
                   <CardDescription>
-                    Kullanıcı ve katılımcı özeti
+                    {UI_TEXT.SECTION_DESCRIPTIONS.PLATFORM_STATS}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -458,14 +496,14 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground">
-                          Aktif Kullanıcılar
+                          {UI_TEXT.STATS.ACTIVE_USERS}
                         </h3>
                         <p className="text-2xl font-bold">+573</p>
                       </div>
                       <Users className="h-8 w-8 text-muted-foreground opacity-75" />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Son 30 günde +39 yeni üye
+                      {UI_TEXT.STATS.NEW_MEMBERS(39)}
                     </p>
                   </div>
 
@@ -473,14 +511,14 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground">
-                          Toplam Katılımcı
+                          {UI_TEXT.STATS.TOTAL_PARTICIPANTS}
                         </h3>
                         <p className="text-2xl font-bold">1,324</p>
                       </div>
                       <Activity className="h-8 w-8 text-muted-foreground opacity-75" />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Son ayın toplam katılımcısı
+                      {UI_TEXT.STATS.MONTHLY_PARTICIPANTS}
                     </p>
                   </div>
 
@@ -488,14 +526,14 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground">
-                          Etkinlik Doluluk Oranı
+                          {UI_TEXT.STATS.EVENT_FILL_RATE}
                         </h3>
                         <p className="text-2xl font-bold">%78</p>
                       </div>
                       <CreditCard className="h-8 w-8 text-muted-foreground opacity-75" />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Ortalama etkinlik katılım oranı
+                      {UI_TEXT.STATS.AVG_PARTICIPATION}
                     </p>
                   </div>
                 </CardContent>
@@ -503,23 +541,23 @@ export default function DashboardPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => openModal("activeUsers")}
+                    onClick={() => openModal(MODAL_TYPES.ACTIVE_USERS)}
                   >
                     <Users className="mr-2 h-4 w-4" />
-                    Kullanıcı İstatistikleri
+                    {UI_TEXT.BUTTON_TEXT.USER_STATS}
                   </Button>
                 </CardFooter>
               </Card>
             </div>
           </div>
         </TabsContent>
-        <TabsContent value="analytics" className="space-y-4">
+        <TabsContent value={DASHBOARD_TABS.analytics} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
             <Card className="col-span-1">
               <CardHeader>
-                <CardTitle>Etkinlik Analizi</CardTitle>
+                <CardTitle>{UI_TEXT.SECTION_TITLES.EVENT_ANALYSIS}</CardTitle>
                 <CardDescription>
-                  Son 12 aydaki etkinlik verileri
+                  {UI_TEXT.SECTION_DESCRIPTIONS.EVENT_ANALYSIS}
                 </CardDescription>
               </CardHeader>
               <CardContent className="pl-2">
@@ -528,9 +566,11 @@ export default function DashboardPage() {
             </Card>
             <Card className="col-span-1">
               <CardHeader>
-                <CardTitle>Kullanıcı Dağılımı</CardTitle>
+                <CardTitle>
+                  {UI_TEXT.SECTION_TITLES.USER_DISTRIBUTION}
+                </CardTitle>
                 <CardDescription>
-                  Kategorilere göre kullanıcı dağılımı
+                  {UI_TEXT.SECTION_DESCRIPTIONS.USER_DISTRIBUTION}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -539,25 +579,31 @@ export default function DashboardPage() {
             </Card>
           </div>
         </TabsContent>
-        <TabsContent value="events" className="space-y-4">
+        <TabsContent value={DASHBOARD_TABS.events} className="space-y-4">
           {/* ... existing code ... */}
         </TabsContent>
-        <TabsContent value="reports" className="space-y-4">
+        <TabsContent value={DASHBOARD_TABS.reports} className="space-y-4">
           <div className="space-y-4">
             <div className="flex justify-between">
               <div className="flex gap-2">
                 <Button
-                  variant={reportFilter === "all" ? "default" : "outline"}
-                  onClick={() => setReportFilter("all")}
+                  variant={
+                    reportFilter === REPORT_FILTERS.all ? "default" : "outline"
+                  }
+                  onClick={() => setReportFilter(REPORT_FILTERS.all)}
                 >
-                  Tüm Raporlar
+                  {REPORT_FILTER_LABELS.all}
                 </Button>
                 <Button
-                  variant={reportFilter === "users" ? "default" : "outline"}
-                  onClick={() => setReportFilter("users")}
+                  variant={
+                    reportFilter === REPORT_FILTERS.users
+                      ? "default"
+                      : "outline"
+                  }
+                  onClick={() => setReportFilter(REPORT_FILTERS.users)}
                   className="relative"
                 >
-                  Kullanıcı Raporları
+                  {REPORT_FILTER_LABELS.users}
                   <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
                     {
                       DEMO_REPORTS.filter(
@@ -567,11 +613,15 @@ export default function DashboardPage() {
                   </Badge>
                 </Button>
                 <Button
-                  variant={reportFilter === "events" ? "default" : "outline"}
-                  onClick={() => setReportFilter("events")}
+                  variant={
+                    reportFilter === REPORT_FILTERS.events
+                      ? "default"
+                      : "outline"
+                  }
+                  onClick={() => setReportFilter(REPORT_FILTERS.events)}
                   className="relative"
                 >
-                  Etkinlik Raporları
+                  {REPORT_FILTER_LABELS.events}
                   <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
                     {
                       DEMO_REPORTS.filter(
@@ -595,9 +645,15 @@ export default function DashboardPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tüm Öncelikler</SelectItem>
-                    <SelectItem value="high">Yüksek</SelectItem>
-                    <SelectItem value="medium">Orta</SelectItem>
-                    <SelectItem value="low">Düşük</SelectItem>
+                    <SelectItem value="high">
+                      {REPORT_PRIORITY_LABELS.high}
+                    </SelectItem>
+                    <SelectItem value="medium">
+                      {REPORT_PRIORITY_LABELS.medium}
+                    </SelectItem>
+                    <SelectItem value="low">
+                      {REPORT_PRIORITY_LABELS.low}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -612,10 +668,18 @@ export default function DashboardPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tüm Durumlar</SelectItem>
-                    <SelectItem value="pending">Beklemede</SelectItem>
-                    <SelectItem value="reviewing">İnceleniyor</SelectItem>
-                    <SelectItem value="resolved">Çözüldü</SelectItem>
-                    <SelectItem value="rejected">Reddedildi</SelectItem>
+                    <SelectItem value="pending">
+                      {REPORT_STATUS_LABELS.pending}
+                    </SelectItem>
+                    <SelectItem value="reviewing">
+                      {REPORT_STATUS_LABELS.reviewing}
+                    </SelectItem>
+                    <SelectItem value="resolved">
+                      {REPORT_STATUS_LABELS.resolved}
+                    </SelectItem>
+                    <SelectItem value="rejected">
+                      {REPORT_STATUS_LABELS.rejected}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -623,9 +687,12 @@ export default function DashboardPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Gelen Raporlar ({filteredReports.length})</CardTitle>
+                <CardTitle>
+                  {UI_TEXT.SECTION_TITLES.INCOMING_REPORTS} (
+                  {filteredReports.length})
+                </CardTitle>
                 <CardDescription>
-                  İncelemeniz gereken rapor ve bildirimler
+                  {UI_TEXT.SECTION_DESCRIPTIONS.INCOMING_REPORTS}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -654,9 +721,7 @@ export default function DashboardPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {report.entityType === "user"
-                            ? "Kullanıcı"
-                            : "Etkinlik"}
+                          {ENTITY_TYPE_LABELS[report.entityType]}
                         </TableCell>
                         <TableCell>
                           {getPriorityBadge(report.priority)}
@@ -719,12 +784,12 @@ export default function DashboardPage() {
             </Card>
           </div>
         </TabsContent>
-        <TabsContent value="messages" className="space-y-4">
+        <TabsContent value={DASHBOARD_TABS.messages} className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Mesajlaşma</CardTitle>
+              <CardTitle>{UI_TEXT.SECTION_TITLES.MESSAGING}</CardTitle>
               <CardDescription>
-                Kullanıcılar ve etkinlik katılımcıları ile iletişime geçin
+                {UI_TEXT.SECTION_DESCRIPTIONS.MESSAGING}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -829,9 +894,9 @@ export default function DashboardPage() {
       {/* Modallar */}
       <EventDetailModal
         open={
-          activeModal === "event" ||
-          activeModal === "dailyEvents" ||
-          activeModal === "orgEvents"
+          activeModal === MODAL_TYPES.EVENT ||
+          activeModal === MODAL_TYPES.DAILY_EVENTS ||
+          activeModal === MODAL_TYPES.ORG_EVENTS
         }
         onOpenChange={closeModal}
         event={selectedEvent as any}
@@ -839,13 +904,13 @@ export default function DashboardPage() {
       />
 
       <UserDetailModal
-        open={activeModal === "user"}
+        open={activeModal === MODAL_TYPES.USER}
         onOpenChange={closeModal}
         user={selectedUser as any}
       />
 
       <NewEventModal
-        open={activeModal === "newEvent"}
+        open={activeModal === MODAL_TYPES.NEW_EVENT}
         onOpenChange={closeModal}
         onSuccess={() => {
           if (selectedEvent) {
@@ -856,27 +921,30 @@ export default function DashboardPage() {
         }}
       />
 
-      {activeModal === "newNews" && (
+      {activeModal === MODAL_TYPES.NEWS && (
         <NewsModal
-          open={activeModal === "newNews"}
+          open={activeModal === MODAL_TYPES.NEWS}
           onOpenChange={() => closeModal()}
         />
       )}
 
-      {activeModal === "newAnnouncement" && (
+      {activeModal === MODAL_TYPES.ANNOUNCEMENT && (
         <NewsModal
-          open={activeModal === "newAnnouncement"}
+          open={activeModal === MODAL_TYPES.ANNOUNCEMENT}
           onOpenChange={() => closeModal()}
         />
       )}
 
       <ReportsModal
         open={
-          activeModal === "reportedUsers" || activeModal === "reportedEvents"
+          activeModal === MODAL_TYPES.REPORTED_USERS ||
+          activeModal === MODAL_TYPES.REPORTED_EVENTS
         }
         onOpenChange={closeModal}
         preferredFilter={preferredReportFilter}
-        reportType={activeModal === "reportedUsers" ? "users" : "events"}
+        reportType={
+          activeModal === MODAL_TYPES.REPORTED_USERS ? "users" : "events"
+        }
       />
     </div>
   );

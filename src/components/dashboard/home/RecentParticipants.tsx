@@ -3,18 +3,7 @@
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface Participant {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  lastEvent: string;
-}
-
-interface RecentParticipantsProps {
-  onUserSelect?: (participant: Participant) => void;
-}
+import { Participant, RecentParticipantsProps } from "@/types/dashboard";
 
 export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
   const [participants, setParticipants] = useState<Participant[]>([]);

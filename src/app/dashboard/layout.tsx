@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CalendarDateRangePicker } from "@/components/common/DateRangePicker";
-import { CategoryFilterDropdown } from "@/components/dashboard/filters/CategoryFilterDropdown";
+import { CategoryFilterDropdown } from "@/components/dashboard/shared/CategoryFilterDropdown";
 import { UserNav } from "@/components/nav/UserNav";
 
 export default function DashboardLayout({

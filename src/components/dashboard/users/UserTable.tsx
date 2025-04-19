@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CategoryCount } from "@/types/dashboard";
 
-const categories = [
+const categories: CategoryCount[] = [
   { name: "Futbol", count: 156, change: "+12%" },
   { name: "Basketbol", count: 98, change: "+5%" },
   { name: "Yüzme", count: 65, change: "+22%" },

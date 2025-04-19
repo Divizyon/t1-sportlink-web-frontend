@@ -19,23 +19,8 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-// Etkinlik kategorileri
-const EVENT_CATEGORIES = [
-  "Futbol",
-  "Basketbol",
-  "Yüzme",
-  "Tenis",
-  "Voleybol",
-  "Koşu",
-  "Yoga",
-  "Fitness",
-];
-
-interface CategoryFilterDropdownProps {
-  selectedCategories: string[];
-  onChange: (categories: string[]) => void;
-}
+import { CategoryFilterDropdownProps } from "@/types/dashboard";
+import { EVENT_CATEGORIES } from "@/constants/dashboard";
 
 export function CategoryFilterDropdown({
   selectedCategories,

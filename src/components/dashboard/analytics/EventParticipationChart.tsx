@@ -19,51 +19,17 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarDays, Users, Layers, Trophy } from "lucide-react";
-
-// Etkinlik kategorileri
-const EVENT_CATEGORIES = [
-  "Futbol",
-  "Basketbol",
-  "Voleybol",
-  "Tenis",
-  "Yüzme",
-  "Koşu",
-  "Yoga",
-  "Fitness",
-  "Diğer",
-];
-
-// Renk paleti
-const COLORS = [
-  "#22c55e",
-  "#eab308",
-  "#ef4444",
-  "#3b82f6",
-  "#8b5cf6",
-  "#ec4899",
-  "#10b981",
-  "#f97316",
-  "#6366f1",
-];
-
-interface ChartData {
-  name: string;
-  onaylanan: number;
-  bekleyen: number;
-  reddedilen: number;
-  tamamlanan: number;
-  [key: string]: string | number;
-}
-
-interface CategoryData {
-  name: string;
-  value: number;
-  color: string;
-}
-
-interface EventParticipationChartProps {
-  categories?: string[];
-}
+import {
+  ChartData,
+  CategoryData,
+  EventParticipationChartProps,
+} from "@/types/dashboard";
+import {
+  EVENT_CATEGORIES,
+  COLORS,
+  DAYS_OF_WEEK,
+  LOADING_DELAYS,
+} from "@/constants";
 
 export function EventParticipationChart({
   categories = [],
@@ -81,8 +47,7 @@ export function EventParticipationChart({
     // Filtrelenmiş verileri yükleme simülasyonu
     setTimeout(() => {
       // Her gün için farklı kategoriler için rastgele veriler
-      const days = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
-      const mockData: ChartData[] = days.map((day) => {
+      const mockData: ChartData[] = DAYS_OF_WEEK.map((day) => {
         const baseData: ChartData = {
           name: day,
           onaylanan: Math.floor(Math.random() * 20) + 10,
@@ -125,13 +90,13 @@ export function EventParticipationChart({
       ).map((category, index) => ({
         name: category,
         value: Math.floor(Math.random() * 50) + 20,
-        color: COLORS[index % COLORS.length],
+        color: COLORS.chart[index % COLORS.chart.length],
       }));
 
       setData(mockData);
       setCategoryData(mockCategoryData);
       setLoading(false);
-    }, 1000);
+    }, LOADING_DELAYS.long);
   }, [categories]);
 
   // Toplam etkinlik sayısını hesapla
@@ -234,122 +199,133 @@ export function EventParticipationChart({
             </div>
           </div>
 
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250}>
             <BarChart
               data={data}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              margin={{
+                top: 20,
+                right: 30,
+                left: 0,
+                bottom: 5,
+              }}
+              barSize={20}
             >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
-              <YAxis width={30} />
-              <Tooltip
-                formatter={(value, name) => {
-                  const labels = {
-                    onaylanan: "Onaylı",
-                    bekleyen: "Bekleyen",
-                    reddedilen: "Reddedilen",
-                    tamamlanan: "Tamamlanan",
-                  };
-                  return [value, labels[name as keyof typeof labels] || name];
-                }}
-                wrapperStyle={{ zIndex: 1000 }}
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar
+                dataKey="onaylanan"
+                stackId="a"
+                fill={COLORS.status.approved}
+                name="Onaylı"
               />
-              <Legend
-                formatter={(value) => {
-                  const labels = {
-                    onaylanan: "Onaylı",
-                    bekleyen: "Bekleyen",
-                    reddedilen: "Reddedilen",
-                    tamamlanan: "Tamamlanan",
-                  };
-                  return labels[value as keyof typeof labels] || value;
-                }}
+              <Bar
+                dataKey="bekleyen"
+                stackId="a"
+                fill={COLORS.status.pending}
+                name="Bekleyen"
               />
-              <Bar dataKey="onaylanan" fill="#22c55e" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="bekleyen" fill="#eab308" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="reddedilen" fill="#ef4444" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="tamamlanan" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="reddedilen"
+                stackId="a"
+                fill={COLORS.status.rejected}
+                name="Reddedilen"
+              />
+              <Bar
+                dataKey="tamamlanan"
+                stackId="a"
+                fill={COLORS.status.completed}
+                name="Tamamlanan"
+              />
             </BarChart>
           </ResponsiveContainer>
         </TabsContent>
 
         <TabsContent value="category">
-          <div className="flex justify-between items-center my-4">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-amber-500" />
-              <span className="font-medium">En Popüler Kategoriler</span>
-            </div>
-            <div>
-              <Badge
-                variant="outline"
-                className="bg-purple-100 text-purple-800"
-              >
-                Toplam: {totalCategoryEvents} Etkinlik
-              </Badge>
-            </div>
-          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 h-[300px]">
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({
+                    cx,
+                    cy,
+                    midAngle,
+                    innerRadius,
+                    outerRadius,
+                    percent,
+                    index,
+                  }) => {
+                    const RADIAN = Math.PI / 180;
+                    const radius =
+                      innerRadius + (outerRadius - innerRadius) * 0.5;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => [`${value} Etkinlik`, "Toplam"]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+                    return (
+                      <text
+                        x={x}
+                        y={y}
+                        fill="white"
+                        textAnchor={x > cx ? "start" : "end"}
+                        dominantBaseline="central"
+                      >
+                        {`${(percent * 100).toFixed(0)}%`}
+                      </text>
+                    );
+                  }}
+                >
+                  {categoryData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.color}
+                      stroke={entry.color}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value, name, props) => [
+                    `${value} etkinlik (${getPercentage(
+                      value as number,
+                      totalCategoryEvents
+                    )}%)`,
+                    props.payload.name,
+                  ]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
 
-            <div className="flex flex-col justify-center">
-              <div className="space-y-2">
-                {categoryData.map((entry, index) => (
-                  <div
-                    key={`legend-${index}`}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: entry.color }}
-                      />
-                      <span>{entry.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{entry.value}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({getPercentage(entry.value, totalCategoryEvents)}%)
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-2 justify-center sm:flex-col sm:min-w-[150px]">
+              {categoryData.map((entry, index) => (
+                <Badge
+                  key={`legend-${index}`}
+                  variant="outline"
+                  className="flex items-center gap-1"
+                  style={{
+                    backgroundColor: `${entry.color}20`,
+                    color: entry.color,
+                    borderColor: entry.color,
+                  }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: entry.color }}
+                  ></span>
+                  {entry.name} ({entry.value})
+                </Badge>
+              ))}
             </div>
           </div>
         </TabsContent>
       </Tabs>
-
-      <div className="text-xs text-muted-foreground text-center">
-        Toplam {totalEvents} etkinlik{" "}
-        {categories.length > 0
-          ? `(${categories.join(", ")})`
-          : "(tüm kategoriler)"}
-      </div>
     </div>
   );
 }
