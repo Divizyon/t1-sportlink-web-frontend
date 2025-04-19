@@ -12,11 +12,13 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Settings, LogOut, Bell } from "lucide-react";
+import { User, LogOut, Bell } from "lucide-react";
 import { useAuth } from "@/contexts";
+import { useRouter } from "next/navigation";
 
 export function UserNav() {
   const { user, logout } = useAuth();
+  const router = useRouter();
 
   // Get first letter(s) of name for avatar fallback
   const getInitials = (name: string) => {
@@ -29,12 +31,77 @@ export function UserNav() {
 
   return (
     <div className="flex items-center gap-4">
-      <Button variant="ghost" size="icon" className="relative">
-        <Bell className="h-5 w-5" />
-        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] text-white">
-          3
-        </span>
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] text-white">
+              8
+            </span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-80" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">Bildirimler</p>
+              <p className="text-xs leading-none text-muted-foreground">8 yeni bildiriminiz var</p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <div className="max-h-[300px] overflow-y-auto">
+            <DropdownMenuGroup>
+              <DropdownMenuItem className="cursor-pointer">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">Bildirim 1</p>
+                  <p className="text-xs text-muted-foreground">2 dakika önce</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">Bildirim 2</p>
+                  <p className="text-xs text-muted-foreground">15 dakika önce</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">Bildirim 3</p>
+                  <p className="text-xs text-muted-foreground">30 dakika önce</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">Bildirim 4</p>
+                  <p className="text-xs text-muted-foreground">1 saat önce</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">Bildirim 5</p>
+                  <p className="text-xs text-muted-foreground">2 saat önce</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">Bildirim 6</p>
+                  <p className="text-xs text-muted-foreground">3 saat önce</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">Bildirim 7</p>
+                  <p className="text-xs text-muted-foreground">5 saat önce</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">Bildirim 8</p>
+                  <p className="text-xs text-muted-foreground">1 gün önce</p>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -63,15 +130,10 @@ export function UserNav() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
               <User className="mr-2 h-4 w-4" />
               <span>Profil</span>
               <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Ayarlar</span>
-              <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />

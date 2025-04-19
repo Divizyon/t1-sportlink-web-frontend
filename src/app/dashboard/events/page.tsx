@@ -82,49 +82,44 @@ export default function EventsPage() {
   const handleDeleteEvent = (id: string) => {
     setEvents(events.filter(event => event.id !== id))
   }
-
+  
   const handleAddNewEvent = (newEvent: Event) => {
     setEvents(prevEvents => [...prevEvents, newEvent])
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Input
-            placeholder="Etkinlik ara..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full sm:w-64"
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          >
-            <option value="all">Tüm Durumlar</option>
-            <option value="active">Aktif</option>
-            <option value="completed">Tamamlandı</option>
-            <option value="cancelled">İptal Edildi</option>
-          </select>
-          <CategoryFilterDropdown
-            selectedCategories={selectedCategories}
-            onSelectCategories={setSelectedCategories}
-          />
-        </div>
-        <Button onClick={() => setIsNewEventModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Yeni Etkinlik Ekle
-        </Button>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Etkinlik Yönetimi</h1>
+        <NewEventModal open={true} onOpenChange={() => {}} />
       </div>
 
       <Card className="p-4">
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <Input 
+            placeholder="Etkinlik ara..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-sm"
+          />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Durum" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tümü</SelectItem>
+              <SelectItem value="active">Aktif</SelectItem>
+              <SelectItem value="completed">Tamamlandı</SelectItem>
+              <SelectItem value="cancelled">İptal Edildi</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Etkinlik Adı</TableHead>
-                <TableHead>Kategori</TableHead>
                 <TableHead>Tarih</TableHead>
                 <TableHead>Konum</TableHead>
                 <TableHead>Katılımcılar</TableHead>
@@ -136,14 +131,6 @@ export default function EventsPage() {
               {filteredEvents.map((event) => (
                 <TableRow key={event.id}>
                   <TableCell className="font-medium">{event.name}</TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant="outline" 
-                      className={`${CATEGORY_COLORS[event.category].bg} ${CATEGORY_COLORS[event.category].text} hover:${CATEGORY_COLORS[event.category].bg}`}
-                    >
-                      {event.category}
-                    </Badge>
-                  </TableCell>
                   <TableCell>{event.date}</TableCell>
                   <TableCell>{event.location}</TableCell>
                   <TableCell>{event.participants}/{event.capacity}</TableCell>
@@ -155,8 +142,9 @@ export default function EventsPage() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <EditEventModal 
-                        event={event}
-                        onSave={(updatedEvent) => handleEditEvent(event.id, updatedEvent)}
+                        eventId={Number(event.id)}
+                        open={false}
+                        onOpenChange={() => {}}
                       />
                       <DeleteEventModal 
                         eventName={event.name}
@@ -170,15 +158,6 @@ export default function EventsPage() {
           </Table>
         </div>
       </Card>
-
-      <NewEventModal
-        open={isNewEventModalOpen}
-        onOpenChange={setIsNewEventModalOpen}
-        onSuccess={(newEvent) => {
-          handleAddNewEvent(newEvent)
-          setIsNewEventModalOpen(false)
-        }}
-      />
     </div>
   )
 } 
