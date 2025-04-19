@@ -11,6 +11,7 @@ import { NewEventModal } from "@/components/modals/NewEventModal"
 import { EditEventModal } from "@/components/modals/EditEventModal"
 import { DeleteEventModal } from "@/components/modals/DeleteEventModal"
 import { CategoryFilterDropdown } from "@/components/CategoryFilterDropdown"
+import { Plus } from "lucide-react"
 
 interface Event {
   id: string
@@ -40,6 +41,7 @@ export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [isNewEventModalOpen, setIsNewEventModalOpen] = useState(false)
   const [events, setEvents] = useState<Event[]>([
     {
       id: "1",
@@ -81,38 +83,42 @@ export default function EventsPage() {
     setEvents(events.filter(event => event.id !== id))
   }
 
-  return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Etkinlik Yönetimi</h1>
-        <NewEventModal />
-      </div>
+  const handleAddNewEvent = (newEvent: Event) => {
+    setEvents(prevEvents => [...prevEvents, newEvent])
+  }
 
-      <Card className="p-4">
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <Input 
-            placeholder="Etkinlik ara..." 
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Input
+            placeholder="Etkinlik ara..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-sm"
+            className="w-full sm:w-64"
           />
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Durum" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tümü</SelectItem>
-              <SelectItem value="active">Aktif</SelectItem>
-              <SelectItem value="completed">Tamamlandı</SelectItem>
-              <SelectItem value="cancelled">İptal Edildi</SelectItem>
-            </SelectContent>
-          </Select>
-          <CategoryFilterDropdown 
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            <option value="all">Tüm Durumlar</option>
+            <option value="active">Aktif</option>
+            <option value="completed">Tamamlandı</option>
+            <option value="cancelled">İptal Edildi</option>
+          </select>
+          <CategoryFilterDropdown
             selectedCategories={selectedCategories}
             onSelectCategories={setSelectedCategories}
           />
         </div>
+        <Button onClick={() => setIsNewEventModalOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Yeni Etkinlik Ekle
+        </Button>
+      </div>
 
+      <Card className="p-4">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -164,6 +170,15 @@ export default function EventsPage() {
           </Table>
         </div>
       </Card>
+
+      <NewEventModal
+        open={isNewEventModalOpen}
+        onOpenChange={setIsNewEventModalOpen}
+        onSuccess={(newEvent) => {
+          handleAddNewEvent(newEvent)
+          setIsNewEventModalOpen(false)
+        }}
+      />
     </div>
   )
 } 

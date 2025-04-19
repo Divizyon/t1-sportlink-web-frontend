@@ -37,7 +37,7 @@ import {
 interface NewEventModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess?: () => void
+  onSuccess?: (newEvent: Event) => void
 }
 
 const EVENT_CATEGORIES = [
@@ -94,11 +94,22 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
     
     // Simüle edilmiş API çağrısı
     setTimeout(() => {
+      const newEvent: Event = {
+        id: Math.random().toString(36).substr(2, 9), // Geçici ID oluşturma
+        name: formData.title,
+        date: formData.date.toISOString().split('T')[0],
+        location: formData.location,
+        capacity: formData.maxParticipants,
+        participants: 0,
+        status: "active",
+        category: formData.category
+      }
+
       setLoading(false)
       toast.success("Etkinlik başarıyla oluşturuldu")
       resetForm()
       onOpenChange(false)
-      if (onSuccess) onSuccess()
+      if (onSuccess) onSuccess(newEvent)
     }, 1500)
   }
   
