@@ -120,9 +120,7 @@ export type ModalType =
 export type DashboardTabValue =
   | "overview"
   | "analytics"
-  | "events"
-  | "reports"
-  | "messages";
+  | "reports";
 
 // Filter Types
 export type ReportFilterType = "all" | "users" | "events";
