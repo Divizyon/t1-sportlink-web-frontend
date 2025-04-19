@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -8,9 +8,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const categories = [
   { name: "Futbol", count: 156, change: "+12%" },
@@ -20,7 +20,7 @@ const categories = [
   { name: "Koşu", count: 42, change: "+9%" },
   { name: "Yoga", count: 36, change: "+18%" },
   { name: "Fitness", count: 28, change: "+7%" },
-]
+];
 
 export function UserTable() {
   return (
@@ -59,5 +59,5 @@ export function UserTable() {
         Son 30 günde kategorilere göre kullanıcı değişimi
       </div>
     </div>
-  )
-} 
+  );
+}

@@ -1,40 +1,38 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Skeleton } from "@/components/ui/skeleton"
+import { useState, useEffect } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface User {
-  id: string
-  name: string
-  email: string
-  avatar?: string
-  lastEvent: string
-  amount?: string
+interface Participant {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  lastEvent: string;
 }
 
-interface RecentSalesProps {
-  onUserSelect?: (user: User) => void
+interface RecentParticipantsProps {
+  onUserSelect?: (participant: Participant) => void;
 }
 
-export function RecentSales({ onUserSelect }: RecentSalesProps) {
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
+export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Gerçek uygulamada burada API'den veri çekilecek
-    setLoading(true)
-    
+    setLoading(true);
+
     // Demo verilerini yükleme simülasyonu
     setTimeout(() => {
-      const demoUsers: User[] = [
+      const demoParticipants: Participant[] = [
         {
           id: "usr-1",
           name: "Zeynep Yılmaz",
           email: "zeynep@example.com",
           avatar: "/avatars/01.png",
           lastEvent: "Sabah Koşusu",
-          amount: "₺120"
         },
         {
           id: "usr-2",
@@ -42,7 +40,6 @@ export function RecentSales({ onUserSelect }: RecentSalesProps) {
           email: "ahmet@example.com",
           avatar: "/avatars/02.png",
           lastEvent: "Basketbol Turnuvası",
-          amount: "₺225"
         },
         {
           id: "usr-3",
@@ -50,7 +47,6 @@ export function RecentSales({ onUserSelect }: RecentSalesProps) {
           email: "ayse@example.com",
           avatar: "/avatars/03.png",
           lastEvent: "Yüzme Etkinliği",
-          amount: "₺150"
         },
         {
           id: "usr-4",
@@ -58,7 +54,6 @@ export function RecentSales({ onUserSelect }: RecentSalesProps) {
           email: "mehmet@example.com",
           avatar: "/avatars/04.png",
           lastEvent: "Yoga Dersi",
-          amount: "₺90"
         },
         {
           id: "usr-5",
@@ -66,14 +61,13 @@ export function RecentSales({ onUserSelect }: RecentSalesProps) {
           email: "elif@example.com",
           avatar: "/avatars/05.png",
           lastEvent: "Akşam Bisiklet Turu",
-          amount: "₺75"
-        }
-      ]
-      
-      setUsers(demoUsers)
-      setLoading(false)
-    }, 800)
-  }, [])
+        },
+      ];
+
+      setParticipants(demoParticipants);
+      setLoading(false);
+    }, 800);
+  }, []);
 
   if (loading) {
     return (
@@ -89,31 +83,34 @@ export function RecentSales({ onUserSelect }: RecentSalesProps) {
           </div>
         ))}
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-8">
-      {users.map((user) => (
-        <div 
-          key={user.id} 
+      {participants.map((participant) => (
+        <div
+          key={participant.id}
           className="flex items-center cursor-pointer hover:bg-muted/50 p-2 rounded-md -mx-2"
-          onClick={() => onUserSelect && onUserSelect(user)}
+          onClick={() => onUserSelect && onUserSelect(participant)}
         >
           <Avatar className="h-9 w-9">
-            <AvatarImage src={user.avatar} alt={user.name} />
-            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+            <AvatarImage src={participant.avatar} alt={participant.name} />
+            <AvatarFallback>{participant.name.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="ml-4 space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+            <p className="text-sm font-medium leading-none">
+              {participant.name}
+            </p>
+            <p className="text-sm text-muted-foreground">{participant.email}</p>
           </div>
           <div className="ml-auto font-medium">
-            <div className="text-sm text-muted-foreground mb-1">{user.lastEvent}</div>
-            {user.amount && <div className="text-sm">{user.amount}</div>}
+            <div className="text-sm text-muted-foreground">
+              {participant.lastEvent}
+            </div>
           </div>
         </div>
       ))}
     </div>
-  )
-} 
+  );
+}

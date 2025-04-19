@@ -1,63 +1,70 @@
-"use client"
+"use client";
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
+import {
+  Bar,
+  BarChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 
-// Demo verileri - son 12 ayın etkinlik sayıları
-const data = [
+// Demo verileri - son 12 ayın etkinlik sayıları (sabit değerler)
+const monthlyEventData = [
   {
     name: "Oca",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 32,
   },
   {
     name: "Şub",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 28,
   },
   {
     name: "Mar",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 35,
   },
   {
     name: "Nis",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 42,
   },
   {
     name: "May",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 49,
   },
   {
     name: "Haz",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 53,
   },
   {
     name: "Tem",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 47,
   },
   {
     name: "Ağu",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 43,
   },
   {
     name: "Eyl",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 38,
   },
   {
     name: "Eki",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 45,
   },
   {
     name: "Kas",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 40,
   },
   {
     name: "Ara",
-    total: Math.floor(Math.random() * 40) + 15,
+    total: 37,
   },
-]
+];
 
-export function Overview() {
+export function MonthlyEventsChart() {
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={data}>
+      <BarChart data={monthlyEventData}>
         <XAxis
           dataKey="name"
           stroke="#888888"
@@ -72,8 +79,8 @@ export function Overview() {
           axisLine={false}
           tickFormatter={(value) => `${value}`}
         />
-        <Tooltip 
-          formatter={(value) => [`${value} Etkinlik`, 'Toplam']}
+        <Tooltip
+          formatter={(value) => [`${value} Etkinlik`, "Toplam"]}
           contentStyle={{
             backgroundColor: "#fff",
             borderRadius: "6px",
@@ -89,5 +96,8 @@ export function Overview() {
         />
       </BarChart>
     </ResponsiveContainer>
-  )
-} 
+  );
+}
+
+// Export with the old name as well for backwards compatibility
+export const Overview = MonthlyEventsChart;

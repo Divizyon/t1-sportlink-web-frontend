@@ -1,37 +1,40 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { format } from "date-fns"
-import { tr } from "date-fns/locale"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, MapPin, Users } from "lucide-react"
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { tr } from "date-fns/locale";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock, MapPin, Users } from "lucide-react";
 
 interface Event {
-  id: string
-  title: string
-  date: Date
-  time: string
-  location: string
-  participants: number
-  maxParticipants: number
-  category: string
-  status: "pending" | "approved" | "rejected" | "completed"
+  id: string;
+  title: string;
+  date: Date;
+  time: string;
+  location: string;
+  participants: number;
+  maxParticipants: number;
+  category: string;
+  status: "pending" | "approved" | "rejected" | "completed";
 }
 
 interface TodaysEventsProps {
-  onEventSelect?: (event: Event) => void
-  categories?: string[]
+  onEventSelect?: (event: Event) => void;
+  categories?: string[];
 }
 
-export function TodaysEvents({ onEventSelect, categories = [] }: TodaysEventsProps) {
-  const [events, setEvents] = useState<Event[]>([])
-  const [loading, setLoading] = useState(true)
+export function TodaysEvents({
+  onEventSelect,
+  categories = [],
+}: TodaysEventsProps) {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Gerçek uygulamada burada API'den veri çekilecek
-    setLoading(true)
-    
+    setLoading(true);
+
     // Demo verilerini yükleme simülasyonu
     setTimeout(() => {
       const demoEvents: Event[] = [
@@ -44,7 +47,7 @@ export function TodaysEvents({ onEventSelect, categories = [] }: TodaysEventsPro
           participants: 12,
           maxParticipants: 20,
           category: "Koşu",
-          status: "approved"
+          status: "approved",
         },
         {
           id: "evt-2",
@@ -55,7 +58,7 @@ export function TodaysEvents({ onEventSelect, categories = [] }: TodaysEventsPro
           participants: 8,
           maxParticipants: 15,
           category: "Yoga",
-          status: "approved"
+          status: "approved",
         },
         {
           id: "evt-3",
@@ -66,7 +69,7 @@ export function TodaysEvents({ onEventSelect, categories = [] }: TodaysEventsPro
           participants: 20,
           maxParticipants: 20,
           category: "Basketbol",
-          status: "approved"
+          status: "approved",
         },
         {
           id: "evt-4",
@@ -77,7 +80,7 @@ export function TodaysEvents({ onEventSelect, categories = [] }: TodaysEventsPro
           participants: 10,
           maxParticipants: 25,
           category: "Yüzme",
-          status: "approved"
+          status: "approved",
         },
         {
           id: "evt-5",
@@ -88,22 +91,22 @@ export function TodaysEvents({ onEventSelect, categories = [] }: TodaysEventsPro
           participants: 15,
           maxParticipants: 30,
           category: "Bisiklet",
-          status: "approved"
-        }
-      ]
-      
+          status: "approved",
+        },
+      ];
+
       // Kategoriye göre filtreleme
-      let filteredEvents = demoEvents
+      let filteredEvents = demoEvents;
       if (categories && categories.length > 0) {
-        filteredEvents = demoEvents.filter(event => 
+        filteredEvents = demoEvents.filter((event) =>
           categories.includes(event.category)
-        )
+        );
       }
-      
-      setEvents(filteredEvents)
-      setLoading(false)
-    }, 800)
-  }, [categories])
+
+      setEvents(filteredEvents);
+      setLoading(false);
+    }, 800);
+  }, [categories]);
 
   if (loading) {
     return (
@@ -118,7 +121,7 @@ export function TodaysEvents({ onEventSelect, categories = [] }: TodaysEventsPro
           </div>
         ))}
       </div>
-    )
+    );
   }
 
   if (events.length === 0) {
@@ -126,21 +129,23 @@ export function TodaysEvents({ onEventSelect, categories = [] }: TodaysEventsPro
       <div className="flex h-[240px] items-center justify-center border rounded-md">
         <div className="text-center">
           <Calendar className="mx-auto h-10 w-10 text-muted-foreground opacity-30" />
-          <h3 className="mt-2 text-lg font-medium">Bugün için etkinlik bulunamadı</h3>
+          <h3 className="mt-2 text-lg font-medium">
+            Bugün için etkinlik bulunamadı
+          </h3>
           <p className="text-sm text-muted-foreground">
-            {categories.length > 0 
-              ? "Filtreyi değiştirmeyi deneyin" 
+            {categories.length > 0
+              ? "Filtreyi değiştirmeyi deneyin"
               : "Bugün için etkinlik planlanmamış"}
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-4">
       {events.map((event) => (
-        <div 
+        <div
           key={event.id}
           className="flex items-start gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50 cursor-pointer"
           onClick={() => onEventSelect && onEventSelect(event)}
@@ -155,7 +160,7 @@ export function TodaysEvents({ onEventSelect, categories = [] }: TodaysEventsPro
                 {event.category}
               </Badge>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-1 text-sm text-muted-foreground">
               <div className="flex items-center">
                 <Clock className="mr-1 h-3 w-3" />
@@ -174,5 +179,5 @@ export function TodaysEvents({ onEventSelect, categories = [] }: TodaysEventsPro
         </div>
       ))}
     </div>
-  )
-} 
+  );
+}

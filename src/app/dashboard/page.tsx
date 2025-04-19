@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,8 +10,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Activity,
   CreditCard,
@@ -33,20 +33,18 @@ import {
   BellRing,
   Newspaper,
   SendHorizontal,
-} from "lucide-react"
-import { CalendarDateRangePicker } from "@/components/date-range-picker"
-import { Overview } from "@/components/dashboard/overview"
-import { EventsCardSkeleton } from "@/components/dashboard/skeletons"
-import { TodaysEvents } from "@/components/dashboard/todays-events"
-import { RecentSales } from "@/components/dashboard/recent-sales"
-import { UserTable } from "@/components/dashboard/user-table"
-import { EventParticipation } from "@/components/dashboard/event-participation-chart"
-import { CategoryFilterDropdown } from "@/components/dashboard/category-filter"
-import { EventDetailModal } from "@/components/modals/EventDetailModal"
-import { UserDetailModal } from "@/components/modals/UserDetailModal"
-import { NewEventModal } from "@/components/modals/NewEventModal"
-import { ReportsModal } from "@/components/modals/ReportsModal"
-import { NewsModal } from "@/components/modals/NewsModal"
+} from "lucide-react";
+import { MonthlyEventsChart } from "@/components/dashboard/charts/MonthlyEventsChart";
+import { TodaysEvents } from "@/components/dashboard/TodaysEvents";
+import { RecentParticipants } from "@/components/dashboard/RecentParticipants";
+import { UserTable } from "@/components/dashboard/tables/UserTable";
+import { EventParticipationChart } from "@/components/dashboard/charts/EventParticipationChart";
+import { CategoryFilterDropdown } from "@/components/dashboard/filters/CategoryFilterDropdown";
+import { EventDetailModal } from "@/components/modals/EventDetailModal";
+import { UserDetailModal } from "@/components/modals/UserDetailModal";
+import { NewEventModal } from "@/components/modals/NewEventModal";
+import { ReportsModal } from "@/components/modals/ReportsModal";
+import { NewsModal } from "@/components/modals/NewsModal";
 import {
   Table,
   TableBody,
@@ -54,36 +52,36 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 
-type ModalType = 
-  | 'event' 
-  | 'newEvent' 
-  | 'newNews'
-  | 'newAnnouncement'
-  | 'user' 
-  | 'users' 
-  | 'dailyEvents' 
-  | 'activeUsers' 
-  | 'totalParticipants' 
-  | 'reportedUsers' 
-  | 'reportedEvents' 
-  | 'orgEvents'
-  | null
+type ModalType =
+  | "event"
+  | "newEvent"
+  | "newNews"
+  | "newAnnouncement"
+  | "user"
+  | "users"
+  | "dailyEvents"
+  | "activeUsers"
+  | "totalParticipants"
+  | "reportedUsers"
+  | "reportedEvents"
+  | "orgEvents"
+  | null;
 
 // Raporlar için demo verileri
-type Priority = "high" | "medium" | "low"
-type Status = "pending" | "reviewing" | "resolved" | "rejected"
+type Priority = "high" | "medium" | "low";
+type Status = "pending" | "reviewing" | "resolved" | "rejected";
 
 interface User {
   id: number;
@@ -137,7 +135,7 @@ const DEMO_REPORTS: Report[] = [
     entityType: "event",
     entityId: 101,
     priority: "high",
-    status: "pending"
+    status: "pending",
   },
   {
     id: 2,
@@ -147,8 +145,8 @@ const DEMO_REPORTS: Report[] = [
     reportedDate: "2023-07-14",
     entityType: "user",
     entityId: 203,
-    priority: "high", 
-    status: "reviewing"
+    priority: "high",
+    status: "reviewing",
   },
   {
     id: 3,
@@ -159,7 +157,7 @@ const DEMO_REPORTS: Report[] = [
     entityType: "event",
     entityId: 105,
     priority: "medium",
-    status: "pending"
+    status: "pending",
   },
   {
     id: 4,
@@ -170,7 +168,7 @@ const DEMO_REPORTS: Report[] = [
     entityType: "user",
     entityId: 210,
     priority: "medium",
-    status: "resolved"
+    status: "resolved",
   },
   {
     id: 5,
@@ -181,120 +179,159 @@ const DEMO_REPORTS: Report[] = [
     entityType: "event",
     entityId: 112,
     priority: "low",
-    status: "rejected"
-  }
-]
+    status: "rejected",
+  },
+];
 
 export default function DashboardPage() {
-  const { toast } = useToast()
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [activeModal, setActiveModal] = useState<ModalType>(null)
-  const [activeTab, setActiveTab] = useState<string>("overview")
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [preferredReportFilter, setPreferredReportFilter] = useState<string>("all")
-  
+  const { toast } = useToast();
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [activeTab, setActiveTab] = useState<string>("overview");
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [preferredReportFilter, setPreferredReportFilter] =
+    useState<string>("all");
+
   // Raporlar için filtre state'leri
-  const [reportFilter, setReportFilter] = useState<"all" | "users" | "events">("all")
-  const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all")
-  const [statusFilter, setStatusFilter] = useState<Status | "all">("all")
-  
-  const [allReports, setAllReports] = useState<Report[]>(DEMO_REPORTS)
+  const [reportFilter, setReportFilter] = useState<"all" | "users" | "events">(
+    "all"
+  );
+  const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
+
+  const [allReports, setAllReports] = useState<Report[]>(DEMO_REPORTS);
 
   const demoUsers = [
-    { id: 1, name: "Ahmet Koç", email: "ahmet@example.com", role: "üye", status: "aktif", joinDate: "2023-01-15" },
-    { id: 2, name: "Ayşe Yılmaz", email: "ayse@example.com", role: "üye", status: "aktif", joinDate: "2023-02-20" },
-    { id: 3, name: "Mehmet Can", email: "mehmet@example.com", role: "üye", status: "aktif", joinDate: "2023-03-10" },
-    { id: 4, name: "Zeynep Kaya", email: "zeynep@example.com", role: "üye", status: "aktif", joinDate: "2023-03-15" },
-    { id: 5, name: "Emre Güneş", email: "emre@example.com", role: "üye", status: "beklemede", joinDate: "2023-04-05" }
-  ]
+    {
+      id: 1,
+      name: "Ahmet Koç",
+      email: "ahmet@example.com",
+      role: "üye",
+      status: "aktif",
+      joinDate: "2023-01-15",
+    },
+    {
+      id: 2,
+      name: "Ayşe Yılmaz",
+      email: "ayse@example.com",
+      role: "üye",
+      status: "aktif",
+      joinDate: "2023-02-20",
+    },
+    {
+      id: 3,
+      name: "Mehmet Can",
+      email: "mehmet@example.com",
+      role: "üye",
+      status: "aktif",
+      joinDate: "2023-03-10",
+    },
+    {
+      id: 4,
+      name: "Zeynep Kaya",
+      email: "zeynep@example.com",
+      role: "üye",
+      status: "aktif",
+      joinDate: "2023-03-15",
+    },
+    {
+      id: 5,
+      name: "Emre Güneş",
+      email: "emre@example.com",
+      role: "üye",
+      status: "beklemede",
+      joinDate: "2023-04-05",
+    },
+  ];
 
   const openModal = (type: ModalType, entityData: any = null) => {
-    if (type === 'event' || type === 'dailyEvents' || type === 'orgEvents') {
-      setSelectedEvent(entityData)
-    } else if (type === 'user') {
-      setSelectedUser(entityData)
-    } else if (type === 'reportedUsers') {
-      setPreferredReportFilter('users')
-    } else if (type === 'reportedEvents') {
-      setPreferredReportFilter('events')
+    if (type === "event" || type === "dailyEvents" || type === "orgEvents") {
+      setSelectedEvent(entityData);
+    } else if (type === "user") {
+      setSelectedUser(entityData);
+    } else if (type === "reportedUsers") {
+      setPreferredReportFilter("users");
+    } else if (type === "reportedEvents") {
+      setPreferredReportFilter("events");
     }
-    setActiveModal(type)
-  }
-  
+    setActiveModal(type);
+  };
+
   const closeModal = () => {
-    setActiveModal(null)
-    setSelectedEvent(null)
-    setSelectedUser(null)
-  }
-  
+    setActiveModal(null);
+    setSelectedEvent(null);
+    setSelectedUser(null);
+  };
+
   const handleNewEventSuccess = (event: Event) => {
     toast({
       title: "Etkinlik oluşturuldu",
       description: `"${event.title}" etkinliği başarıyla oluşturuldu.`,
-    })
-    closeModal()
-  }
-  
+    });
+    closeModal();
+  };
+
   const handleCategoryChange = (categories: string[]) => {
-    setSelectedCategories(categories)
-  }
+    setSelectedCategories(categories);
+  };
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value)
-  }
+    setActiveTab(value);
+  };
 
   // Filtreleme işlemi
-  const filteredReports = DEMO_REPORTS.filter(report => {
+  const filteredReports = DEMO_REPORTS.filter((report) => {
     // Tür filtreleme
-    if (reportFilter !== "all" && report.entityType !== reportFilter.slice(0, -1)) {
-      return false
+    if (
+      reportFilter !== "all" &&
+      report.entityType !== reportFilter.slice(0, -1)
+    ) {
+      return false;
     }
-    
+
     // Öncelik filtreleme
     if (priorityFilter !== "all" && report.priority !== priorityFilter) {
-      return false
+      return false;
     }
-    
+
     // Durum filtreleme
     if (statusFilter !== "all" && report.status !== statusFilter) {
-      return false
+      return false;
     }
-    
-    return true
-  })
+
+    return true;
+  });
 
   const getPriorityBadge = (priority: Priority) => {
     switch (priority) {
       case "high":
-        return <Badge variant="destructive">Yüksek</Badge>
+        return <Badge variant="destructive">Yüksek</Badge>;
       case "medium":
-        return <Badge variant="default">Orta</Badge>
+        return <Badge variant="default">Orta</Badge>;
       case "low":
-        return <Badge variant="outline">Düşük</Badge>
+        return <Badge variant="outline">Düşük</Badge>;
     }
-  }
+  };
 
   const getStatusBadge = (status: Status) => {
     switch (status) {
       case "pending":
-        return <Badge className="bg-yellow-500">Beklemede</Badge>
+        return <Badge className="bg-yellow-500">Beklemede</Badge>;
       case "reviewing":
-        return <Badge className="bg-blue-500">İnceleniyor</Badge>
+        return <Badge className="bg-blue-500">İnceleniyor</Badge>;
       case "resolved":
-        return <Badge className="bg-green-500">Çözüldü</Badge>
+        return <Badge className="bg-green-500">Çözüldü</Badge>;
       case "rejected":
-        return <Badge className="bg-gray-500">Reddedildi</Badge>
+        return <Badge className="bg-gray-500">Reddedildi</Badge>;
     }
-  }
+  };
 
   const handleStatusChange = (reportId: number, newStatus: Status) => {
-    setAllReports(prevReports => 
-      prevReports.map(report => 
-        report.id === reportId 
-          ? { ...report, status: newStatus } 
-          : report
+    setAllReports((prevReports) =>
+      prevReports.map((report) =>
+        report.id === reportId ? { ...report, status: newStatus } : report
       )
     );
     toast({
@@ -306,24 +343,28 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4">
       {/* Üstteki tarihleme ve filtreleme alanı artık sabit header'da */}
-      
+
       {/* Hızlı Erişim Butonları */}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => openModal('newEvent')}>
+        <Button onClick={() => openModal("newEvent")}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Yeni Etkinlik
         </Button>
-        <Button variant="outline" onClick={() => openModal('newAnnouncement')}>
+        <Button variant="outline" onClick={() => openModal("newAnnouncement")}>
           <BellRing className="mr-2 h-4 w-4" />
           Duyuru Yayınla
         </Button>
-        <Button variant="outline" onClick={() => openModal('newNews')}>
+        <Button variant="outline" onClick={() => openModal("newNews")}>
           <Newspaper className="mr-2 h-4 w-4" />
           Haber Yayınla
         </Button>
       </div>
 
-      <Tabs defaultValue="overview" value={activeTab} onValueChange={handleTabChange}>
+      <Tabs
+        defaultValue="overview"
+        value={activeTab}
+        onValueChange={handleTabChange}
+      >
         <TabsList className="grid grid-cols-5 w-[600px]">
           <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
           <TabsTrigger value="analytics">İstatistikler</TabsTrigger>
@@ -341,31 +382,39 @@ export default function DashboardPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pl-2">
-                <EventParticipation categories={selectedCategories} />
+                <EventParticipationChart categories={selectedCategories} />
               </CardContent>
             </Card>
             <Card className="col-span-3">
               <CardHeader>
                 <CardTitle>Bugünkü Etkinlikler</CardTitle>
                 <CardDescription>
-                  {new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  {new Date().toLocaleDateString("tr-TR", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <TodaysEvents 
-                  onEventSelect={(event) => openModal('event', event)} 
-                  categories={selectedCategories} 
+                <TodaysEvents
+                  onEventSelect={(event) => openModal("event", event)}
+                  categories={selectedCategories}
                 />
               </CardContent>
               <CardFooter>
-                <Button variant="outline" className="w-full" onClick={() => openModal('orgEvents')}>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => openModal("orgEvents")}
+                >
                   <Calendar className="mr-2 h-4 w-4" />
                   Organizasyon Etkinlikleri
                 </Button>
               </CardFooter>
             </Card>
           </div>
-          
+
           {/* Alt Kısım */}
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             {/* Sol Kolon */}
@@ -374,23 +423,27 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle>Son Katılımcılar</CardTitle>
                   <CardDescription>
-                    Son etkinliklere katılan kullanıcılar
+                    Son etkinliklere katılan spor tutkunları
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="h-[380px] overflow-y-auto">
-                  <RecentSales 
-                    onUserSelect={(user) => openModal('user', user)} 
+                  <RecentParticipants
+                    onUserSelect={(user) => openModal("user", user)}
                   />
                 </CardContent>
                 <CardFooter>
-                  <Button variant="outline" className="w-full" onClick={() => openModal('users')}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => openModal("users")}
+                  >
                     <Users className="mr-2 h-4 w-4" />
                     Tüm Kullanıcıları Yönet
                   </Button>
                 </CardFooter>
               </Card>
             </div>
-            
+
             {/* Sağ Kolon */}
             <div className="space-y-4">
               <Card>
@@ -404,38 +457,54 @@ export default function DashboardPage() {
                   <div className="border-b pb-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Aktif Kullanıcılar</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">
+                          Aktif Kullanıcılar
+                        </h3>
                         <p className="text-2xl font-bold">+573</p>
                       </div>
                       <Users className="h-8 w-8 text-muted-foreground opacity-75" />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Son 30 günde +39 yeni üye</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Son 30 günde +39 yeni üye
+                    </p>
                   </div>
-                  
+
                   <div className="border-b pb-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Toplam Katılımcı</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">
+                          Toplam Katılımcı
+                        </h3>
                         <p className="text-2xl font-bold">1,324</p>
                       </div>
                       <Activity className="h-8 w-8 text-muted-foreground opacity-75" />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Son ayın toplam katılımcısı</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Son ayın toplam katılımcısı
+                    </p>
                   </div>
-                  
+
                   <div>
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Etkinlik Doluluk Oranı</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">
+                          Etkinlik Doluluk Oranı
+                        </h3>
                         <p className="text-2xl font-bold">%78</p>
                       </div>
                       <CreditCard className="h-8 w-8 text-muted-foreground opacity-75" />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Ortalama etkinlik katılım oranı</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ortalama etkinlik katılım oranı
+                    </p>
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="outline" className="w-full" onClick={() => openModal('activeUsers')}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => openModal("activeUsers")}
+                  >
                     <Users className="mr-2 h-4 w-4" />
                     Kullanıcı İstatistikleri
                   </Button>
@@ -454,7 +523,7 @@ export default function DashboardPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pl-2">
-                <Overview />
+                <MonthlyEventsChart />
               </CardContent>
             </Card>
             <Card className="col-span-1">
@@ -477,38 +546,49 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <div className="flex justify-between">
               <div className="flex gap-2">
-                <Button 
+                <Button
                   variant={reportFilter === "all" ? "default" : "outline"}
                   onClick={() => setReportFilter("all")}
                 >
                   Tüm Raporlar
                 </Button>
-                <Button 
+                <Button
                   variant={reportFilter === "users" ? "default" : "outline"}
                   onClick={() => setReportFilter("users")}
                   className="relative"
                 >
                   Kullanıcı Raporları
                   <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
-                    {DEMO_REPORTS.filter(r => r.entityType === "user" && r.status === "pending").length}
+                    {
+                      DEMO_REPORTS.filter(
+                        (r) => r.entityType === "user" && r.status === "pending"
+                      ).length
+                    }
                   </Badge>
                 </Button>
-                <Button 
+                <Button
                   variant={reportFilter === "events" ? "default" : "outline"}
                   onClick={() => setReportFilter("events")}
                   className="relative"
                 >
                   Etkinlik Raporları
                   <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
-                    {DEMO_REPORTS.filter(r => r.entityType === "event" && r.status === "pending").length}
+                    {
+                      DEMO_REPORTS.filter(
+                        (r) =>
+                          r.entityType === "event" && r.status === "pending"
+                      ).length
+                    }
                   </Badge>
                 </Button>
               </div>
-              
+
               <div className="flex space-x-2">
-                <Select 
-                  value={priorityFilter} 
-                  onValueChange={(value) => setPriorityFilter(value as Priority | "all")}
+                <Select
+                  value={priorityFilter}
+                  onValueChange={(value) =>
+                    setPriorityFilter(value as Priority | "all")
+                  }
                 >
                   <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Öncelik Filtrele" />
@@ -520,10 +600,12 @@ export default function DashboardPage() {
                     <SelectItem value="low">Düşük</SelectItem>
                   </SelectContent>
                 </Select>
-                
-                <Select 
-                  value={statusFilter} 
-                  onValueChange={(value) => setStatusFilter(value as Status | "all")}
+
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) =>
+                    setStatusFilter(value as Status | "all")
+                  }
                 >
                   <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Durum Filtrele" />
@@ -538,7 +620,7 @@ export default function DashboardPage() {
                 </Select>
               </div>
             </div>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Gelen Raporlar ({filteredReports.length})</CardTitle>
@@ -562,45 +644,66 @@ export default function DashboardPage() {
                   <TableBody>
                     {filteredReports.map((report) => (
                       <TableRow key={report.id}>
-                        <TableCell className="font-medium">{report.subject}</TableCell>
-                        <TableCell>{report.reportedBy}</TableCell>
-                        <TableCell>{new Date(report.reportedDate).toLocaleDateString('tr-TR')}</TableCell>
-                        <TableCell>
-                          {report.entityType === "user" ? "Kullanıcı" : "Etkinlik"}
+                        <TableCell className="font-medium">
+                          {report.subject}
                         </TableCell>
-                        <TableCell>{getPriorityBadge(report.priority)}</TableCell>
+                        <TableCell>{report.reportedBy}</TableCell>
+                        <TableCell>
+                          {new Date(report.reportedDate).toLocaleDateString(
+                            "tr-TR"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {report.entityType === "user"
+                            ? "Kullanıcı"
+                            : "Etkinlik"}
+                        </TableCell>
+                        <TableCell>
+                          {getPriorityBadge(report.priority)}
+                        </TableCell>
                         <TableCell>{getStatusBadge(report.status)}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => openModal(report.entityType, { id: report.entityId })}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                openModal(report.entityType, {
+                                  id: report.entityId,
+                                })
+                              }
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
                             {report.status === "pending" && (
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => handleStatusChange(report.id, "reviewing")}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleStatusChange(report.id, "reviewing")
+                                }
                               >
                                 <AlertTriangle className="h-4 w-4 text-yellow-500" />
                               </Button>
                             )}
-                            {(report.status === "pending" || report.status === "reviewing") && (
+                            {(report.status === "pending" ||
+                              report.status === "reviewing") && (
                               <>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  onClick={() => handleStatusChange(report.id, "resolved")}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleStatusChange(report.id, "resolved")
+                                  }
                                 >
                                   <CheckCircle className="h-4 w-4 text-green-500" />
                                 </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  onClick={() => handleStatusChange(report.id, "rejected")}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleStatusChange(report.id, "rejected")
+                                  }
                                 >
                                   <XCircle className="h-4 w-4 text-red-500" />
                                 </Button>
@@ -620,7 +723,9 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Mesajlaşma</CardTitle>
-              <CardDescription>Kullanıcılar ve etkinlik katılımcıları ile iletişime geçin</CardDescription>
+              <CardDescription>
+                Kullanıcılar ve etkinlik katılımcıları ile iletişime geçin
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex h-[400px] border rounded-md">
@@ -630,14 +735,23 @@ export default function DashboardPage() {
                   </div>
                   <div className="overflow-auto h-[348px]">
                     {demoUsers.map((user, index) => (
-                      <div key={index} className="flex items-center p-4 hover:bg-accent cursor-pointer border-b">
+                      <div
+                        key={index}
+                        className="flex items-center p-4 hover:bg-accent cursor-pointer border-b"
+                      >
                         <Avatar className="h-9 w-9 mr-2">
-                          <AvatarImage src={`https://i.pravatar.cc/150?img=${index + 10}`} />
-                          <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                          <AvatarImage
+                            src={`https://i.pravatar.cc/150?img=${index + 10}`}
+                          />
+                          <AvatarFallback>
+                            {user.name.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="text-sm font-medium">{user.name}</p>
-                          <p className="text-xs text-muted-foreground truncate w-40">Son mesaj içeriği burada gösterilecek...</p>
+                          <p className="text-xs text-muted-foreground truncate w-40">
+                            Son mesaj içeriği burada gösterilecek...
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -662,14 +776,23 @@ export default function DashboardPage() {
                           <AvatarFallback>AK</AvatarFallback>
                         </Avatar>
                         <div className="bg-accent p-3 rounded-lg max-w-[80%]">
-                          <p className="text-sm">Merhaba, etkinlik hakkında bilgi alabilir miyim?</p>
-                          <p className="text-xs text-muted-foreground mt-1">09:15</p>
+                          <p className="text-sm">
+                            Merhaba, etkinlik hakkında bilgi alabilir miyim?
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            09:15
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-start justify-end">
                         <div className="bg-primary text-primary-foreground p-3 rounded-lg max-w-[80%]">
-                          <p className="text-sm">Tabii ki, hangi etkinlik hakkında bilgi almak istiyorsunuz?</p>
-                          <p className="text-xs text-primary-foreground/70 mt-1">09:17</p>
+                          <p className="text-sm">
+                            Tabii ki, hangi etkinlik hakkında bilgi almak
+                            istiyorsunuz?
+                          </p>
+                          <p className="text-xs text-primary-foreground/70 mt-1">
+                            09:17
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-start">
@@ -678,8 +801,12 @@ export default function DashboardPage() {
                           <AvatarFallback>AK</AvatarFallback>
                         </Avatar>
                         <div className="bg-accent p-3 rounded-lg max-w-[80%]">
-                          <p className="text-sm">15 Haziran'daki futbol turnuvası için.</p>
-                          <p className="text-xs text-muted-foreground mt-1">09:18</p>
+                          <p className="text-sm">
+                            15 Haziran'daki futbol turnuvası için.
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            09:18
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -700,22 +827,26 @@ export default function DashboardPage() {
       </Tabs>
 
       {/* Modallar */}
-      <EventDetailModal 
-        open={activeModal === 'event' || activeModal === 'dailyEvents' || activeModal === 'orgEvents'} 
-        onOpenChange={closeModal} 
+      <EventDetailModal
+        open={
+          activeModal === "event" ||
+          activeModal === "dailyEvents" ||
+          activeModal === "orgEvents"
+        }
+        onOpenChange={closeModal}
         event={selectedEvent as any}
         onSuccess={closeModal}
       />
-      
-      <UserDetailModal 
-        open={activeModal === 'user'} 
-        onOpenChange={closeModal} 
+
+      <UserDetailModal
+        open={activeModal === "user"}
+        onOpenChange={closeModal}
         user={selectedUser as any}
       />
-      
-      <NewEventModal 
-        open={activeModal === 'newEvent'} 
-        onOpenChange={closeModal} 
+
+      <NewEventModal
+        open={activeModal === "newEvent"}
+        onOpenChange={closeModal}
         onSuccess={() => {
           if (selectedEvent) {
             handleNewEventSuccess(selectedEvent);
@@ -724,30 +855,29 @@ export default function DashboardPage() {
           }
         }}
       />
-      
-      {activeModal === 'newNews' && (
-        <NewsModal 
-          open={activeModal === 'newNews'} 
-          onOpenChange={() => closeModal()} 
+
+      {activeModal === "newNews" && (
+        <NewsModal
+          open={activeModal === "newNews"}
+          onOpenChange={() => closeModal()}
         />
       )}
-      
-      {activeModal === 'newAnnouncement' && (
-        <NewsModal 
-          open={activeModal === 'newAnnouncement'} 
-          onOpenChange={() => closeModal()} 
+
+      {activeModal === "newAnnouncement" && (
+        <NewsModal
+          open={activeModal === "newAnnouncement"}
+          onOpenChange={() => closeModal()}
         />
       )}
-      
-      <ReportsModal 
+
+      <ReportsModal
         open={
-          activeModal === 'reportedUsers' || 
-          activeModal === 'reportedEvents'
-        } 
+          activeModal === "reportedUsers" || activeModal === "reportedEvents"
+        }
         onOpenChange={closeModal}
         preferredFilter={preferredReportFilter}
-        reportType={activeModal === 'reportedUsers' ? 'users' : 'events'}
+        reportType={activeModal === "reportedUsers" ? "users" : "events"}
       />
     </div>
-  )
-} 
+  );
+}
