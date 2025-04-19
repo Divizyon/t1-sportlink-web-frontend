@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,34 +10,39 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { LogOut, Menu, Settings, User } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
+} from "@/components/ui/dropdown-menu";
+import { LogOut, Menu, Settings, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface HeaderProps {
   toggleSidebar?: () => void;
 }
 
 export function Header({ toggleSidebar }: HeaderProps) {
-  const router = useRouter()
-  const [isOpen, setIsOpen] = useState(false)
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
-    toast.success("Başarıyla çıkış yapıldı")
-    router.push("/login")
-  }
+    toast.success("Başarıyla çıkış yapıldı");
+    router.push("/auth/login");
+  };
 
   const handleProfile = () => {
-    router.push("/settings")
-  }
+    router.push("/dashboard/settings");
+  };
 
   return (
     <header className="w-full">
       <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center gap-4">
           {toggleSidebar && (
-            <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSidebar}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={toggleSidebar}
+            >
               <Menu className="h-5 w-5" />
             </Button>
           )}
@@ -45,12 +50,15 @@ export function Header({ toggleSidebar }: HeaderProps) {
             <span className="text-xl font-semibold">Spor Yönetim Sistemi</span>
           </a>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <nav className="flex items-center">
             <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-9 w-9 rounded-full"
+                >
                   <Avatar className="h-9 w-9">
                     <AvatarImage src="/avatars/01.png" alt="Admin" />
                     <AvatarFallback>AD</AvatarFallback>
@@ -86,5 +94,5 @@ export function Header({ toggleSidebar }: HeaderProps) {
         </div>
       </div>
     </header>
-  )
-} 
+  );
+}

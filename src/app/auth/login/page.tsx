@@ -1,49 +1,58 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff } from "lucide-react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import Cookies from "js-cookie"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts";
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const router = useRouter();
+  const { login, isLoading, error } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    
-    // Burada gerçek bir API çağrısı yapılabilir
-    setTimeout(() => {
-      setIsLoading(false)
-      // Basit doğrulama için örnek
-      if (email && password) {
-        // Başarılı giriş
-        toast.success("Başarılı giriş yapıldı")
-        // Giriş bilgisini cookie'de sakla (7 gün geçerli)
-        Cookies.set('isLoggedIn', 'true', { expires: 7 })
-        // Dashboard'a yönlendir
-        router.push("/dashboard")
-      } else {
-        // Başarısız giriş
-        toast.error("Geçersiz e-posta veya şifre")
-      }
-    }, 1000)
-  }
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const success = await login(email, password);
+
+    if (success) {
+      // Toast is also shown from the context
+      router.push("/dashboard");
+    } else {
+      // Error message is handled by the context
+    }
+  };
 
   return (
     <Card className="w-[350px] shadow-lg">
       <div className="flex justify-center pt-6">
         <div className="flex flex-col items-center">
           <div className="bg-primary rounded-full p-3 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-6 w-6"
+            >
               <path d="M2 19h20"></path>
               <path d="M12 3v16"></path>
               <path d="M9 10a3 3 0 1 0 6 0 3 3 0 1 0 -6 0"></path>
@@ -96,6 +105,7 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
+          {error && <p className="text-sm text-destructive mt-2">{error}</p>}
           <div className="mt-6">
             <Button className="w-full" type="submit" disabled={isLoading}>
               {isLoading ? "Giriş yapılıyor..." : "Giriş Yap"}
@@ -109,5 +119,5 @@ export default function LoginPage() {
         </Button>
       </CardFooter>
     </Card>
-  )
-} 
+  );
+}
