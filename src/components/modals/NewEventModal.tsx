@@ -138,6 +138,25 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
             />
           </div>
           
+          <div className="space-y-2">
+            <Label htmlFor="category">Kategori *</Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Kategori seçin" />
+              </SelectTrigger>
+              <SelectContent>
+                {EVENT_CATEGORIES.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="date">Tarih *</Label>
@@ -206,40 +225,21 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="category">Kategori *</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-              >
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Kategori seçin" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EVENT_CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="maxParticipants">Maksimum Katılımcı Sayısı *</Label>
-            <div className="flex items-center relative">
-              <Users className="absolute left-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="maxParticipants"
-                name="maxParticipants"
-                type="number"
-                min={1}
-                max={1000}
-                value={formData.maxParticipants}
-                onChange={handleChange}
-                className="pl-10"
-                required
-              />
+              <Label htmlFor="maxParticipants">Maksimum Katılımcı Sayısı *</Label>
+              <div className="flex items-center relative">
+                <Users className="absolute left-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="maxParticipants"
+                  name="maxParticipants"
+                  type="number"
+                  min={1}
+                  max={1000}
+                  value={formData.maxParticipants}
+                  onChange={handleChange}
+                  className="pl-10"
+                  required
+                />
+              </div>
             </div>
           </div>
           
