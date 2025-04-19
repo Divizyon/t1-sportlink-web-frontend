@@ -60,11 +60,6 @@ export default function DashboardLayout({
                     SportLink Yönetim Paneli
                   </h2>
                   <div className="flex items-center space-x-4">
-                    <CalendarDateRangePicker />
-                    <CategoryFilterDropdown
-                      onChange={setSelectedCategories}
-                      selectedCategories={selectedCategories}
-                    />
                     <div className="pl-2 border-l">
                       <UserNav />
                     </div>

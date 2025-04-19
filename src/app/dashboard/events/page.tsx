@@ -66,7 +66,7 @@ export default function EventsPage() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Etkinlik Yönetimi</h1>
-        <NewEventModal />
+        <NewEventModal open={true} onOpenChange={() => {}} />
       </div>
 
       <Card className="p-4">
@@ -117,8 +117,9 @@ export default function EventsPage() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <EditEventModal 
-                        event={event}
-                        onSave={(updatedEvent) => handleEditEvent(event.id, updatedEvent)}
+                        eventId={Number(event.id)}
+                        open={false}
+                        onOpenChange={() => {}}
                       />
                       <DeleteEventModal 
                         eventName={event.name}

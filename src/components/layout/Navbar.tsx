@@ -36,9 +36,6 @@ export function Navbar() {
                 Profil
               </DropdownMenuItem>
               <DropdownMenuItem>
-                Ayarlar
-              </DropdownMenuItem>
-              <DropdownMenuItem>
                 Çıkış Yap
               </DropdownMenuItem>
             </DropdownMenuContent>
