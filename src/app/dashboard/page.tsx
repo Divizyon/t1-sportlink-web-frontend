@@ -329,6 +329,7 @@ export default function DashboardPage() {
               <CardContent>
                 <TodaysEvents
                   onEventSelect={(event) => openModal(MODAL_TYPES.EVENT, event)}
+                  onUserSelect={(user) => openModal(MODAL_TYPES.USER, user)}
                   categories={selectedCategories}
                 />
               </CardContent>

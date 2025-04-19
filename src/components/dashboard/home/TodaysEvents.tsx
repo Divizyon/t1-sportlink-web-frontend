@@ -4,7 +4,12 @@ import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, MapPin, Users } from "lucide-react";
-import { Event, EventStatus, TodaysEventsProps } from "@/types/dashboard";
+import {
+  Event,
+  EventStatus,
+  TodaysEventsProps,
+  Participant,
+} from "@/types/dashboard";
 import { TODAY_EVENTS } from "@/mocks/events";
 import {
   formatEventTime,
@@ -14,13 +19,71 @@ import {
 } from "@/lib/eventUtils";
 import { generateSkeletonArray } from "@/lib/uiUtils";
 import { filterEvents } from "@/lib/eventUtils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getUserInitials } from "@/lib/userUtils";
+
+// Mock data for participants in each event
+const EVENT_PARTICIPANTS: Record<string | number, Participant[]> = {
+  1: [
+    {
+      id: "p1",
+      name: "Ali Yılmaz",
+      email: "ali@example.com",
+      lastEvent: "3 gün önce",
+    },
+    {
+      id: "p2",
+      name: "Ayşe Kaya",
+      email: "ayse@example.com",
+      lastEvent: "1 gün önce",
+    },
+    {
+      id: "p3",
+      name: "Mehmet Demir",
+      email: "mehmet@example.com",
+      lastEvent: "5 gün önce",
+    },
+  ],
+  2: [
+    {
+      id: "p4",
+      name: "Zeynep Çelik",
+      email: "zeynep@example.com",
+      lastEvent: "2 gün önce",
+    },
+    {
+      id: "p5",
+      name: "Emre Şahin",
+      email: "emre@example.com",
+      lastEvent: "Bugün",
+    },
+  ],
+  3: [
+    {
+      id: "p6",
+      name: "Deniz Yıldız",
+      email: "deniz@example.com",
+      lastEvent: "4 gün önce",
+    },
+    {
+      id: "p7",
+      name: "Selin Aksoy",
+      email: "selin@example.com",
+      lastEvent: "Dün",
+    },
+  ],
+};
 
 export function TodaysEvents({
   onEventSelect,
+  onUserSelect,
   categories = [],
 }: TodaysEventsProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedEvent, setExpandedEvent] = useState<string | number | null>(
+    null
+  );
 
   useEffect(() => {
     // Gerçek uygulamada burada API'den veri çekilecek
@@ -34,6 +97,11 @@ export function TodaysEvents({
       setLoading(false);
     }, 800);
   }, [categories]);
+
+  const toggleEventExpand = (eventId: string | number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedEvent(expandedEvent === eventId ? null : eventId);
+  };
 
   if (loading) {
     return (
@@ -72,42 +140,85 @@ export function TodaysEvents({
   return (
     <div className="space-y-4">
       {events.map((event) => (
-        <div
-          key={event.id}
-          className="flex items-start gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50 cursor-pointer"
-          onClick={() => onEventSelect && onEventSelect(event)}
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <Calendar className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center justify-between">
-              <p className="font-medium">{event.title}</p>
-              <Badge style={getEventStatusStyle(event.status)}>
-                {event.category}
-              </Badge>
+        <div key={event.id} className="space-y-1">
+          <div
+            className="flex items-start gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50 cursor-pointer"
+            onClick={() => onEventSelect && onEventSelect(event)}
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+              <Calendar className="h-5 w-5 text-primary" />
             </div>
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center justify-between">
+                <p className="font-medium">{event.title}</p>
+                <Badge style={getEventStatusStyle(event.status)}>
+                  {event.category}
+                </Badge>
+              </div>
 
-            <div className="grid grid-cols-2 gap-1 text-sm text-muted-foreground">
-              <div className="flex items-center">
-                <Clock className="mr-1 h-3 w-3" />
-                {formatEventTime(event.time)}
-              </div>
-              <div className="flex items-center">
-                <Users className="mr-1 h-3 w-3" />
-                {event.participants}/{event.maxParticipants}
-                <span className="text-xs ml-1">
-                  ({calculateEventFillRate(event)}%)
-                </span>
-              </div>
-              <div className="flex items-center col-span-2 truncate">
-                <MapPin className="mr-1 h-3 w-3 flex-shrink-0" />
-                <span className="truncate">
-                  {formatEventLocation(event.location)}
-                </span>
+              <div className="grid grid-cols-2 gap-1 text-sm text-muted-foreground">
+                <div className="flex items-center">
+                  <Clock className="mr-1 h-3 w-3" />
+                  {formatEventTime(event.time)}
+                </div>
+                <div className="flex items-center">
+                  <Users className="mr-1 h-3 w-3" />
+                  {event.participants}/{event.maxParticipants}
+                  <span className="text-xs ml-1">
+                    ({calculateEventFillRate(event)}%)
+                  </span>
+                  {EVENT_PARTICIPANTS[event.id] && (
+                    <button
+                      onClick={(e) => toggleEventExpand(event.id, e)}
+                      className="ml-1 text-xs text-primary hover:underline"
+                    >
+                      {expandedEvent === event.id ? "Gizle" : "Göster"}
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center col-span-2 truncate">
+                  <MapPin className="mr-1 h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">
+                    {formatEventLocation(event.location)}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Participants section shown when expanded */}
+          {expandedEvent === event.id && EVENT_PARTICIPANTS[event.id] && (
+            <div className="ml-14 mt-2 space-y-2 rounded-md border p-2 bg-muted/20">
+              <h4 className="text-xs font-medium text-muted-foreground mb-2">
+                Katılımcılar
+              </h4>
+              <div className="space-y-2">
+                {EVENT_PARTICIPANTS[event.id].map((participant) => (
+                  <div
+                    key={participant.id}
+                    className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded-md cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onUserSelect && onUserSelect(participant);
+                    }}
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage
+                        src={participant.avatar}
+                        alt={participant.name}
+                      />
+                      <AvatarFallback>
+                        {getUserInitials(participant.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-xs font-medium">{participant.name}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>

@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,54 +8,85 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Search, UserPlus, UserX, Edit, MoreHorizontal } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Search, UserPlus, UserX, Edit, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 interface UsersModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 // Mock kullanıcı verileri
 const mockUsers = [
-  { id: 1, name: "Ahmet Yılmaz", email: "ahmet@example.com", role: "Admin", status: "Aktif" },
-  { id: 2, name: "Ayşe Kaya", email: "ayse@example.com", role: "Moderatör", status: "Aktif" },
-  { id: 3, name: "Mehmet Demir", email: "mehmet@example.com", role: "Kullanıcı", status: "Aktif" },
-  { id: 4, name: "Zeynep Çelik", email: "zeynep@example.com", role: "Kullanıcı", status: "Beklemede" },
-  { id: 5, name: "Ali Öztürk", email: "ali@example.com", role: "Kullanıcı", status: "Engellendi" },
-]
+  {
+    id: 1,
+    name: "Ahmet Yılmaz",
+    email: "ahmet@example.com",
+    role: "Admin",
+    status: "Aktif",
+  },
+  {
+    id: 2,
+    name: "Ayşe Kaya",
+    email: "ayse@example.com",
+    role: "Moderatör",
+    status: "Aktif",
+  },
+  {
+    id: 3,
+    name: "Mehmet Demir",
+    email: "mehmet@example.com",
+    role: "Kullanıcı",
+    status: "Aktif",
+  },
+  {
+    id: 4,
+    name: "Zeynep Çelik",
+    email: "zeynep@example.com",
+    role: "Kullanıcı",
+    status: "Beklemede",
+  },
+  {
+    id: 5,
+    name: "Ali Öztürk",
+    email: "ali@example.com",
+    role: "Kullanıcı",
+    status: "Engellendi",
+  },
+];
 
 export function UsersModal({ open, onOpenChange }: UsersModalProps) {
-  const [users, setUsers] = useState(mockUsers)
-  const [searchQuery, setSearchQuery] = useState("")
+  const [users, setUsers] = useState(mockUsers);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleAddUser = () => {
     // Yeni kullanıcı ekleme işlemi
-    alert("Yeni kullanıcı ekle")
-  }
+    alert("Yeni kullanıcı ekle");
+  };
 
   const handleDeleteUser = (id: number) => {
-    setUsers(users.filter(user => user.id !== id))
-  }
+    setUsers(users.filter((user) => user.id !== id));
+  };
 
   const handleEditUser = (id: number) => {
     // Kullanıcı düzenleme işlemi
-    alert(`${id} ID'li kullanıcıyı düzenle`)
-  }
+    alert(`${id} ID'li kullanıcıyı düzenle`);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,7 +97,7 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
             Sistem kullanıcılarını görüntüleyin, düzenleyin veya silin.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="flex items-center justify-between mb-4">
           <div className="relative flex-1 mr-4">
             <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -82,7 +113,7 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
             Kullanıcı Ekle
           </Button>
         </div>
-        
+
         <div className="max-h-[400px] overflow-auto">
           <table className="w-full">
             <thead>
@@ -95,20 +126,32 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map(user => (
+              {filteredUsers.map((user) => (
                 <tr key={user.id} className="border-b hover:bg-gray-50">
                   <td className="py-2 px-3">{user.name}</td>
                   <td className="py-2 px-3">{user.email}</td>
                   <td className="py-2 px-3">
-                    <Badge variant={user.role === "Admin" ? "default" : "outline"}>
+                    <Badge
+                      variant={user.role === "Admin" ? "default" : "outline"}
+                    >
                       {user.role}
                     </Badge>
                   </td>
                   <td className="py-2 px-3">
-                    <Badge 
+                    <Badge
                       variant={
-                        user.status === "Aktif" ? "success" :
-                        user.status === "Beklemede" ? "warning" : "destructive"
+                        user.status === "Aktif"
+                          ? "default"
+                          : user.status === "Beklemede"
+                          ? "outline"
+                          : "outline"
+                      }
+                      className={
+                        user.status === "Aktif"
+                          ? "bg-green-100 text-green-800 border-green-200"
+                          : user.status === "Beklemede"
+                          ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                          : "bg-red-100 text-red-800 border-red-200"
                       }
                     >
                       {user.status}
@@ -122,11 +165,13 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditUser(user.id)}>
+                        <DropdownMenuItem
+                          onClick={() => handleEditUser(user.id)}
+                        >
                           <Edit className="mr-2 h-4 w-4" />
                           Düzenle
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => handleDeleteUser(user.id)}
                           className="text-red-600"
                         >
@@ -140,7 +185,10 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
               ))}
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-4 text-center text-muted-foreground">
+                  <td
+                    colSpan={5}
+                    className="py-4 text-center text-muted-foreground"
+                  >
                     Sonuç bulunamadı
                   </td>
                 </tr>
@@ -156,5 +204,5 @@ export function UsersModal({ open, onOpenChange }: UsersModalProps) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}
