@@ -37,7 +37,7 @@ import {
 interface NewEventModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess?: () => void
+  onSuccess?: (newEvent: Event) => void
 }
 
 const EVENT_CATEGORIES = [
@@ -94,11 +94,22 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
     
     // Simüle edilmiş API çağrısı
     setTimeout(() => {
+      const newEvent: Event = {
+        id: Math.random().toString(36).substr(2, 9), // Geçici ID oluşturma
+        name: formData.title,
+        date: formData.date.toISOString().split('T')[0],
+        location: formData.location,
+        capacity: formData.maxParticipants,
+        participants: 0,
+        status: "active",
+        category: formData.category
+      }
+
       setLoading(false)
       toast.success("Etkinlik başarıyla oluşturuldu")
       resetForm()
       onOpenChange(false)
-      if (onSuccess) onSuccess()
+      if (onSuccess) onSuccess(newEvent)
     }, 1500)
   }
   
@@ -136,6 +147,25 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
               className="min-h-[120px]"
               required
             />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="category">Kategori *</Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Kategori seçin" />
+              </SelectTrigger>
+              <SelectContent>
+                {EVENT_CATEGORIES.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -206,40 +236,21 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="category">Kategori *</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-              >
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Kategori seçin" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EVENT_CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="maxParticipants">Maksimum Katılımcı Sayısı *</Label>
-            <div className="flex items-center relative">
-              <Users className="absolute left-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="maxParticipants"
-                name="maxParticipants"
-                type="number"
-                min={1}
-                max={1000}
-                value={formData.maxParticipants}
-                onChange={handleChange}
-                className="pl-10"
-                required
-              />
+              <Label htmlFor="maxParticipants">Maksimum Katılımcı Sayısı *</Label>
+              <div className="flex items-center relative">
+                <Users className="absolute left-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="maxParticipants"
+                  name="maxParticipants"
+                  type="number"
+                  min={1}
+                  max={1000}
+                  value={formData.maxParticipants}
+                  onChange={handleChange}
+                  className="pl-10"
+                  required
+                />
+              </div>
             </div>
           </div>
           

@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Calendar, Users, Newspaper, Shield, Settings, LayoutDashboard } from "lucide-react"
+import { Calendar, Users, Newspaper, Shield, Settings, LayoutDashboard, Flag } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { UserNav } from "@/components/nav/user-nav"
+import { Badge } from "@/components/ui/badge"
+import { REPORTS } from "@/mocks/reports"
 
 // Demo kullanıcılar
 const demoUsers = [
@@ -53,6 +54,12 @@ const routes = [
     href: "/dashboard/settings",
     color: "text-gray-500",
   },
+  {
+    label: "Raporlar",
+    icon: Flag,
+    href: "/dashboard/reports",
+    color: "text-red-500",
+  },
 ]
 
 export function Sidebar() {
@@ -88,6 +95,11 @@ export function Sidebar() {
                 )}
               />
               {route.label}
+              {route.label === "Raporlar" && (
+                <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4">
+                  {REPORTS.filter((r) => r.status === "pending").length}
+                </Badge>
+              )}
             </Link>
           ))}
         </nav>

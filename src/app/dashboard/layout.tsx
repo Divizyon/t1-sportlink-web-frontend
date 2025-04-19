@@ -3,11 +3,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CalendarDateRangePicker } from "@/components/common/DateRangePicker";
-import { CategoryFilterDropdown } from "@/components/dashboard/shared/CategoryFilterDropdown";
 import { UserNav } from "@/components/nav/UserNav";
-import { DashboardRoot } from "@/components/dashboard/DashboardRoot";
-import { useDashboardContext } from "@/contexts";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 export default function DashboardLayout({
   children,
@@ -69,18 +65,13 @@ export default function DashboardLayout({
                   {children}
                 </main>
               </div>
-            </div>
+            </header>
+            <main className="flex-1 rounded-lg bg-white p-6 shadow-sm">
+              {children}
+            </main>
           </div>
         </div>
       </div>
-    );
-  };
-
-  return (
-    <ProtectedRoute>
-      <DashboardRoot>
-        <DashboardContent />
-      </DashboardRoot>
-    </ProtectedRoute>
+    </div>
   );
 }

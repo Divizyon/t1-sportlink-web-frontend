@@ -33,6 +33,15 @@ import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
 import { Report, ReportPriority, ReportStatus } from "@/types/dashboard";
 import { DASHBOARD_REPORTS } from "@/mocks/dashboard-reports";
+import {
+  DASHBOARD_TAB_LABELS,
+  ENTITY_TYPE_LABELS,
+  REPORT_PRIORITY_LABELS,
+  REPORT_STATUS_LABELS,
+  UI_TEXT,
+  REPORT_FILTER_LABELS,
+  REPORT_FILTERS,
+} from "@/constants/dashboard";
 
 export default function ReportsPage() {
   const { toast } = useToast();
@@ -41,11 +50,12 @@ export default function ReportsPage() {
     "all"
   );
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "all">("all");
+  const [allReports, setAllReports] = useState<Report[]>(DASHBOARD_REPORTS);
 
   // Filtreleme işlemi
   const filteredReports = DASHBOARD_REPORTS.filter((report) => {
     // Tür filtreleme
-    if (filter !== "all" && report.entityType !== filter.slice(0, -1)) {
+    if (filter !== REPORT_FILTERS.all && report.entityType !== filter.slice(0, -1)) {
       return false;
     }
 
@@ -65,32 +75,38 @@ export default function ReportsPage() {
   const getPriorityBadge = (priority: ReportPriority) => {
     switch (priority) {
       case "high":
-        return <Badge variant="destructive">Yüksek</Badge>;
+        return <Badge variant="destructive">{REPORT_PRIORITY_LABELS.high}</Badge>;
       case "medium":
-        return <Badge variant="default">Orta</Badge>;
+        return <Badge variant="default">{REPORT_PRIORITY_LABELS.medium}</Badge>;
       case "low":
-        return <Badge variant="outline">Düşük</Badge>;
+        return <Badge variant="outline">{REPORT_PRIORITY_LABELS.low}</Badge>;
     }
   };
 
   const getStatusBadge = (status: ReportStatus) => {
     switch (status) {
       case "pending":
-        return <Badge className="bg-yellow-500">Beklemede</Badge>;
+        return <Badge className="bg-yellow-500">{REPORT_STATUS_LABELS.pending}</Badge>;
       case "reviewing":
-        return <Badge className="bg-blue-500">İnceleniyor</Badge>;
+        return <Badge className="bg-blue-500">{REPORT_STATUS_LABELS.reviewing}</Badge>;
       case "resolved":
-        return <Badge className="bg-green-500">Çözüldü</Badge>;
+        return <Badge className="bg-green-500">{REPORT_STATUS_LABELS.resolved}</Badge>;
       case "rejected":
-        return <Badge className="bg-gray-500">Reddedildi</Badge>;
+        return <Badge className="bg-gray-500">{REPORT_STATUS_LABELS.rejected}</Badge>;
     }
   };
 
   const handleStatusChange = (reportId: number, newStatus: ReportStatus) => {
-    // Normalde API'ye istek atılacak
+    setAllReports((prevReports) =>
+      prevReports.map((report) =>
+        report.id === reportId ? { ...report, status: newStatus } : report
+      )
+    );
     toast({
-      title: "Durum Güncellendi",
-      description: `Rapor durumu ${newStatus} olarak güncellendi`,
+      title: UI_TEXT.TOAST.REPORT_STATUS_UPDATED.TITLE,
+      description: UI_TEXT.TOAST.REPORT_STATUS_UPDATED.DESCRIPTION(
+        REPORT_STATUS_LABELS[newStatus]
+      ),
     });
   };
 
@@ -158,9 +174,9 @@ export default function ReportsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Öncelikler</SelectItem>
-                  <SelectItem value="high">Yüksek</SelectItem>
-                  <SelectItem value="medium">Orta</SelectItem>
-                  <SelectItem value="low">Düşük</SelectItem>
+                  <SelectItem value="high">{REPORT_PRIORITY_LABELS.high}</SelectItem>
+                  <SelectItem value="medium">{REPORT_PRIORITY_LABELS.medium}</SelectItem>
+                  <SelectItem value="low">{REPORT_PRIORITY_LABELS.low}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -175,10 +191,10 @@ export default function ReportsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Durumlar</SelectItem>
-                  <SelectItem value="pending">Beklemede</SelectItem>
-                  <SelectItem value="reviewing">İnceleniyor</SelectItem>
-                  <SelectItem value="resolved">Çözüldü</SelectItem>
-                  <SelectItem value="rejected">Reddedildi</SelectItem>
+                  <SelectItem value="pending">{REPORT_STATUS_LABELS.pending}</SelectItem>
+                  <SelectItem value="reviewing">{REPORT_STATUS_LABELS.reviewing}</SelectItem>
+                  <SelectItem value="resolved">{REPORT_STATUS_LABELS.resolved}</SelectItem>
+                  <SelectItem value="rejected">{REPORT_STATUS_LABELS.rejected}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -217,9 +233,7 @@ export default function ReportsPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {report.entityType === "user"
-                          ? "Kullanıcı"
-                          : "Etkinlik"}
+                        {ENTITY_TYPE_LABELS[report.entityType]}
                       </TableCell>
                       <TableCell>{getPriorityBadge(report.priority)}</TableCell>
                       <TableCell>{getStatusBadge(report.status)}</TableCell>
