@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, MapPin, Users } from "lucide-react";
 import { Event, EventStatus, TodaysEventsProps } from "@/types/dashboard";
+import { TODAY_EVENTS } from "@/mocks/events";
 
 export function TodaysEvents({
   onEventSelect,
@@ -19,70 +20,12 @@ export function TodaysEvents({
     // Gerçek uygulamada burada API'den veri çekilecek
     setLoading(true);
 
-    // Demo verilerini yükleme simülasyonu
+    // Mock verileri kullanarak yükleme simülasyonu
     setTimeout(() => {
-      const demoEvents: Event[] = [
-        {
-          id: "evt-1",
-          title: "Sabah Koşusu",
-          date: new Date(),
-          time: "06:30",
-          location: "Sahil Parkı",
-          participants: 12,
-          maxParticipants: 20,
-          category: "Koşu",
-          status: "approved",
-        },
-        {
-          id: "evt-2",
-          title: "Yoga Dersi",
-          date: new Date(),
-          time: "09:00",
-          location: "Central Fitness",
-          participants: 8,
-          maxParticipants: 15,
-          category: "Yoga",
-          status: "approved",
-        },
-        {
-          id: "evt-3",
-          title: "Basketbol Turnuvası",
-          date: new Date(),
-          time: "14:00",
-          location: "Spor Salonu",
-          participants: 20,
-          maxParticipants: 20,
-          category: "Basketbol",
-          status: "approved",
-        },
-        {
-          id: "evt-4",
-          title: "Yüzme Etkinliği",
-          date: new Date(),
-          time: "16:30",
-          location: "Olimpik Havuz",
-          participants: 10,
-          maxParticipants: 25,
-          category: "Yüzme",
-          status: "approved",
-        },
-        {
-          id: "evt-5",
-          title: "Akşam Bisiklet Turu",
-          date: new Date(),
-          time: "19:00",
-          location: "Bisiklet Yolu",
-          participants: 15,
-          maxParticipants: 30,
-          category: "Bisiklet",
-          status: "approved",
-        },
-      ];
-
       // Kategoriye göre filtreleme
-      let filteredEvents = demoEvents;
+      let filteredEvents = TODAY_EVENTS;
       if (categories && categories.length > 0) {
-        filteredEvents = demoEvents.filter((event) =>
+        filteredEvents = TODAY_EVENTS.filter((event) =>
           categories.includes(event.category)
         );
       }

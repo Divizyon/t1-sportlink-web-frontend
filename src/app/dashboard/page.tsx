@@ -74,6 +74,8 @@ import {
   REPORT_FILTERS,
 } from "@/constants/dashboard";
 import { ReportPriority, ReportStatus, ModalType } from "@/types";
+import { REPORTS } from "@/mocks/reports";
+import { USERS } from "@/mocks/users";
 
 // Raporlar için demo verileri
 type Priority = "high" | "medium" | "low";
@@ -120,65 +122,6 @@ interface Report {
   status: "pending" | "reviewing" | "resolved" | "rejected";
 }
 
-// Demo verileri
-const DEMO_REPORTS: Report[] = [
-  {
-    id: 1,
-    subject: "Uygunsuz İçerik",
-    description: "Etkinlik açıklamasında uygunsuz içerik bulunuyor.",
-    reportedBy: "Ahmet Yılmaz",
-    reportedDate: "2023-07-15",
-    entityType: "event",
-    entityId: 101,
-    priority: "high",
-    status: "pending",
-  },
-  {
-    id: 2,
-    subject: "Taciz Edici Davranış",
-    description: "Kullanıcı mesajlarda taciz edici davranışlarda bulunuyor.",
-    reportedBy: "Ayşe Demir",
-    reportedDate: "2023-07-14",
-    entityType: "user",
-    entityId: 203,
-    priority: "high",
-    status: "reviewing",
-  },
-  {
-    id: 3,
-    subject: "Yanlış Bilgi",
-    description: "Etkinlik konumu yanlış belirtilmiş.",
-    reportedBy: "Mehmet Can",
-    reportedDate: "2023-07-12",
-    entityType: "event",
-    entityId: 105,
-    priority: "medium",
-    status: "pending",
-  },
-  {
-    id: 4,
-    subject: "Sahte Profil",
-    description: "Bu hesap sahte olabilir.",
-    reportedBy: "Zeynep Kaya",
-    reportedDate: "2023-07-10",
-    entityType: "user",
-    entityId: 210,
-    priority: "medium",
-    status: "resolved",
-  },
-  {
-    id: 5,
-    subject: "Spam İçerik",
-    description: "Etkinlik spam içeriği barındırıyor.",
-    reportedBy: "Emre Güneş",
-    reportedDate: "2023-07-08",
-    entityType: "event",
-    entityId: 112,
-    priority: "low",
-    status: "rejected",
-  },
-];
-
 export default function DashboardPage() {
   const { toast } = useToast();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -198,50 +141,9 @@ export default function DashboardPage() {
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
 
-  const [allReports, setAllReports] = useState<Report[]>(DEMO_REPORTS);
+  const [allReports, setAllReports] = useState<Report[]>(REPORTS);
 
-  const demoUsers = [
-    {
-      id: 1,
-      name: "Ahmet Koç",
-      email: "ahmet@example.com",
-      role: "üye",
-      status: "aktif",
-      joinDate: "2023-01-15",
-    },
-    {
-      id: 2,
-      name: "Ayşe Yılmaz",
-      email: "ayse@example.com",
-      role: "üye",
-      status: "aktif",
-      joinDate: "2023-02-20",
-    },
-    {
-      id: 3,
-      name: "Mehmet Can",
-      email: "mehmet@example.com",
-      role: "üye",
-      status: "aktif",
-      joinDate: "2023-03-10",
-    },
-    {
-      id: 4,
-      name: "Zeynep Kaya",
-      email: "zeynep@example.com",
-      role: "üye",
-      status: "aktif",
-      joinDate: "2023-03-15",
-    },
-    {
-      id: 5,
-      name: "Emre Güneş",
-      email: "emre@example.com",
-      role: "üye",
-      status: "beklemede",
-      joinDate: "2023-04-05",
-    },
-  ];
+  const demoUsers = USERS;
 
   const openModal = (type: ModalType, entityData: any = null) => {
     if (
@@ -283,7 +185,7 @@ export default function DashboardPage() {
   };
 
   // Filtreleme işlemi
-  const filteredReports = DEMO_REPORTS.filter((report) => {
+  const filteredReports = REPORTS.filter((report) => {
     // Tür filtreleme
     if (
       reportFilter !== REPORT_FILTERS.all &&
@@ -606,7 +508,7 @@ export default function DashboardPage() {
                   {REPORT_FILTER_LABELS.users}
                   <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
                     {
-                      DEMO_REPORTS.filter(
+                      REPORTS.filter(
                         (r) => r.entityType === "user" && r.status === "pending"
                       ).length
                     }
@@ -624,7 +526,7 @@ export default function DashboardPage() {
                   {REPORT_FILTER_LABELS.events}
                   <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
                     {
-                      DEMO_REPORTS.filter(
+                      REPORTS.filter(
                         (r) =>
                           r.entityType === "event" && r.status === "pending"
                       ).length

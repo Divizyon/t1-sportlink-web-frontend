@@ -30,6 +30,10 @@ import {
   DAYS_OF_WEEK,
   LOADING_DELAYS,
 } from "@/constants";
+import {
+  generateDailyChartData,
+  generateCategoryData,
+} from "@/mocks/analytics";
 
 export function EventParticipationChart({
   categories = [],
@@ -44,54 +48,13 @@ export function EventParticipationChart({
     // Gerçek uygulamada burada API'den veri çekilecek
     setLoading(true);
 
-    // Filtrelenmiş verileri yükleme simülasyonu
+    // Mock verileri yükleme simülasyonu
     setTimeout(() => {
-      // Her gün için farklı kategoriler için rastgele veriler
-      const mockData: ChartData[] = DAYS_OF_WEEK.map((day) => {
-        const baseData: ChartData = {
-          name: day,
-          onaylanan: Math.floor(Math.random() * 20) + 10,
-          bekleyen: Math.floor(Math.random() * 10) + 5,
-          reddedilen: Math.floor(Math.random() * 5) + 1,
-          tamamlanan: Math.floor(Math.random() * 15) + 5,
-        };
-
-        // Kategoriye göre filtreleme
-        if (categories && categories.length > 0) {
-          let filteredData: ChartData = {
-            name: day,
-            onaylanan: 0,
-            bekleyen: 0,
-            reddedilen: 0,
-            tamamlanan: 0,
-          };
-
-          // Her kategori için ağırlıklandırılmış veriler
-          categories.forEach((category) => {
-            const weight =
-              (EVENT_CATEGORIES.indexOf(category) + 1) /
-              EVENT_CATEGORIES.length;
-            filteredData.onaylanan += Math.floor(baseData.onaylanan * weight);
-            filteredData.bekleyen += Math.floor(baseData.bekleyen * weight);
-            filteredData.reddedilen += Math.floor(baseData.reddedilen * weight);
-            filteredData.tamamlanan += Math.floor(baseData.tamamlanan * weight);
-          });
-
-          return filteredData;
-        }
-
-        return baseData;
-      });
-
-      // Kategori verilerini oluştur
-      const mockCategoryData: CategoryData[] = EVENT_CATEGORIES.slice(
-        0,
+      // Mock veri jeneratörlerini kullan
+      const mockData = generateDailyChartData(categories);
+      const mockCategoryData = generateCategoryData(
         categories.length > 0 ? categories.length : 8
-      ).map((category, index) => ({
-        name: category,
-        value: Math.floor(Math.random() * 50) + 20,
-        color: COLORS.chart[index % COLORS.chart.length],
-      }));
+      );
 
       setData(mockData);
       setCategoryData(mockCategoryData);
@@ -252,36 +215,13 @@ export function EventParticipationChart({
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  outerRadius={80}
+                  outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({
-                    cx,
-                    cy,
-                    midAngle,
-                    innerRadius,
-                    outerRadius,
-                    percent,
-                    index,
-                  }) => {
-                    const RADIAN = Math.PI / 180;
-                    const radius =
-                      innerRadius + (outerRadius - innerRadius) * 0.5;
-                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-                    return (
-                      <text
-                        x={x}
-                        y={y}
-                        fill="white"
-                        textAnchor={x > cx ? "start" : "end"}
-                        dominantBaseline="central"
-                      >
-                        {`${(percent * 100).toFixed(0)}%`}
-                      </text>
-                    );
-                  }}
+                  nameKey="name"
+                  label={({ name, percent }) =>
+                    `${name}: ${(percent * 100).toFixed(0)}%`
+                  }
                 >
                   {categoryData.map((entry, index) => (
                     <Cell
@@ -292,13 +232,7 @@ export function EventParticipationChart({
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value, name, props) => [
-                    `${value} etkinlik (${getPercentage(
-                      value as number,
-                      totalCategoryEvents
-                    )}%)`,
-                    props.payload.name,
-                  ]}
+                  formatter={(value, name) => [`${value} Etkinlik`, name]}
                 />
               </PieChart>
             </ResponsiveContainer>

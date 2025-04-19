@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Participant, RecentParticipantsProps } from "@/types/dashboard";
+import { RECENT_PARTICIPANTS } from "@/mocks/participants";
 
 export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -13,47 +14,9 @@ export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
     // Gerçek uygulamada burada API'den veri çekilecek
     setLoading(true);
 
-    // Demo verilerini yükleme simülasyonu
+    // Mock verileri kullanarak yükleme simülasyonu
     setTimeout(() => {
-      const demoParticipants: Participant[] = [
-        {
-          id: "usr-1",
-          name: "Zeynep Yılmaz",
-          email: "zeynep@example.com",
-          avatar: "/avatars/01.png",
-          lastEvent: "Sabah Koşusu",
-        },
-        {
-          id: "usr-2",
-          name: "Ahmet Demir",
-          email: "ahmet@example.com",
-          avatar: "/avatars/02.png",
-          lastEvent: "Basketbol Turnuvası",
-        },
-        {
-          id: "usr-3",
-          name: "Ayşe Kaya",
-          email: "ayse@example.com",
-          avatar: "/avatars/03.png",
-          lastEvent: "Yüzme Etkinliği",
-        },
-        {
-          id: "usr-4",
-          name: "Mehmet Öz",
-          email: "mehmet@example.com",
-          avatar: "/avatars/04.png",
-          lastEvent: "Yoga Dersi",
-        },
-        {
-          id: "usr-5",
-          name: "Elif Şahin",
-          email: "elif@example.com",
-          avatar: "/avatars/05.png",
-          lastEvent: "Akşam Bisiklet Turu",
-        },
-      ];
-
-      setParticipants(demoParticipants);
+      setParticipants(RECENT_PARTICIPANTS);
       setLoading(false);
     }, 800);
   }, []);

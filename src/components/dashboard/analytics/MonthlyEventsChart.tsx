@@ -7,64 +7,27 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Legend,
+  CartesianGrid,
 } from "recharts";
+import { MONTHLY_EVENT_DATA } from "@/mocks/analytics";
 
-// Demo verileri - son 12 ayın etkinlik sayıları (sabit değerler)
-const monthlyEventData = [
-  {
-    name: "Oca",
-    total: 32,
-  },
-  {
-    name: "Şub",
-    total: 28,
-  },
-  {
-    name: "Mar",
-    total: 35,
-  },
-  {
-    name: "Nis",
-    total: 42,
-  },
-  {
-    name: "May",
-    total: 49,
-  },
-  {
-    name: "Haz",
-    total: 53,
-  },
-  {
-    name: "Tem",
-    total: 47,
-  },
-  {
-    name: "Ağu",
-    total: 43,
-  },
-  {
-    name: "Eyl",
-    total: 38,
-  },
-  {
-    name: "Eki",
-    total: 45,
-  },
-  {
-    name: "Kas",
-    total: 40,
-  },
-  {
-    name: "Ara",
-    total: 37,
-  },
-];
+// Define valid data keys
+type DataKey = "onaylanan" | "bekleyen" | "reddedilen" | "tamamlanan";
 
 export function MonthlyEventsChart() {
+  // Labels for the data keys
+  const labels: Record<DataKey, string> = {
+    onaylanan: "Onaylanan",
+    bekleyen: "Bekleyen",
+    reddedilen: "Reddedilen",
+    tamamlanan: "Tamamlanan",
+  };
+
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={monthlyEventData}>
+      <BarChart data={MONTHLY_EVENT_DATA}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis
           dataKey="name"
           stroke="#888888"
@@ -80,7 +43,11 @@ export function MonthlyEventsChart() {
           tickFormatter={(value) => `${value}`}
         />
         <Tooltip
-          formatter={(value) => [`${value} Etkinlik`, "Toplam"]}
+          formatter={(value, name: string) => {
+            // Cast name to DataKey if it's a valid key
+            const key = name as DataKey;
+            return [`${value} Etkinlik`, labels[key] || name];
+          }}
           contentStyle={{
             backgroundColor: "#fff",
             borderRadius: "6px",
@@ -88,11 +55,39 @@ export function MonthlyEventsChart() {
             border: "none",
           }}
         />
+        <Legend
+          formatter={(value: string) => {
+            // Cast value to DataKey if it's a valid key
+            return labels[value as DataKey] || value;
+          }}
+        />
         <Bar
-          dataKey="total"
+          dataKey="onaylanan"
           fill="#3b82f6"
           radius={[4, 4, 0, 0]}
           barSize={30}
+          stackId="a"
+        />
+        <Bar
+          dataKey="bekleyen"
+          fill="#f59e0b"
+          radius={[4, 4, 0, 0]}
+          barSize={30}
+          stackId="a"
+        />
+        <Bar
+          dataKey="reddedilen"
+          fill="#ef4444"
+          radius={[4, 4, 0, 0]}
+          barSize={30}
+          stackId="a"
+        />
+        <Bar
+          dataKey="tamamlanan"
+          fill="#10b981"
+          radius={[4, 4, 0, 0]}
+          barSize={30}
+          stackId="a"
         />
       </BarChart>
     </ResponsiveContainer>
