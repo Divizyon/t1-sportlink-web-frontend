@@ -41,3 +41,5 @@ export interface PaginatedResponse<T> {
     totalPages: number;
   };
 }
+
+export type DashboardTabValue = "overview" | "analytics";

@@ -78,22 +78,16 @@ export const ENTITY_TYPE_LABELS: Record<string, string> = {
 };
 
 // Dashboard Tab Values
-export const DASHBOARD_TABS: Record<DashboardTabValue, DashboardTabValue> = {
+export const DASHBOARD_TABS = {
   overview: "overview",
   analytics: "analytics",
-  events: "events",
-  reports: "reports",
-  messages: "messages",
-};
+} as const satisfies Record<DashboardTabValue, DashboardTabValue>;
 
 // Dashboard Tab Labels
-export const DASHBOARD_TAB_LABELS: Record<DashboardTabValue, string> = {
+export const DASHBOARD_TAB_LABELS = {
   overview: "Genel Bakış",
-  analytics: "İstatistikler",
-  events: "Etkinlikler",
-  reports: "Raporlar",
-  messages: "Mesajlaşma",
-};
+  analytics: "Analitik",
+} as const satisfies Record<DashboardTabValue, string>;
 
 // Report Filter Values
 export const REPORT_FILTERS: Record<ReportFilterType, ReportFilterType> = {
@@ -192,27 +186,26 @@ export const MODAL_TYPES = {
 export const UI_TEXT = {
   // Section Titles
   SECTION_TITLES: {
-    RECENT_PARTICIPANTS: "Son Katılımcılar",
+    OVERVIEW: "Genel Bakış",
+    ANALYTICS: "Analitik",
+    WEEKLY_PARTICIPATION: "Haftalık Katılım",
     TODAY_EVENTS: "Bugünkü Etkinlikler",
+    RECENT_PARTICIPANTS: "Son Katılımcılar",
     PLATFORM_STATS: "Platform İstatistikleri",
-    WEEKLY_PARTICIPATION: "Haftalık Etkinlik Katılımı",
-    INCOMING_REPORTS: "Gelen Raporlar",
     EVENT_ANALYSIS: "Etkinlik Analizi",
     USER_DISTRIBUTION: "Kullanıcı Dağılımı",
-    MESSAGING: "Mesajlaşma",
   },
 
   // Section Descriptions
   SECTION_DESCRIPTIONS: {
-    RECENT_PARTICIPANTS: "Son etkinliklere katılan spor tutkunları",
-    TODAY_EVENTS: (date: string) => date,
-    PLATFORM_STATS: "Kullanıcı ve katılımcı özeti",
-    WEEKLY_PARTICIPATION:
-      "Son 7 gündeki etkinliklere katılım ve durum oranları",
-    INCOMING_REPORTS: "İncelemeniz gereken rapor ve bildirimler",
-    EVENT_ANALYSIS: "Son 12 aydaki etkinlik verileri",
-    USER_DISTRIBUTION: "Kategorilere göre kullanıcı dağılımı",
-    MESSAGING: "Kullanıcılar ve etkinlik katılımcıları ile iletişime geçin",
+    OVERVIEW: "Genel bakış açıklaması",
+    ANALYTICS: "Analitik açıklaması",
+    WEEKLY_PARTICIPATION: "Haftalık katılım istatistikleri",
+    TODAY_EVENTS: (date: string) => `${date} tarihli etkinlikler`,
+    RECENT_PARTICIPANTS: "Son katılan kullanıcıların listesi",
+    PLATFORM_STATS: "Platform genel istatistikleri",
+    EVENT_ANALYSIS: "Etkinlik analiz ve istatistikleri",
+    USER_DISTRIBUTION: "Kullanıcı dağılım ve istatistikleri",
   },
 
   // Button Text
