@@ -11,6 +11,8 @@ import {
   CartesianGrid,
 } from "recharts";
 import { MONTHLY_EVENT_DATA } from "@/mocks/analytics";
+import { COLORS } from "@/constants";
+import { formatNumber } from "@/lib/uiUtils";
 
 // Define valid data keys
 type DataKey = "onaylanan" | "bekleyen" | "reddedilen" | "tamamlanan";
@@ -40,13 +42,16 @@ export function MonthlyEventsChart() {
           fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `${value}`}
+          tickFormatter={(value) => formatNumber(value)}
         />
         <Tooltip
           formatter={(value, name: string) => {
             // Cast name to DataKey if it's a valid key
             const key = name as DataKey;
-            return [`${value} Etkinlik`, labels[key] || name];
+            return [
+              `${formatNumber(value as number)} Etkinlik`,
+              labels[key] || name,
+            ];
           }}
           contentStyle={{
             backgroundColor: "#fff",
@@ -63,28 +68,28 @@ export function MonthlyEventsChart() {
         />
         <Bar
           dataKey="onaylanan"
-          fill="#3b82f6"
+          fill={COLORS.status.approved}
           radius={[4, 4, 0, 0]}
           barSize={30}
           stackId="a"
         />
         <Bar
           dataKey="bekleyen"
-          fill="#f59e0b"
+          fill={COLORS.status.pending}
           radius={[4, 4, 0, 0]}
           barSize={30}
           stackId="a"
         />
         <Bar
           dataKey="reddedilen"
-          fill="#ef4444"
+          fill={COLORS.status.rejected}
           radius={[4, 4, 0, 0]}
           barSize={30}
           stackId="a"
         />
         <Bar
           dataKey="tamamlanan"
-          fill="#10b981"
+          fill={COLORS.status.completed}
           radius={[4, 4, 0, 0]}
           barSize={30}
           stackId="a"

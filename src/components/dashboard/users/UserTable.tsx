@@ -12,6 +12,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CategoryCount } from "@/types/dashboard";
+import { formatNumber } from "@/lib/uiUtils";
+import { getGrowthBadgeStyle } from "@/lib/uiUtils";
 
 const categories: CategoryCount[] = [
   { name: "Futbol", count: 156, change: "+12%" },
@@ -39,15 +41,11 @@ export function UserTable() {
             {categories.map((category) => (
               <TableRow key={category.name}>
                 <TableCell className="font-medium">{category.name}</TableCell>
-                <TableCell className="text-right">{category.count}</TableCell>
                 <TableCell className="text-right">
-                  <Badge
-                    className={
-                      category.change.startsWith("+")
-                        ? "bg-green-100 text-green-800 hover:bg-green-100"
-                        : "bg-red-100 text-red-800 hover:bg-red-100"
-                    }
-                  >
+                  {formatNumber(category.count)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Badge style={getGrowthBadgeStyle(category.change)}>
                     {category.change}
                   </Badge>
                 </TableCell>

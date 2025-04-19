@@ -34,6 +34,8 @@ import {
   generateDailyChartData,
   generateCategoryData,
 } from "@/mocks/analytics";
+import { calculatePercentage, formatPercentage } from "@/lib/dashboardUtils";
+import { applyColorOpacity } from "@/lib/uiUtils";
 
 export function EventParticipationChart({
   categories = [],
@@ -87,11 +89,6 @@ export function EventParticipationChart({
     0
   );
 
-  // Yüzde hesaplama
-  const getPercentage = (value: number, total: number) => {
-    return total > 0 ? Math.round((value / total) * 100) : 0;
-  };
-
   if (loading) {
     return (
       <div className="w-full space-y-3">
@@ -123,7 +120,7 @@ export function EventParticipationChart({
               >
                 Onaylı: {statusCounts.approved}{" "}
                 <span className="text-xs ml-1">
-                  ({getPercentage(statusCounts.approved, totalEvents)}%)
+                  ({calculatePercentage(statusCounts.approved, totalEvents)}%)
                 </span>
               </Badge>
             </div>
@@ -134,7 +131,7 @@ export function EventParticipationChart({
               >
                 Bekleyen: {statusCounts.pending}{" "}
                 <span className="text-xs ml-1">
-                  ({getPercentage(statusCounts.pending, totalEvents)}%)
+                  ({calculatePercentage(statusCounts.pending, totalEvents)}%)
                 </span>
               </Badge>
             </div>
@@ -145,7 +142,7 @@ export function EventParticipationChart({
               >
                 Reddedilen: {statusCounts.rejected}{" "}
                 <span className="text-xs ml-1">
-                  ({getPercentage(statusCounts.rejected, totalEvents)}%)
+                  ({calculatePercentage(statusCounts.rejected, totalEvents)}%)
                 </span>
               </Badge>
             </div>
@@ -156,7 +153,7 @@ export function EventParticipationChart({
               >
                 Tamamlanan: {statusCounts.completed}{" "}
                 <span className="text-xs ml-1">
-                  ({getPercentage(statusCounts.completed, totalEvents)}%)
+                  ({calculatePercentage(statusCounts.completed, totalEvents)}%)
                 </span>
               </Badge>
             </div>
@@ -244,16 +241,17 @@ export function EventParticipationChart({
                   variant="outline"
                   className="flex items-center gap-1"
                   style={{
-                    backgroundColor: `${entry.color}20`,
+                    backgroundColor: applyColorOpacity(entry.color, 0.2),
                     color: entry.color,
                     borderColor: entry.color,
                   }}
                 >
-                  <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: entry.color }}
-                  ></span>
-                  {entry.name} ({entry.value})
+                  {entry.name}:{" "}
+                  <span className="ml-1 font-semibold">
+                    {formatPercentage(
+                      calculatePercentage(entry.value, totalCategoryEvents)
+                    )}
+                  </span>
                 </Badge>
               ))}
             </div>

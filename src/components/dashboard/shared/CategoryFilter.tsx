@@ -19,18 +19,12 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-// Etkinlik kategorileri
-const EVENT_CATEGORIES = [
-  "Futbol",
-  "Basketbol",
-  "Yüzme",
-  "Tenis",
-  "Voleybol",
-  "Koşu",
-  "Yoga",
-  "Fitness",
-];
+import { EVENT_CATEGORIES } from "@/constants";
+import {
+  toggleCategory,
+  isFilterActive,
+  resetFilters,
+} from "@/lib/filterUtils";
 
 interface CategoryFilterDropdownProps {
   selectedCategories: string[];
@@ -43,20 +37,19 @@ export function CategoryFilterDropdown({
 }: CategoryFilterDropdownProps) {
   const [open, setOpen] = useState(false);
 
-  // Kategori seçimini değiştirme işlevi
-  const toggleCategory = (category: string) => {
-    if (selectedCategories.includes(category)) {
-      onSelectCategories(selectedCategories.filter((c) => c !== category));
-    } else {
-      onSelectCategories([...selectedCategories, category]);
-    }
+  // Handle category toggle using utility function
+  const handleToggleCategory = (category: string) => {
+    onSelectCategories(toggleCategory(category, selectedCategories));
   };
 
-  // Tüm seçimleri temizleme
+  // Clear all selections using resetFilters
   const clearSelections = () => {
-    onSelectCategories([]);
+    onSelectCategories(resetFilters().categories);
     setOpen(false);
   };
+
+  // Check if filter is active
+  const filterActive = isFilterActive(selectedCategories);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -69,7 +62,7 @@ export function CategoryFilterDropdown({
         >
           <Filter className="mr-2 h-4 w-4" />
           <span>Kategoriler</span>
-          {selectedCategories.length > 0 && (
+          {filterActive && (
             <Badge
               variant="secondary"
               className="ml-2 rounded-sm px-1 font-normal"
@@ -90,7 +83,7 @@ export function CategoryFilterDropdown({
                 <CommandItem
                   key={category}
                   value={category}
-                  onSelect={() => toggleCategory(category)}
+                  onSelect={() => handleToggleCategory(category)}
                 >
                   <Check
                     className={cn(
@@ -104,7 +97,7 @@ export function CategoryFilterDropdown({
                 </CommandItem>
               ))}
             </CommandGroup>
-            {selectedCategories.length > 0 && (
+            {filterActive && (
               <>
                 <CommandSeparator />
                 <CommandGroup>

@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { CategoryFilterDropdownProps } from "@/types/dashboard";
 import { EVENT_CATEGORIES } from "@/constants/dashboard";
+import { toggleCategory } from "@/lib/filterUtils";
 
 export function CategoryFilterDropdown({
   selectedCategories,
@@ -28,16 +29,12 @@ export function CategoryFilterDropdown({
 }: CategoryFilterDropdownProps) {
   const [open, setOpen] = useState(false);
 
-  // Kategori seçimini değiştirme işlevi
-  const toggleCategory = (category: string) => {
-    if (selectedCategories.includes(category)) {
-      onChange(selectedCategories.filter((c) => c !== category));
-    } else {
-      onChange([...selectedCategories, category]);
-    }
+  // Handle category toggle using utility function
+  const handleToggleCategory = (category: string) => {
+    onChange(toggleCategory(category, selectedCategories));
   };
 
-  // Tüm seçimleri temizleme
+  // Clear all selections
   const clearSelections = () => {
     onChange([]);
     setOpen(false);
@@ -75,7 +72,7 @@ export function CategoryFilterDropdown({
                 <CommandItem
                   key={category}
                   value={category}
-                  onSelect={() => toggleCategory(category)}
+                  onSelect={() => handleToggleCategory(category)}
                 >
                   <Check
                     className={cn(

@@ -5,6 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Participant, RecentParticipantsProps } from "@/types/dashboard";
 import { RECENT_PARTICIPANTS } from "@/mocks/participants";
+import { getUserInitials, sortParticipantsByLastEvent } from "@/lib/userUtils";
+import { generateSkeletonArray } from "@/lib/uiUtils";
 
 export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -16,7 +18,10 @@ export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
 
     // Mock verileri kullanarak yükleme simülasyonu
     setTimeout(() => {
-      setParticipants(RECENT_PARTICIPANTS);
+      // Sort participants by their last event using utility function
+      const sortedParticipants =
+        sortParticipantsByLastEvent(RECENT_PARTICIPANTS);
+      setParticipants(sortedParticipants);
       setLoading(false);
     }, 800);
   }, []);
@@ -24,7 +29,7 @@ export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
   if (loading) {
     return (
       <div className="space-y-4">
-        {[1, 2, 3, 4, 5].map((_, index) => (
+        {generateSkeletonArray(5).map((index) => (
           <div key={index} className="flex items-center space-x-4">
             <Skeleton className="h-10 w-10 rounded-full" />
             <div className="space-y-2">
@@ -48,7 +53,7 @@ export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
         >
           <Avatar className="h-9 w-9">
             <AvatarImage src={participant.avatar} alt={participant.name} />
-            <AvatarFallback>{participant.name.charAt(0)}</AvatarFallback>
+            <AvatarFallback>{getUserInitials(participant.name)}</AvatarFallback>
           </Avatar>
           <div className="ml-4 space-y-1">
             <p className="text-sm font-medium leading-none">
