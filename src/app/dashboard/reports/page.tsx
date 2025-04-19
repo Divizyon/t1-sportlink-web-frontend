@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Flag, AlertTriangle, CheckCircle, XCircle, Eye } from "lucide-react";
+import { Flag, AlertTriangle, CheckCircle, XCircle, Eye, ChevronRight } from "lucide-react";
 import { UserNav } from "@/components/nav/UserNav";
 import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
@@ -42,6 +43,8 @@ import {
   REPORT_FILTER_LABELS,
   REPORT_FILTERS,
 } from "@/constants/dashboard";
+import { ReportDetailModal } from "@/components/modals/ReportDetailModal";
+import { formatDate } from "@/lib/utils";
 
 export default function ReportsPage() {
   const { toast } = useToast();
@@ -51,6 +54,8 @@ export default function ReportsPage() {
   );
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "all">("all");
   const [allReports, setAllReports] = useState<Report[]>(DASHBOARD_REPORTS);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Filtreleme işlemi
   const filteredReports = DASHBOARD_REPORTS.filter((report) => {
@@ -96,38 +101,52 @@ export default function ReportsPage() {
     }
   };
 
-  const handleStatusChange = (reportId: number, newStatus: ReportStatus) => {
-    setAllReports((prevReports) =>
-      prevReports.map((report) =>
-        report.id === reportId ? { ...report, status: newStatus } : report
-      )
-    );
-    toast({
-      title: UI_TEXT.TOAST.REPORT_STATUS_UPDATED.TITLE,
-      description: UI_TEXT.TOAST.REPORT_STATUS_UPDATED.DESCRIPTION(
-        REPORT_STATUS_LABELS[newStatus]
-      ),
-    });
+  const handleReportClick = (report: Report) => {
+    setSelectedReport(report);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleReportStatusChange = async (
+    reportId: string,
+    status: ReportStatus,
+    adminNote?: string,
+    banUser?: boolean
+  ) => {
+    try {
+      // API çağrısı yapılacak
+      const updatedReports = allReports.map((report) => {
+        if (report.id.toString() === reportId) {
+          return {
+            ...report,
+            status,
+            adminNote,
+            adminName: "Admin User", // Gerçek admin kullanıcı adı buraya gelecek
+            adminActionDate: new Date().toISOString(),
+            isBanned: banUser || false,
+          };
+        }
+        return report;
+      });
+
+      setAllReports(updatedReports);
+      toast({
+        title: "Başarılı",
+        description: `Rapor ${status === "resolved" ? "çözüldü" : "reddedildi"}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Bir hata oluştu",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="border-b">
-        <div className="flex h-16 items-center px-4">
-          <h1 className="text-xl font-bold">Sport Link</h1>
-          <div className="ml-auto flex items-center">
-            <UserNav />
-          </div>
-        </div>
-      </div>
       <div className="flex-1 space-y-4 p-8 pt-6">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Raporlar</h2>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" asChild>
-              <Link href="/dashboard">Anasayfa</Link>
-            </Button>
-          </div>
         </div>
 
         <Tabs
@@ -222,15 +241,17 @@ export default function ReportsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredReports.map((report) => (
-                    <TableRow key={report.id}>
+                    <TableRow 
+                      key={report.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleReportClick(report)}
+                    >
                       <TableCell className="font-medium">
                         {report.subject}
                       </TableCell>
                       <TableCell>{report.reportedBy}</TableCell>
                       <TableCell>
-                        {new Date(report.reportedDate).toLocaleDateString(
-                          "tr-TR"
-                        )}
+                        {new Date(report.reportedDate).toLocaleDateString("tr-TR")}
                       </TableCell>
                       <TableCell>
                         {ENTITY_TYPE_LABELS[report.entityType]}
@@ -238,53 +259,16 @@ export default function ReportsPage() {
                       <TableCell>{getPriorityBadge(report.priority)}</TableCell>
                       <TableCell>{getStatusBadge(report.status)}</TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link
-                              href={`/dashboard/${
-                                report.entityType === "user"
-                                  ? "users"
-                                  : "events"
-                              }/${report.entityId}`}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          {report.status === "pending" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                handleStatusChange(report.id, "reviewing")
-                              }
-                            >
-                              <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                            </Button>
-                          )}
-                          {(report.status === "pending" ||
-                            report.status === "reviewing") && (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                  handleStatusChange(report.id, "resolved")
-                                }
-                              >
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                  handleStatusChange(report.id, "rejected")
-                                }
-                              >
-                                <XCircle className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleReportClick(report);
+                          }}
+                        >
+                          Detaylar
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -294,6 +278,40 @@ export default function ReportsPage() {
           </Card>
         </Tabs>
       </div>
+
+      {selectedReport && (
+        <ReportDetailModal
+          open={isDetailModalOpen}
+          onOpenChange={setIsDetailModalOpen}
+          report={{
+            id: selectedReport.id.toString(),
+            type: selectedReport.entityType === "event" ? "event" : "user",
+            title: selectedReport.subject,
+            reporter: {
+              id: selectedReport.reportedBy,
+              name: selectedReport.reportedBy,
+              avatar: undefined
+            },
+            reportedItem: {
+              id: selectedReport.entityId.toString(),
+              name: selectedReport.subject,
+              avatar: undefined,
+              date: selectedReport.entityType === "event" ? new Date(selectedReport.reportedDate).toLocaleDateString("tr-TR") : undefined,
+              email: selectedReport.entityType === "user" ? selectedReport.reportedBy : undefined
+            },
+            reason: selectedReport.reason || selectedReport.description,
+            details: selectedReport.details || selectedReport.description,
+            status: selectedReport.status,
+            severity: selectedReport.priority,
+            createdAt: selectedReport.reportedDate,
+            adminNote: selectedReport.adminNote,
+            adminName: selectedReport.adminName,
+            adminActionDate: selectedReport.adminActionDate,
+            isBanned: selectedReport.isBanned
+          }}
+          onStatusChange={handleReportStatusChange}
+        />
+      )}
     </div>
   );
 }

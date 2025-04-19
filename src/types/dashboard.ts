@@ -76,10 +76,16 @@ export interface Report {
   entityId: number;
   priority: ReportPriority;
   status: ReportStatus;
+  reason?: string;
+  details?: string;
+  adminNote?: string;
+  adminName?: string;
+  adminActionDate?: string;
+  isBanned?: boolean;
 }
 
 export type ReportPriority = "high" | "medium" | "low";
-export type ReportStatus = "pending" | "reviewing" | "resolved" | "rejected";
+export type ReportStatus = "pending" | "reviewing" | "resolved" | "rejected" | "dismissed";
 
 // Component Props Types
 export interface EventParticipationChartProps {
