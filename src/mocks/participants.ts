@@ -11,11 +11,11 @@ export const RECENT_PARTICIPANTS: Participant[] = [
     name: "Ahmet Yılmaz",
     email: "ahmet@example.com",
     avatar: "/avatars/01.png",
-    lastEvent: "Futbol Turnuvası",
+    lastEvent: "Futbol Turnuvası DEGIL",
   },
   {
     id: "part-2",
-    name: "Ayşe Demir",
+    name: "Ayşe Demirrrrrrrr",
     email: "ayse@example.com",
     avatar: "/avatars/02.png",
     lastEvent: "Basketbol Karşılaşması",

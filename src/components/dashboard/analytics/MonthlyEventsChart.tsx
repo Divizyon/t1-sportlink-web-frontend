@@ -10,7 +10,7 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
-import { MONTHLY_EVENT_DATA } from "@/mocks/analytics";
+import { MONTHLY_EVENT_DATA } from "@/mockups";
 import { COLORS } from "@/constants";
 import { formatNumber } from "@/lib/uiUtils";
 

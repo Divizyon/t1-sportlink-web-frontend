@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -18,8 +18,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDate } from "@/lib/utils";
-import { REPORT_STATUS_LABELS } from "@/lib/constants";
-import { ReportStatus } from "@/types/dashboard";
+import { ReportStatus } from "@/mockups";
+import { REPORT_STATUS_LABELS } from "@/constants";
 
 interface ReportDetailModalProps {
   open: boolean;
@@ -32,6 +32,7 @@ interface ReportDetailModalProps {
       id: string;
       name: string;
       avatar?: string;
+      email?: string;
     };
     reportedItem: {
       id: string;
@@ -51,7 +52,12 @@ interface ReportDetailModalProps {
     adminActionDate?: string;
     isBanned?: boolean;
   };
-  onStatusChange: (reportId: string, status: ReportStatus, adminNote?: string, banUser?: boolean) => void;
+  onStatusChange: (
+    reportId: string,
+    status: ReportStatus,
+    adminNote?: string,
+    banUser?: boolean
+  ) => void;
 }
 
 export function ReportDetailModal({
@@ -88,7 +94,7 @@ export function ReportDetailModal({
   const handleDismiss = async () => {
     try {
       setLoading(true);
-      await onStatusChange(report.id, "dismissed", adminNote, banUser);
+      await onStatusChange(report.id, "rejected", adminNote, banUser);
       toast({
         title: "Rapor reddedildi",
         description: "Rapor başarıyla reddedildi.",
@@ -108,25 +114,73 @@ export function ReportDetailModal({
   const getSeverityBadge = (severity: "low" | "medium" | "high") => {
     switch (severity) {
       case "low":
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Düşük</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200"
+          >
+            Düşük
+          </Badge>
+        );
       case "medium":
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Orta</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-200"
+          >
+            Orta
+          </Badge>
+        );
       case "high":
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Yüksek</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-200"
+          >
+            Yüksek
+          </Badge>
+        );
     }
   };
 
-  const getStatusBadge = (status: "pending" | "reviewing" | "resolved" | "rejected" | "dismissed") => {
+  const getStatusBadge = (status: ReportStatus) => {
     switch (status) {
       case "pending":
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Beklemede</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-200"
+          >
+            Beklemede
+          </Badge>
+        );
       case "reviewing":
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">İnceleniyor</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200"
+          >
+            İnceleniyor
+          </Badge>
+        );
       case "resolved":
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Çözüldü</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200"
+          >
+            Çözüldü
+          </Badge>
+        );
       case "rejected":
-      case "dismissed":
-        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Reddedildi</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-gray-50 text-gray-700 border-gray-200"
+          >
+            Reddedildi
+          </Badge>
+        );
     }
   };
 
@@ -164,7 +218,9 @@ export function ReportDetailModal({
                 <div>
                   <p className="font-medium">{report.reportedItem.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {report.type === "event" ? report.reportedItem.date : report.reportedItem.email}
+                    {report.type === "event"
+                      ? report.reportedItem.date
+                      : report.reportedItem.email}
                   </p>
                 </div>
               </div>
@@ -197,7 +253,9 @@ export function ReportDetailModal({
             <h3 className="font-medium">Rapor Detayları</h3>
             <div className="rounded-lg border p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Önem Derecesi:</span>
+                <span className="text-sm text-muted-foreground">
+                  Önem Derecesi:
+                </span>
                 {getSeverityBadge(report.severity)}
               </div>
               <div>
@@ -255,4 +313,4 @@ export function ReportDetailModal({
       </DialogContent>
     </Dialog>
   );
-} 
+}

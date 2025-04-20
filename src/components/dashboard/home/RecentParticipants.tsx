@@ -4,25 +4,35 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Participant, RecentParticipantsProps } from "@/types/dashboard";
-import { RECENT_PARTICIPANTS } from "@/mocks";
-import { getUserInitials, sortParticipantsByLastEvent } from "@/lib/userUtils";
+import { getUserInitials } from "@/lib/userUtils";
 import { generateSkeletonArray } from "@/lib/uiUtils";
 import { enrichUserData } from "@/lib/userDataService";
+import { RECENT_PARTICIPANTS, PARTICIPANT_DETAILS } from "@/mockups";
 
 export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Gerçek uygulamada burada API'den veri çekilecek
+    // Simulating API load delay
     setLoading(true);
 
-    // Mock verileri kullanarak yükleme simülasyonu
+    // Simulate loading time
     setTimeout(() => {
-      // Sort participants by their last event using utility function
-      const sortedParticipants =
-        sortParticipantsByLastEvent(RECENT_PARTICIPANTS);
-      setParticipants(sortedParticipants);
+      // Use the RECENT_PARTICIPANTS from mockups instead of generating from USERS
+      const recentParticipants: Participant[] = RECENT_PARTICIPANTS.map(
+        (participant) => ({
+          id: participant.id.toString(),
+          name: participant.name,
+          email: participant.email,
+          avatar:
+            participant.avatar ||
+            `/avatars/0${Math.floor(Math.random() * 9) + 1}.png`,
+          lastEvent: participant.lastEvent,
+        })
+      );
+
+      setParticipants(recentParticipants);
       setLoading(false);
     }, 800);
   }, []);
@@ -47,8 +57,9 @@ export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
   // Handle participant selection with consistent data
   const handleParticipantSelect = (participant: Participant) => {
     if (onUserSelect) {
-      // Enrich participant data for consistent experience
-      const enrichedParticipant = enrichUserData(participant);
+      // Use PARTICIPANT_DETAILS from mockups for enriched data
+      const enrichedParticipant =
+        PARTICIPANT_DETAILS[participant.id] || participant;
       onUserSelect(enrichedParticipant as any);
     }
   };

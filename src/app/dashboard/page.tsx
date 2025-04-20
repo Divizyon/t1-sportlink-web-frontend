@@ -73,9 +73,8 @@ import {
   REPORT_FILTER_LABELS,
   REPORT_FILTERS,
 } from "@/constants/dashboard";
-import { ReportPriority, ReportStatus, ModalType } from "@/types";
+import { ModalType } from "@/types";
 import { REPORTS } from "@/mocks/reports";
-import { USERS } from "@/mocks/users";
 import Link from "next/link";
 
 // Raporlar için demo verileri
@@ -111,6 +110,7 @@ interface Event {
   createdAt?: string;
 }
 
+// Doğru Report interface'ini tanımlayalım
 interface Report {
   id: number;
   subject: string;
@@ -142,9 +142,7 @@ export default function DashboardPage() {
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
 
-  const [allReports, setAllReports] = useState<Report[]>(REPORTS);
-
-  const demoUsers = USERS;
+  const [allReports, setAllReports] = useState(REPORTS);
 
   const openModal = (type: ModalType, entityData: any = null) => {
     if (
@@ -251,7 +249,9 @@ export default function DashboardPage() {
   const handleStatusChange = (reportId: number, newStatus: Status) => {
     setAllReports((prevReports) =>
       prevReports.map((report) =>
-        report.id === reportId ? { ...report, status: newStatus } : report
+        report.id === reportId
+          ? { ...report, status: newStatus as any }
+          : report
       )
     );
     toast({
@@ -365,14 +365,12 @@ export default function DashboardPage() {
                   />
                 </CardContent>
                 <CardFooter>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => openModal(MODAL_TYPES.USERS)}
-                  >
-                    <Users className="mr-2 h-4 w-4" />
-                    {UI_TEXT.BUTTON_TEXT.MANAGE_ALL_USERS}
-                  </Button>
+                  <Link href="/dashboard/users" style={{ width: "100%" }}>
+                    <Button variant="outline" className="w-full">
+                      <Users className="mr-2 h-4 w-4" />
+                      {UI_TEXT.BUTTON_TEXT.MANAGE_ALL_USERS}
+                    </Button>
+                  </Link>
                 </CardFooter>
               </Card>
             </div>
@@ -433,14 +431,12 @@ export default function DashboardPage() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => openModal(MODAL_TYPES.ACTIVE_USERS)}
-                  >
-                    <Users className="mr-2 h-4 w-4" />
-                    {UI_TEXT.BUTTON_TEXT.USER_STATS}
-                  </Button>
+                  <Link href="/dashboard/events" style={{ width: "100%" }}>
+                    <Button variant="outline" className="w-full">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Tüm Etkinlikleri Görüntüle
+                    </Button>
+                  </Link>
                 </CardFooter>
               </Card>
             </div>

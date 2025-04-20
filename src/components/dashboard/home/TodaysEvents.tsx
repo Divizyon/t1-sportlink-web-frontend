@@ -10,7 +10,7 @@ import {
   TodaysEventsProps,
   Participant,
 } from "@/types/dashboard";
-import { TODAY_EVENTS, EVENT_PARTICIPANTS } from "@/mocks";
+import { TODAY_EVENTS, UPCOMING_EVENTS, EVENT_PARTICIPANTS } from "@/mockups";
 import {
   formatEventTime,
   formatEventLocation,
@@ -28,21 +28,32 @@ export function TodaysEvents({
   onUserSelect,
   categories = [],
 }: TodaysEventsProps) {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedEvent, setExpandedEvent] = useState<string | number | null>(
     null
   );
 
   useEffect(() => {
-    // Gerçek uygulamada burada API'den veri çekilecek
+    // Simulating API load delay
     setLoading(true);
 
-    // Mock verileri kullanarak yükleme simülasyonu
+    // Set timeout to simulate loading
     setTimeout(() => {
-      // Kategoriye göre filtreleme
-      const filteredEvents = filterEvents(TODAY_EVENTS, categories);
-      setEvents(filteredEvents);
+      // Get events from mockups
+      let todayEvents = [...TODAY_EVENTS];
+
+      // Filter by categories if specified
+      if (categories && categories.length > 0) {
+        todayEvents = todayEvents.filter((event) =>
+          categories.includes(event.category)
+        );
+      }
+
+      // Note: In a real-world scenario, we'd convert the TodaysEventMock to Event type
+      // Since we're using mock data directly in the component,
+      // we'll use the todayEvents structure as is
+      setEvents(todayEvents);
       setLoading(false);
     }, 800);
   }, [categories]);
@@ -92,7 +103,13 @@ export function TodaysEvents({
         <div key={event.id} className="space-y-1">
           <div
             className="flex items-start gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50 cursor-pointer"
-            onClick={() => onEventSelect && onEventSelect(event)}
+            onClick={() =>
+              onEventSelect &&
+              onEventSelect({
+                ...event,
+                date: new Date(), // Add the date property required by Event type
+              } as Event)
+            }
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
               <Calendar className="h-5 w-5 text-primary" />
@@ -148,8 +165,7 @@ export function TodaysEvents({
                     className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded-md cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onUserSelect &&
-                        onUserSelect(enrichUserData(participant) as any);
+                      onUserSelect && onUserSelect(participant as Participant);
                     }}
                   >
                     <Avatar className="h-6 w-6">

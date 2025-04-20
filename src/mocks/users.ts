@@ -8,7 +8,7 @@ import { User } from "@/types/dashboard";
 export const USERS: User[] = [
   {
     id: 1,
-    name: "Ahmet Yılmaz",
+    name: "Ahmet Yılmaz BEN BURDAYIM",
     email: "ahmet@example.com",
     role: "admin",
     status: "active",

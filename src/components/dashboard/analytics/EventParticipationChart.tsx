@@ -30,10 +30,15 @@ import {
   DAYS_OF_WEEK,
   LOADING_DELAYS,
 } from "@/constants";
+
+// Import from mockups instead of mocks
 import {
-  generateDailyChartData,
-  generateCategoryData,
-} from "@/mocks/analytics";
+  DAILY_EVENT_DATA,
+  filterEventDataByCategories,
+  EVENT_CATEGORY_DISTRIBUTION,
+  EVENT_STATUS_COUNTS,
+} from "@/mockups";
+
 import { calculatePercentage, formatPercentage } from "@/lib/dashboardUtils";
 import { applyColorOpacity } from "@/lib/uiUtils";
 
@@ -52,14 +57,14 @@ export function EventParticipationChart({
 
     // Mock verileri yükleme simülasyonu
     setTimeout(() => {
-      // Mock veri jeneratörlerini kullan
-      const mockData = generateDailyChartData(categories);
-      const mockCategoryData = generateCategoryData(
-        categories.length > 0 ? categories.length : 8
-      );
+      // Use mockups data instead of generators from mocks
+      const mockData =
+        categories.length > 0
+          ? filterEventDataByCategories(categories)
+          : DAILY_EVENT_DATA;
 
+      setCategoryData(EVENT_CATEGORY_DISTRIBUTION);
       setData(mockData);
-      setCategoryData(mockCategoryData);
       setLoading(false);
     }, LOADING_DELAYS.long);
   }, [categories]);
@@ -71,17 +76,19 @@ export function EventParticipationChart({
     0
   );
 
-  // Duruma göre etkinlik sayılarını hesapla
-  const statusCounts = data.reduce(
-    (counts, day) => {
-      counts.approved += day.onaylanan;
-      counts.pending += day.bekleyen;
-      counts.rejected += day.reddedilen;
-      counts.completed += day.tamamlanan;
-      return counts;
-    },
-    { approved: 0, pending: 0, rejected: 0, completed: 0 }
-  );
+  // Use EVENT_STATUS_COUNTS if available, otherwise calculate from data
+  const statusCounts =
+    EVENT_STATUS_COUNTS ||
+    data.reduce(
+      (counts, day) => {
+        counts.approved += day.onaylanan;
+        counts.pending += day.bekleyen;
+        counts.rejected += day.reddedilen;
+        counts.completed += day.tamamlanan;
+        return counts;
+      },
+      { approved: 0, pending: 0, rejected: 0, completed: 0 }
+    );
 
   // Kategorilere göre toplam etkinlik sayısı
   const totalCategoryEvents = categoryData.reduce(
@@ -120,7 +127,12 @@ export function EventParticipationChart({
               >
                 Onaylı: {statusCounts.approved}{" "}
                 <span className="text-xs ml-1">
-                  ({calculatePercentage(statusCounts.approved, totalEvents)}%)
+                  (
+                  {calculatePercentage(
+                    statusCounts.approved,
+                    statusCounts.total || totalEvents
+                  )}
+                  %)
                 </span>
               </Badge>
             </div>
@@ -131,7 +143,12 @@ export function EventParticipationChart({
               >
                 Bekleyen: {statusCounts.pending}{" "}
                 <span className="text-xs ml-1">
-                  ({calculatePercentage(statusCounts.pending, totalEvents)}%)
+                  (
+                  {calculatePercentage(
+                    statusCounts.pending,
+                    statusCounts.total || totalEvents
+                  )}
+                  %)
                 </span>
               </Badge>
             </div>
@@ -142,7 +159,12 @@ export function EventParticipationChart({
               >
                 Reddedilen: {statusCounts.rejected}{" "}
                 <span className="text-xs ml-1">
-                  ({calculatePercentage(statusCounts.rejected, totalEvents)}%)
+                  (
+                  {calculatePercentage(
+                    statusCounts.rejected,
+                    statusCounts.total || totalEvents
+                  )}
+                  %)
                 </span>
               </Badge>
             </div>
@@ -153,7 +175,12 @@ export function EventParticipationChart({
               >
                 Tamamlanan: {statusCounts.completed}{" "}
                 <span className="text-xs ml-1">
-                  ({calculatePercentage(statusCounts.completed, totalEvents)}%)
+                  (
+                  {calculatePercentage(
+                    statusCounts.completed,
+                    statusCounts.total || totalEvents
+                  )}
+                  %)
                 </span>
               </Badge>
             </div>
@@ -204,56 +231,69 @@ export function EventParticipationChart({
         </TabsContent>
 
         <TabsContent value="category">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 h-[300px]">
-            <ResponsiveContainer width="100%" height={280}>
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
                   data={categoryData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  outerRadius={100}
+                  outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
                   nameKey="name"
                   label={({ name, percent }) =>
-                    `${name}: ${(percent * 100).toFixed(0)}%`
+                    `${name} ${(percent * 100).toFixed(0)}%`
                   }
                 >
                   {categoryData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.color}
-                      stroke={entry.color}
-                    />
+                    <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value, name) => [`${value} Etkinlik`, name]}
+                  formatter={(value) => [`${value} Etkinlik`, "Toplam"]}
                 />
               </PieChart>
             </ResponsiveContainer>
 
-            <div className="flex flex-wrap gap-2 justify-center sm:flex-col sm:min-w-[150px]">
-              {categoryData.map((entry, index) => (
-                <Badge
-                  key={`legend-${index}`}
-                  variant="outline"
-                  className="flex items-center gap-1"
-                  style={{
-                    backgroundColor: applyColorOpacity(entry.color, 0.2),
-                    color: entry.color,
-                    borderColor: entry.color,
-                  }}
-                >
-                  {entry.name}:{" "}
-                  <span className="ml-1 font-semibold">
-                    {formatPercentage(
-                      calculatePercentage(entry.value, totalCategoryEvents)
-                    )}
-                  </span>
-                </Badge>
-              ))}
+            <div className="px-4 space-y-2 mt-4 md:mt-0">
+              <h3 className="text-sm font-medium">En Popüler Kategoriler</h3>
+              <div className="space-y-4">
+                {categoryData.slice(0, 5).map((category, index) => (
+                  <div key={index} className="flex items-center">
+                    <div
+                      className="w-3 h-3 rounded-full mr-2"
+                      style={{ backgroundColor: category.color }}
+                    />
+                    <div className="flex-1">
+                      <div className="text-sm">{category.name}</div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className="h-1.5 rounded-full"
+                          style={{
+                            width: `${
+                              (category.value /
+                                Math.max(...categoryData.map((d) => d.value))) *
+                              100
+                            }%`,
+                            backgroundColor: applyColorOpacity(
+                              category.color,
+                              0.7
+                            ),
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="ml-2 text-sm font-medium">
+                      {((category.value / totalCategoryEvents) * 100).toFixed(
+                        1
+                      )}
+                      %
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </TabsContent>
