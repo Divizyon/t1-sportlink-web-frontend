@@ -50,6 +50,10 @@ import {
   REPORT_BY_ENTITY,
   ReportStatus,
 } from "@/mockups";
+import {
+  REPORT_REASON_OPTIONS,
+  getReportUpdateModalData,
+} from "@/mockups/components/modals/reportModal";
 
 interface EventReport {
   id: string;
@@ -101,11 +105,10 @@ const mapStatusFromSchema = (
   return "pending"; // Default case
 };
 
-const mapStatusToSchema = (
-  status: string
-): "pending" | "reviewing" | "resolved" | "rejected" => {
+const mapStatusToSchema = (status: string): ReportStatus => {
   if (status === "dismissed") return "rejected";
   if (status === "resolved") return "resolved";
+  if (status === "pending") return "reviewing";
   return "pending"; // Default case
 };
 
@@ -651,10 +654,10 @@ export function ReportsModal({
                               />
                             </div>
                             <div className="w-[30%] truncate font-medium">
-                              {report.eventTitle}
+                              {isEventReport(report) ? report.eventTitle : ""}
                             </div>
                             <div className="w-[15%] text-sm text-muted-foreground">
-                              {report.eventDate}
+                              {isEventReport(report) ? report.eventDate : ""}
                             </div>
                             <div className="w-[20%] flex items-center gap-2">
                               <Avatar className="h-6 w-6">
@@ -751,17 +754,25 @@ export function ReportsModal({
                             </div>
                             <div className="w-[30%] flex items-center gap-2">
                               <Avatar className="h-6 w-6">
-                                <AvatarImage src={report.userAvatar} />
+                                <AvatarImage
+                                  src={
+                                    isUserReport(report)
+                                      ? report.userAvatar
+                                      : undefined
+                                  }
+                                />
                                 <AvatarFallback>
-                                  {report.userName.charAt(0)}
+                                  {isUserReport(report)
+                                    ? report.userName.charAt(0)
+                                    : ""}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="truncate">
                                 <div className="font-medium">
-                                  {report.userName}
+                                  {isUserReport(report) ? report.userName : ""}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                  {report.userEmail}
+                                  {isUserReport(report) ? report.userEmail : ""}
                                 </div>
                               </div>
                             </div>
@@ -837,17 +848,12 @@ export function ReportsModal({
             },
             reason: selectedReport.reason,
             details: selectedReport.details || "",
-            status: mapStatusToSchema(selectedReport.status) as ReportStatus,
+            status: mapStatusToSchema(selectedReport.status),
             severity: selectedReport.severity,
             createdAt: selectedReport.createdAt,
           }}
-          onStatusChange={(newStatus, adminNote, banUser) =>
-            handleReportStatusChange(
-              selectedReport.id,
-              newStatus,
-              adminNote,
-              banUser
-            )
+          onStatusChange={(reportId, status, adminNote, banUser) =>
+            handleReportStatusChange(reportId, status, adminNote, banUser)
           }
         />
       )}

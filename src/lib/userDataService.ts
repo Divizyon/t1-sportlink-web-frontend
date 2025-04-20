@@ -19,11 +19,34 @@
  * const completeUser = enrichUserData(partialUserData);
  */
 
-import {
-  DEFAULT_USER_EVENTS,
-  USER_DETAILS,
-  DETAILED_PARTICIPANTS,
-} from "@/mocks";
+import { USER_SCHEMA } from "@/mockups/schemas/userSchema";
+import { EVENT_SCHEMA } from "@/mockups/schemas/eventSchema";
+
+// Use the schema data to create the structures we need
+const USER_DETAILS = USER_SCHEMA.users;
+
+// Basic default user events
+const DEFAULT_USER_EVENTS = EVENT_SCHEMA.events.slice(0, 3).map((event) => ({
+  id: event.id,
+  title: event.title,
+  date: event.startDate,
+  status: event.status,
+}));
+
+// Create a map of participant details from users
+const DETAILED_PARTICIPANTS: Record<string, any> = {};
+USER_SCHEMA.users.forEach((user) => {
+  DETAILED_PARTICIPANTS[user.id] = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+    role: user.role,
+    status: user.status,
+    lastActive: user.lastActive,
+    joinDate: user.joinDate,
+  };
+});
 
 // Common interface for all user data
 export interface CommonUser {
@@ -79,11 +102,19 @@ export function enrichUserData(participant: any): CommonUser {
         u.name.toLowerCase() === participant.name?.toLowerCase()
     ) || USER_DETAILS[0];
 
-  // Type assertions to handle missing properties in USER_DETAILS
+  // Extract relevant data from user profile
+  const userGender = matchingUser.profile?.gender
+    ? matchingUser.profile.gender === "male"
+      ? "Erkek"
+      : matchingUser.profile.gender === "female"
+      ? "Kadın"
+      : "Diğer"
+    : "Belirtilmemiş";
+
   const userWithDefaults = {
     ...matchingUser,
-    gender: (matchingUser as any).gender || undefined,
-    age: (matchingUser as any).age || undefined,
+    gender: userGender,
+    age: 28, // Default age since it's not in the schema
   };
 
   // Merge the data together with participant data taking precedence
@@ -99,14 +130,14 @@ export function enrichUserData(participant: any): CommonUser {
 
     // Enhanced data for consistent experience
     status: participant.status || userWithDefaults.status || "active",
-    phone: participant.phone || "+90 555 123 4567",
-    gender: participant.gender || (userWithDefaults as any).gender || "Erkek",
-    age: participant.age || (userWithDefaults as any).age || 28,
+    phone:
+      participant.phone ||
+      userWithDefaults.profile?.phoneNumber ||
+      "+90 555 123 4567",
+    gender: participant.gender || userGender,
+    age: participant.age || 28,
     registeredDate:
-      participant.registeredDate ||
-      userWithDefaults.registeredDate ||
-      userWithDefaults.joinDate ||
-      "01.01.2023",
+      participant.registeredDate || userWithDefaults.joinDate || "01.01.2023",
     lastActive:
       participant.lastEvent ||
       participant.lastActive ||
@@ -115,20 +146,21 @@ export function enrichUserData(participant: any): CommonUser {
     role: participant.role || userWithDefaults.role || "üye",
     bio:
       participant.bio ||
+      userWithDefaults.profile?.bio ||
       "Spor ve açık hava aktivitelerine meraklı bir profesyonel.",
-    address: participant.address || "İstanbul, Türkiye",
-    favoriteCategories: participant.favoriteCategories || [
-      "Futbol",
-      "Koşu",
-      "Bisiklet",
-    ],
+    address:
+      participant.address ||
+      userWithDefaults.profile?.location ||
+      "İstanbul, Türkiye",
+    favoriteCategories: participant.favoriteCategories ||
+      userWithDefaults.profile?.interests || ["Futbol", "Koşu", "Bisiklet"],
 
     // Event data
     events: participant.events || DEFAULT_USER_EVENTS,
     eventCount: participant.eventCount || DEFAULT_USER_EVENTS.length,
     completedEvents:
       participant.completedEvents ||
-      DEFAULT_USER_EVENTS.filter((e) => e.status === "completed").length,
+      DEFAULT_USER_EVENTS.filter((e: any) => e.status === "completed").length,
   };
 }
 

@@ -1,11 +1,23 @@
 import { useState, useEffect, useMemo } from "react";
-import { User } from "@/types";
-import { USERS } from "@/mocks/users";
-import { sortUsersByActivity } from "@/lib/userUtils";
+import {
+  USER_SCHEMA,
+  UserRole,
+  UserStatus,
+} from "@/mockups/schemas/userSchema";
+import {
+  UserListItemMock,
+  filterUsersByRole,
+  filterUsersByStatus,
+  sortUsersByJoinDate,
+  sortUsersByLastActive,
+  searchUsers,
+  ROLE_OPTIONS,
+  STATUS_OPTIONS,
+} from "@/mockups/components/users/userList";
 
 interface UserFilters {
-  status?: string | string[];
-  role?: string | string[];
+  status?: UserStatus | "all" | UserStatus[];
+  role?: UserRole | "all" | UserRole[];
   search?: string;
   dateRange?: {
     start: Date;
@@ -14,7 +26,7 @@ interface UserFilters {
 }
 
 export function useUsers(initialFilters: UserFilters = {}) {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserListItemMock[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [filters, setFilters] = useState<UserFilters>(initialFilters);
@@ -29,8 +41,22 @@ export function useUsers(initialFilters: UserFilters = {}) {
         // const data = await response.json();
         // setUsers(data);
 
-        // Using mock data for now
-        setUsers(USERS);
+        // Using mock data from the new mockups structure
+        const allUsers = USER_SCHEMA.users.map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar || "/avatars/default.png",
+          role: user.role,
+          status: user.status,
+          joinDate: user.joinDate,
+          lastActive: user.lastActive,
+          eventsAttended: user.stats.eventsAttended,
+          eventsOrganized: user.stats.eventsOrganized,
+          membershipType: user.membership?.type,
+        }));
+
+        setUsers(allUsers);
         setLoading(false);
       } catch (err) {
         setError(
@@ -45,55 +71,57 @@ export function useUsers(initialFilters: UserFilters = {}) {
 
   // Apply filters to users
   const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      // Filter by status
-      if (filters.status) {
-        if (Array.isArray(filters.status)) {
-          if (
-            filters.status.length > 0 &&
-            !filters.status.includes(user.status)
-          ) {
-            return false;
-          }
-        } else if (filters.status !== "all" && user.status !== filters.status) {
-          return false;
-        }
-      }
+    let filtered = [...users];
 
-      // Filter by role
-      if (filters.role) {
-        if (Array.isArray(filters.role)) {
-          if (filters.role.length > 0 && !filters.role.includes(user.role)) {
-            return false;
-          }
-        } else if (filters.role !== "all" && user.role !== filters.role) {
-          return false;
+    // Filter by status
+    if (filters.status) {
+      if (Array.isArray(filters.status)) {
+        if (filters.status.length > 0) {
+          filtered = filtered.filter((user) =>
+            (filters.status as UserStatus[]).includes(user.status as UserStatus)
+          );
         }
+      } else if (filters.status !== "all") {
+        filtered = filtered.filter((user) => user.status === filters.status);
       }
+    }
 
-      // Filter by search term
-      if (filters.search && filters.search.trim() !== "") {
-        const searchTerm = filters.search.toLowerCase();
-        return (
+    // Filter by role
+    if (filters.role) {
+      if (Array.isArray(filters.role)) {
+        if (filters.role.length > 0) {
+          filtered = filtered.filter((user) =>
+            (filters.role as UserRole[]).includes(user.role as UserRole)
+          );
+        }
+      } else if (filters.role !== "all") {
+        filtered = filtered.filter((user) => user.role === filters.role);
+      }
+    }
+
+    // Filter by search term
+    if (filters.search && filters.search.trim() !== "") {
+      const searchTerm = filters.search.toLowerCase();
+      filtered = filtered.filter(
+        (user) =>
           user.name.toLowerCase().includes(searchTerm) ||
           user.email.toLowerCase().includes(searchTerm) ||
           user.role.toLowerCase().includes(searchTerm)
-        );
-      }
+      );
+    }
 
-      // Filter by date range (join date)
-      if (filters.dateRange) {
+    // Filter by date range (join date)
+    if (filters.dateRange) {
+      filtered = filtered.filter((user) => {
         const joinDate = new Date(user.joinDate);
-        if (
-          joinDate < filters.dateRange.start ||
-          joinDate > filters.dateRange.end
-        ) {
-          return false;
-        }
-      }
+        return (
+          joinDate >= filters.dateRange!.start &&
+          joinDate <= filters.dateRange!.end
+        );
+      });
+    }
 
-      return true;
-    });
+    return filtered;
   }, [users, filters]);
 
   // Get active users (those active in the last 7 days)
@@ -102,7 +130,6 @@ export function useUsers(initialFilters: UserFilters = {}) {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     return filteredUsers.filter((user) => {
-      if (!user.lastActive) return false;
       const lastActive = new Date(user.lastActive);
       return lastActive >= sevenDaysAgo;
     });
@@ -121,7 +148,7 @@ export function useUsers(initialFilters: UserFilters = {}) {
 
   // Get sorted users by activity
   const usersByActivity = useMemo(() => {
-    return sortUsersByActivity([...filteredUsers]);
+    return sortUsersByLastActive(filteredUsers);
   }, [filteredUsers]);
 
   // Get user statistics
@@ -160,7 +187,7 @@ export function useUsers(initialFilters: UserFilters = {}) {
   }, [users, activeUsers.length, recentUsers.length]);
 
   // Set status filter
-  const setStatusFilter = (status: string | string[]) => {
+  const setStatusFilter = (status: UserStatus | "all" | UserStatus[]) => {
     setFilters((prev) => ({
       ...prev,
       status,
@@ -168,7 +195,7 @@ export function useUsers(initialFilters: UserFilters = {}) {
   };
 
   // Set role filter
-  const setRoleFilter = (role: string | string[]) => {
+  const setRoleFilter = (role: UserRole | "all" | UserRole[]) => {
     setFilters((prev) => ({
       ...prev,
       role,
@@ -206,6 +233,10 @@ export function useUsers(initialFilters: UserFilters = {}) {
     loading,
     error,
     filters,
+    filterOptions: {
+      role: ROLE_OPTIONS,
+      status: STATUS_OPTIONS,
+    },
     setStatusFilter,
     setRoleFilter,
     setSearchFilter,

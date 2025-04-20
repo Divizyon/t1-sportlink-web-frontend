@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
-import { USERS } from "@/mocks";
+import { USER_SCHEMA } from "@/mockups/schemas/userSchema";
 
 interface User {
   id: string;
@@ -57,8 +57,8 @@ export default function UsersPage() {
 
   // Convert the USERS from mock data to the expected format
   const [users, setUsers] = useState<User[]>(
-    USERS.map((user) => ({
-      id: user.id.toString(),
+    USER_SCHEMA.users.map((user) => ({
+      id: user.id,
       name: user.name,
       email: user.email,
       role: user.role as "bireysel_kullanici" | "antrenor" | "kulup_uyesi",

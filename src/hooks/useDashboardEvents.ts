@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Event, EventStatus } from "@/types";
 import { EVENT_CATEGORIES } from "@/constants/dashboard";
-import { TODAY_EVENTS, EVENT_DETAILS } from "@/mocks/events";
+import { TODAY_EVENTS } from "@/mockups/components/dashboard/todaysEvents";
+import { EVENT_SCHEMA } from "@/mockups/schemas/eventSchema";
 import {
   groupEventsByDay,
   sortEventsByDate,
@@ -35,14 +36,24 @@ export function useDashboardEvents({
         // In production, replace with actual API call
         // const response = await fetch('/api/events');
         // const data = await response.json();
-        
-        // Using mock data - combine and deduplicate events
-        const allEvents = [...TODAY_EVENTS, ...EVENT_DETAILS];
-        const uniqueEvents = allEvents.filter((event, index, self) =>
-          index === self.findIndex((e) => e.id === event.id)
-        );
-        
-        setEvents(uniqueEvents);
+
+        // Map the schema events to the Event type needed by the component
+        const mappedEvents: Event[] = EVENT_SCHEMA.events.map((event) => ({
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          date: new Date(event.startDate), // Convert string to Date object
+          time: event.time,
+          location: event.location.name,
+          category: event.category,
+          maxParticipants: event.maxParticipants,
+          currentParticipants: event.participants,
+          status: event.status as EventStatus,
+          organizer: event.organizer.name,
+          participants: event.participants,
+        }));
+
+        setEvents(mappedEvents);
         setLoading(false);
       } catch (err) {
         setError(

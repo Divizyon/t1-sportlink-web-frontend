@@ -1,0 +1,42 @@
+"use client"
+
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ChevronLeft } from "lucide-react"
+
+export default function EventDetailPage({ params }: { params: { id: string } }) {
+  const router = useRouter()
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <div className="border-b">
+        <div className="flex h-16 items-center px-4">
+          <h1 className="text-xl font-bold">Sport Link</h1>
+        </div>
+      </div>
+      <div className="flex-1 space-y-4 p-8 pt-6">
+        <div className="flex items-center justify-between space-y-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push('/dashboard/events')}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Geri
+          </Button>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Event Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>This is a placeholder for event #{params.id}.</p>
+            <p>The full event detail page is temporarily disabled during mockup migration testing.</p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+} 

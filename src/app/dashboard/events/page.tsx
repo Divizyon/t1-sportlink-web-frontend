@@ -27,7 +27,7 @@ import { CategoryFilterDropdown } from "@/components/CategoryFilterDropdown";
 import { Plus } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
-import { ALL_EVENTS } from "@/mocks/events";
+import { EVENT_SCHEMA } from "@/mockups/schemas/eventSchema";
 import { User, Event as DashboardEvent, EventStatus } from "@/types/dashboard";
 
 // Kategori renkleri
@@ -136,11 +136,20 @@ export default function EventsPage() {
 
   // Convert the ALL_EVENTS from mock data to the format needed by this component
   const [events, setEvents] = useState<AppEvent[]>(
-    ALL_EVENTS.map((event) => ({
-      ...event,
-      date: new Date(event.date),
-      // Ensure status is one of the allowed values
+    EVENT_SCHEMA.events.map((event) => ({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      date: new Date(event.startDate),
+      time: event.time,
+      location: event.location.name,
+      category: event.category,
+      participants: event.participants,
+      maxParticipants: event.maxParticipants,
       status: event.status as EventStatus,
+      organizer: event.organizer.name,
+      image: event.image,
+      createdAt: event.createdAt,
     }))
   );
 

@@ -1,11 +1,12 @@
 /**
- * Today's Events Mockup Data
+ * Today's Events Mock Data
  *
- * This file contains mockup data specifically for the TodaysEvents component
- * (/components/dashboard/home/TodaysEvents.tsx).
+ * This file provides mock data for the TodaysEvents component.
  *
- * It uses a subset of the main event schema to simulate the specific data
- * needed for this component.
+ * Component Reference:
+ * - TODAY_EVENTS: Used in src/components/dashboard/home/TodaysEvents.tsx for main event listing
+ * - UPCOMING_EVENTS: Used in src/components/dashboard/home/TodaysEvents.tsx for secondary event listing
+ * - EVENT_PARTICIPANTS: Used in src/components/dashboard/home/TodaysEvents.tsx for expandable participant lists
  */
 
 import { EVENT_SCHEMA, EventStatus } from "../../schemas/eventSchema";

@@ -28,12 +28,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Flag, AlertTriangle, CheckCircle, XCircle, Eye, ChevronRight } from "lucide-react";
+import {
+  Flag,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Eye,
+  ChevronRight,
+} from "lucide-react";
 import { UserNav } from "@/components/nav/UserNav";
 import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
 import { Report, ReportPriority, ReportStatus } from "@/types/dashboard";
-import { DASHBOARD_REPORTS } from "@/mocks/dashboard-reports";
+import {
+  RECENT_DASHBOARD_REPORTS,
+  DashboardReport,
+} from "@/mockups/components/dashboard/dashboardReports";
 import {
   DASHBOARD_TAB_LABELS,
   ENTITY_TYPE_LABELS,
@@ -45,6 +55,16 @@ import {
 } from "@/constants/dashboard";
 import { ReportDetailModal } from "@/components/modals/ReportDetailModal";
 import { formatDate } from "@/lib/utils";
+
+// Convert the DashboardReport to Report type
+const DASHBOARD_REPORTS: Report[] = RECENT_DASHBOARD_REPORTS.map((report) => ({
+  ...report,
+  id:
+    typeof report.id === "string" ? parseInt(report.id) : (report.id as number),
+  entityId: 0, // Default value since DashboardReport doesn't have entityId
+  entityType: report.entityType as "user" | "event",
+  status: report.status as ReportStatus, // Handle any type differences
+}));
 
 export default function ReportsPage() {
   const { toast } = useToast();
@@ -60,7 +80,10 @@ export default function ReportsPage() {
   // Filtreleme işlemi
   const filteredReports = DASHBOARD_REPORTS.filter((report) => {
     // Tür filtreleme
-    if (filter !== REPORT_FILTERS.all && report.entityType !== filter.slice(0, -1)) {
+    if (
+      filter !== REPORT_FILTERS.all &&
+      report.entityType !== filter.slice(0, -1)
+    ) {
       return false;
     }
 
@@ -80,7 +103,9 @@ export default function ReportsPage() {
   const getPriorityBadge = (priority: ReportPriority) => {
     switch (priority) {
       case "high":
-        return <Badge variant="destructive">{REPORT_PRIORITY_LABELS.high}</Badge>;
+        return (
+          <Badge variant="destructive">{REPORT_PRIORITY_LABELS.high}</Badge>
+        );
       case "medium":
         return <Badge variant="default">{REPORT_PRIORITY_LABELS.medium}</Badge>;
       case "low":
@@ -91,13 +116,27 @@ export default function ReportsPage() {
   const getStatusBadge = (status: ReportStatus) => {
     switch (status) {
       case "pending":
-        return <Badge className="bg-yellow-500">{REPORT_STATUS_LABELS.pending}</Badge>;
+        return (
+          <Badge className="bg-yellow-500">
+            {REPORT_STATUS_LABELS.pending}
+          </Badge>
+        );
       case "reviewing":
-        return <Badge className="bg-blue-500">{REPORT_STATUS_LABELS.reviewing}</Badge>;
+        return (
+          <Badge className="bg-blue-500">
+            {REPORT_STATUS_LABELS.reviewing}
+          </Badge>
+        );
       case "resolved":
-        return <Badge className="bg-green-500">{REPORT_STATUS_LABELS.resolved}</Badge>;
+        return (
+          <Badge className="bg-green-500">
+            {REPORT_STATUS_LABELS.resolved}
+          </Badge>
+        );
       case "rejected":
-        return <Badge className="bg-gray-500">{REPORT_STATUS_LABELS.rejected}</Badge>;
+        return (
+          <Badge className="bg-gray-500">{REPORT_STATUS_LABELS.rejected}</Badge>
+        );
     }
   };
 
@@ -131,7 +170,9 @@ export default function ReportsPage() {
       setAllReports(updatedReports);
       toast({
         title: "Başarılı",
-        description: `Rapor ${status === "resolved" ? "çözüldü" : "reddedildi"}`,
+        description: `Rapor ${
+          status === "resolved" ? "çözüldü" : "reddedildi"
+        }`,
       });
     } catch (error) {
       toast({
@@ -193,9 +234,15 @@ export default function ReportsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Öncelikler</SelectItem>
-                  <SelectItem value="high">{REPORT_PRIORITY_LABELS.high}</SelectItem>
-                  <SelectItem value="medium">{REPORT_PRIORITY_LABELS.medium}</SelectItem>
-                  <SelectItem value="low">{REPORT_PRIORITY_LABELS.low}</SelectItem>
+                  <SelectItem value="high">
+                    {REPORT_PRIORITY_LABELS.high}
+                  </SelectItem>
+                  <SelectItem value="medium">
+                    {REPORT_PRIORITY_LABELS.medium}
+                  </SelectItem>
+                  <SelectItem value="low">
+                    {REPORT_PRIORITY_LABELS.low}
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -210,10 +257,18 @@ export default function ReportsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Durumlar</SelectItem>
-                  <SelectItem value="pending">{REPORT_STATUS_LABELS.pending}</SelectItem>
-                  <SelectItem value="reviewing">{REPORT_STATUS_LABELS.reviewing}</SelectItem>
-                  <SelectItem value="resolved">{REPORT_STATUS_LABELS.resolved}</SelectItem>
-                  <SelectItem value="rejected">{REPORT_STATUS_LABELS.rejected}</SelectItem>
+                  <SelectItem value="pending">
+                    {REPORT_STATUS_LABELS.pending}
+                  </SelectItem>
+                  <SelectItem value="reviewing">
+                    {REPORT_STATUS_LABELS.reviewing}
+                  </SelectItem>
+                  <SelectItem value="resolved">
+                    {REPORT_STATUS_LABELS.resolved}
+                  </SelectItem>
+                  <SelectItem value="rejected">
+                    {REPORT_STATUS_LABELS.rejected}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -241,7 +296,7 @@ export default function ReportsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredReports.map((report) => (
-                    <TableRow 
+                    <TableRow
                       key={report.id}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleReportClick(report)}
@@ -251,7 +306,9 @@ export default function ReportsPage() {
                       </TableCell>
                       <TableCell>{report.reportedBy}</TableCell>
                       <TableCell>
-                        {new Date(report.reportedDate).toLocaleDateString("tr-TR")}
+                        {new Date(report.reportedDate).toLocaleDateString(
+                          "tr-TR"
+                        )}
                       </TableCell>
                       <TableCell>
                         {ENTITY_TYPE_LABELS[report.entityType]}
@@ -290,14 +347,22 @@ export default function ReportsPage() {
             reporter: {
               id: selectedReport.reportedBy,
               name: selectedReport.reportedBy,
-              avatar: undefined
+              avatar: undefined,
             },
             reportedItem: {
               id: selectedReport.entityId.toString(),
               name: selectedReport.subject,
               avatar: undefined,
-              date: selectedReport.entityType === "event" ? new Date(selectedReport.reportedDate).toLocaleDateString("tr-TR") : undefined,
-              email: selectedReport.entityType === "user" ? selectedReport.reportedBy : undefined
+              date:
+                selectedReport.entityType === "event"
+                  ? new Date(selectedReport.reportedDate).toLocaleDateString(
+                      "tr-TR"
+                    )
+                  : undefined,
+              email:
+                selectedReport.entityType === "user"
+                  ? selectedReport.reportedBy
+                  : undefined,
             },
             reason: selectedReport.reason || selectedReport.description,
             details: selectedReport.details || selectedReport.description,
@@ -307,7 +372,7 @@ export default function ReportsPage() {
             adminNote: selectedReport.adminNote,
             adminName: selectedReport.adminName,
             adminActionDate: selectedReport.adminActionDate,
-            isBanned: selectedReport.isBanned
+            isBanned: selectedReport.isBanned,
           }}
           onStatusChange={handleReportStatusChange}
         />

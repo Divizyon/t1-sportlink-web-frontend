@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,79 +9,76 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/components/ui/use-toast"
-import { Upload, Image as ImageIcon, Bell } from "lucide-react"
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/use-toast";
+import { Upload, Image as ImageIcon, Bell } from "lucide-react";
+// Import from mockups
+import {
+  NEWS_TYPES,
+  EMPTY_NEWS_FORM,
+  NewsFormMock,
+  getNewsConfirmation,
+} from "@/mockups/components/modals/newsModal";
 
 interface NewsModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess?: () => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-const NEWS_TYPES = [
-  { id: "announcement", name: "Duyuru" },
-  { id: "news", name: "Haber" },
-  { id: "event", name: "Etkinlik Haberi" },
-  { id: "update", name: "Güncelleme" },
-]
-
 export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
-  const { toast } = useToast()
-  const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState("announcement")
-  
-  const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-    type: "announcement",
-    image: null as File | null,
-    sendNotification: true,
-  })
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("announcement");
+
+  const [formData, setFormData] = useState<NewsFormMock>({
+    ...EMPTY_NEWS_FORM,
+  });
 
   const resetForm = () => {
-    setFormData({
-      title: "",
-      content: "",
-      type: "announcement",
-      image: null,
-      sendNotification: true,
-    })
-    setActiveTab("announcement")
-  }
+    setFormData({ ...EMPTY_NEWS_FORM });
+    setActiveTab("announcement");
+  };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleTypeChange = (value: string) => {
-    setFormData(prev => ({ ...prev, type: value }))
-  }
+    setFormData((prev) => ({ ...prev, type: value as any }));
+  };
 
   const handleNotificationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, sendNotification: e.target.checked }))
-  }
+    setFormData((prev) => ({ ...prev, sendNotification: e.target.checked }));
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFormData(prev => ({ ...prev, image: e.target.files![0] }))
+      // In a real app, we would upload the file to server and get a URL
+      // Here we're just simulating that by setting a dummy URL
+      setFormData((prev) => ({
+        ...prev,
+        image: URL.createObjectURL(e.target.files![0]),
+      }));
     }
-  }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Form doğrulama
     if (!formData.title.trim()) {
@@ -89,8 +86,8 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
         title: "Hata",
         description: "Başlık alanı zorunludur.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (!formData.content.trim()) {
@@ -98,38 +95,44 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
         title: "Hata",
         description: "İçerik alanı zorunludur.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     // Form gönderme
-    setLoading(true)
+    setLoading(true);
 
     // API çağrısı simülasyonu
     setTimeout(() => {
-      setLoading(false)
-      
+      setLoading(false);
+
+      // Get confirmation data using the mockup utility
+      const confirmation = getNewsConfirmation(formData);
+
       toast({
         title: "Başarılı",
-        description: `${activeTab === "announcement" ? "Duyuru" : "Haber"} başarıyla yayınlandı.`,
-      })
-      
-      resetForm()
-      onOpenChange(false)
-      
+        description: confirmation.message,
+      });
+
+      resetForm();
+      onOpenChange(false);
+
       if (onSuccess) {
-        onSuccess()
+        onSuccess();
       }
-    }, 1000)
-  }
+    }, 1000);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen && !loading) {
-        resetForm()
-      }
-      onOpenChange(isOpen)
-    }}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen && !loading) {
+          resetForm();
+        }
+        onOpenChange(isOpen);
+      }}
+    >
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -137,12 +140,12 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
               {activeTab === "announcement" ? "Duyuru Yayınla" : "Haber Ekle"}
             </DialogTitle>
             <DialogDescription>
-              {activeTab === "announcement" 
-                ? "Katılımcılara önemli duyurular yapın." 
+              {activeTab === "announcement"
+                ? "Katılımcılara önemli duyurular yapın."
                 : "Platformda yayınlanacak haber oluşturun."}
             </DialogDescription>
           </DialogHeader>
-          
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="announcement">
@@ -154,7 +157,7 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
                 Haber
               </TabsTrigger>
             </TabsList>
-            
+
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Başlık</Label>
@@ -166,7 +169,7 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
                   onChange={handleInputChange}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="content">İçerik</Label>
                 <Textarea
@@ -178,18 +181,15 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
                   onChange={handleInputChange}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="type">Tür</Label>
-                <Select 
-                  value={formData.type} 
-                  onValueChange={handleTypeChange}
-                >
+                <Select value={formData.type} onValueChange={handleTypeChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Tür seçin" />
                   </SelectTrigger>
                   <SelectContent>
-                    {NEWS_TYPES.map(type => (
+                    {NEWS_TYPES.map((type) => (
                       <SelectItem key={type.id} value={type.id}>
                         {type.name}
                       </SelectItem>
@@ -197,7 +197,7 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               {activeTab === "news" && (
                 <div className="space-y-2">
                   <Label htmlFor="image">Görsel</Label>
@@ -209,9 +209,9 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
                       onChange={handleImageChange}
                       className="flex-1"
                     />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="icon"
                       onClick={() => document.getElementById("image")?.click()}
                     >
@@ -220,12 +220,12 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
                   </div>
                   {formData.image && (
                     <p className="text-xs text-muted-foreground">
-                      Seçilen dosya: {formData.image.name}
+                      Seçilen görsel yüklendi
                     </p>
                   )}
                 </div>
               )}
-              
+
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -234,31 +234,31 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
                   onChange={handleNotificationChange}
                   className="h-4 w-4 rounded border-gray-300"
                 />
-                <Label htmlFor="sendNotification" className="text-sm font-normal">
+                <Label
+                  htmlFor="sendNotification"
+                  className="text-sm font-normal"
+                >
                   Bildirim olarak gönder
                 </Label>
               </div>
             </div>
           </Tabs>
-          
+
           <DialogFooter className="mt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
               İptal
             </Button>
-            <Button 
-              type="submit" 
-              disabled={loading}
-            >
-              {loading ? "Gönderiliyor..." : "Yayınla"}
+            <Button type="submit" disabled={loading}>
+              {loading ? "Yayınlanıyor..." : "Yayınla"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}

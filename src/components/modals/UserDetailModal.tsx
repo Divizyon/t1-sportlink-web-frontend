@@ -14,8 +14,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Mail } from "lucide-react";
-import { DEFAULT_USER_EVENTS, USERS, USER_DETAILS } from "@/mocks";
 import { enrichUserData, CommonUser } from "@/lib/userDataService";
+import {
+  USER_PROFILES,
+  getUserEvents,
+} from "@/mockups/components/users/userProfile";
 
 interface Event {
   id: string;
@@ -78,7 +81,31 @@ export function UserDetailModal({
   // Ensure consistent user data using our service
   const userData: CommonUser = user
     ? enrichUserData(user)
-    : enrichUserData(USER_DETAILS[0]);
+    : enrichUserData(USER_PROFILES[0]);
+
+  // Get user event data from the new mockups
+  const userEventData = userData.id
+    ? getUserEvents(userData.id.toString())
+    : { upcoming: [], participated: [], organized: [] };
+
+  // Create type-safe event data for the component
+  const userEvents: Event[] = userEventData.upcoming.map((event) => {
+    // Determine the correct status based on the event's status
+    const statusValue: "completed" | "upcoming" | "canceled" =
+      event.status === "completed"
+        ? "completed"
+        : event.status === "canceled"
+        ? "canceled"
+        : "upcoming";
+
+    return {
+      id: event.id.toString(),
+      title: event.title,
+      date: new Date(event.date).toLocaleDateString("tr-TR"),
+      category: event.category,
+      status: statusValue,
+    };
+  });
 
   // Normalize status to ensure consistent handling
   // This ensures that regardless of whether the status comes as "active" or "aktif", it's handled the same way
@@ -195,7 +222,12 @@ export function UserDetailModal({
       modal={true}
     >
       <DialogContent
-        className={`sm:max-w-[700px] ${isNested ? "z-[100]" : "z-50"}`}
+        className="sm:max-w-[700px] fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]"
+        style={{
+          maxHeight: "90vh",
+          overflowY: "auto",
+          zIndex: isNested ? 100 : 50,
+        }}
         // Fix the handler to allow closing by clicking outside
         onPointerDownOutside={(e) => {
           // Always allow closing by clicking outside, regardless of nesting
@@ -336,8 +368,8 @@ export function UserDetailModal({
             </div>
 
             <div className="space-y-3 mt-4">
-              {DEFAULT_USER_EVENTS && DEFAULT_USER_EVENTS.length > 0 ? (
-                DEFAULT_USER_EVENTS.map((event) => (
+              {userEvents && userEvents.length > 0 ? (
+                userEvents.map((event) => (
                   <div
                     key={event.id}
                     className="flex items-center justify-between p-3 border rounded-lg"

@@ -74,7 +74,12 @@ import {
   REPORT_FILTERS,
 } from "@/constants/dashboard";
 import { ModalType } from "@/types";
-import { REPORTS } from "@/mocks/reports";
+import {
+  RECENT_REPORTS,
+  filterReportsByEntityType,
+  filterReportsByPriority,
+  filterReportsByStatus,
+} from "@/mockups/components/reports/reportList";
 import Link from "next/link";
 
 // Raporlar için demo verileri
@@ -142,7 +147,7 @@ export default function DashboardPage() {
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
 
-  const [allReports, setAllReports] = useState(REPORTS);
+  const [allReports, setAllReports] = useState(RECENT_REPORTS);
 
   const openModal = (type: ModalType, entityData: any = null) => {
     if (
@@ -184,7 +189,7 @@ export default function DashboardPage() {
   };
 
   // Filtreleme işlemi
-  const filteredReports = REPORTS.filter((report) => {
+  const filteredReports = RECENT_REPORTS.filter((report) => {
     // Tür filtreleme
     if (
       reportFilter !== REPORT_FILTERS.all &&

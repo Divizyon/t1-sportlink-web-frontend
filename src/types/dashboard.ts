@@ -85,7 +85,12 @@ export interface Report {
 }
 
 export type ReportPriority = "high" | "medium" | "low";
-export type ReportStatus = "pending" | "reviewing" | "resolved" | "rejected" | "dismissed";
+export type ReportStatus =
+  | "pending"
+  | "reviewing"
+  | "resolved"
+  | "rejected"
+  | "dismissed";
 
 // Component Props Types
 export interface EventParticipationChartProps {

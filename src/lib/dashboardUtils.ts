@@ -20,15 +20,16 @@
 
 import { ChartData, CategoryData, Event, EventStatus } from "@/types/dashboard";
 import { EVENT_STATUS_LABELS, COLORS, DAYS_OF_WEEK, MONTHS } from "@/constants";
-import { formatDashboardDate } from "./utils";
-
-// Re-export functions to maintain backward compatibility
-export {
+import {
+  formatDashboardDate,
   calculatePercentage,
   calculateGrowth,
   formatPercentage,
   formatGrowth,
 } from "./utils";
+
+// Re-export functions to maintain backward compatibility
+export { calculatePercentage, calculateGrowth, formatPercentage, formatGrowth };
 
 /**
  * Data Transformation Utilities

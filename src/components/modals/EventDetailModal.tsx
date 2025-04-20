@@ -58,11 +58,10 @@ import {
 import { useRouter } from "next/navigation";
 import { UserDetailModal } from "@/components/modals/UserDetailModal";
 import {
-  DETAILED_EVENT,
-  DetailedEvent,
-  EventParticipant,
-  DEFAULT_USER_EVENTS,
-} from "@/mocks";
+  SAMPLE_EVENT_DETAILS,
+  EventDetailsMock,
+} from "@/mockups/components/events/eventDetails";
+import { EVENT_PARTICIPANTS } from "@/mockups/components/dashboard/todaysEvents";
 import { enrichUserData } from "@/lib/userDataService";
 
 interface Participant {
@@ -150,8 +149,39 @@ export function EventDetailModal({
     useState<Participant | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
 
-  // Use the mock data from the dedicated mocks file instead of inline data
-  const mockEvent: Event = event || DETAILED_EVENT;
+  // Use the mock data from the dedicated mockups file instead of inline data
+  const mockEvent: Event = event || {
+    id: SAMPLE_EVENT_DETAILS.id,
+    title: SAMPLE_EVENT_DETAILS.title,
+    description: SAMPLE_EVENT_DETAILS.description,
+    date: new Date(SAMPLE_EVENT_DETAILS.startDate),
+    time: new Date(SAMPLE_EVENT_DETAILS.startDate).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    location: SAMPLE_EVENT_DETAILS.location.name,
+    organizer: SAMPLE_EVENT_DETAILS.organizer.name,
+    participants: SAMPLE_EVENT_DETAILS.attendees.map((attendee) => ({
+      id: attendee.id,
+      name: attendee.name,
+      email: attendee.email,
+      avatar: attendee.avatar,
+      status: attendee.status === "confirmed" ? "active" : "suspended",
+      registeredDate: attendee.registrationDate,
+      eventCount: Math.floor(Math.random() * 10) + 1,
+      age: Math.floor(Math.random() * 30) + 18,
+      gender: Math.random() > 0.5 ? "Erkek" : "Kadın",
+    })),
+    status: SAMPLE_EVENT_DETAILS.status as
+      | "pending"
+      | "approved"
+      | "rejected"
+      | "completed",
+    maxParticipants: SAMPLE_EVENT_DETAILS.maxParticipants,
+    createdAt: new Date(SAMPLE_EVENT_DETAILS.startDate), // Using startDate as a fallback since createdAt is not available
+    category: SAMPLE_EVENT_DETAILS.category,
+    tags: [], // Providing an empty array since tags may not be available
+  };
 
   const [formData, setFormData] = useState<Event>(mockEvent);
 

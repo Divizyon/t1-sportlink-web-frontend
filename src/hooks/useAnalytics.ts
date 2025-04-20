@@ -2,11 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { Event, ChartData, CategoryData, CategoryCount } from "@/types";
 import {
   MONTHLY_EVENT_DATA,
-  generateDailyChartData,
-  generateCategoryData,
-  CATEGORY_DATA,
-  PLATFORM_GROWTH,
-} from "@/mocks/analytics";
+  CATEGORY_DISTRIBUTION,
+  WEEKLY_ACTIVITY_DATA,
+  USER_REGISTRATION_DATA,
+  EVENT_STATUS_DISTRIBUTION,
+  USER_ROLE_DISTRIBUTION,
+} from "@/mockups/components/dashboard/analyticsCharts";
 import {
   calculateApprovalRate,
   calculateCompletionRate,
@@ -17,6 +18,49 @@ import {
   prepareStackedBarChartData,
 } from "@/lib/analyticsUtils";
 import { COLORS } from "@/constants/dashboard";
+
+// Platform growth statistics - would come from backend in real app
+const PLATFORM_GROWTH = {
+  users: {
+    count: 2450,
+    growth: 12.5,
+  },
+  events: {
+    count: 186,
+    growth: 8.2,
+  },
+  participation: {
+    count: 3240,
+    growth: 15.7,
+  },
+};
+
+// Function to generate daily chart data based on categories
+const generateDailyChartData = (categories?: string[]) => {
+  // Generate last 7 days
+  const days = [
+    "Pazartesi",
+    "Salı",
+    "Çarşamba",
+    "Perşembe",
+    "Cuma",
+    "Cumartesi",
+    "Pazar",
+  ];
+
+  return days.map((day, index) => {
+    // Use data from WEEKLY_ACTIVITY_DATA
+    const weeklyData = WEEKLY_ACTIVITY_DATA[index];
+
+    return {
+      name: day,
+      onaylanan: Math.floor(weeklyData.events * 0.7),
+      bekleyen: Math.floor(weeklyData.events * 0.2),
+      reddedilen: Math.floor(weeklyData.events * 0.1),
+      tamamlanan: Math.floor(weeklyData.events * 0.6),
+    };
+  });
+};
 
 interface AnalyticsFilters {
   startDate?: Date;
@@ -91,7 +135,7 @@ export function useAnalytics(
           setCategoryData(generatedCategoryData);
         } else {
           // Fall back to mock data
-          setCategoryData(CATEGORY_DATA);
+          setCategoryData(CATEGORY_DISTRIBUTION);
         }
 
         setLoading(false);

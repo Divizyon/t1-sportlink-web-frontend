@@ -11,7 +11,7 @@ import {
   Shield,
   Newspaper,
 } from "lucide-react";
-import { REPORTS } from "@/mocks/reports";
+import { REPORT_SCHEMA } from "@/mockups/schemas/reportSchema";
 
 export function Sidebar() {
   const [openEvents, setOpenEvents] = useState(false);
@@ -33,64 +33,43 @@ export function Sidebar() {
       </Button>
       {openEvents && (
         <div className="ml-4 space-y-1">
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            asChild
-          >
+          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/dashboard/events">
               <Calendar className="mr-2 h-4 w-4" />
               Tüm Etkinlikler
             </Link>
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            asChild
-          >
+          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/dashboard/events/new">
               <Plus className="mr-2 h-4 w-4" />
               Yeni Etkinlik
             </Link>
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            asChild
-          >
+          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/dashboard/reports">
               <Flag className="mr-2 h-4 w-4" />
               Raporlar
               <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4">
-                {REPORTS.filter((r) => r.status === "pending").length}
+                {
+                  REPORT_SCHEMA.reports.filter((r) => r.status === "pending")
+                    .length
+                }
               </Badge>
             </Link>
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            asChild
-          >
+          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/dashboard/settings">
               <Settings className="mr-2 h-4 w-4" />
               Ayarlar
             </Link>
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            asChild
-          >
+          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/dashboard/security">
               <Shield className="mr-2 h-4 w-4" />
               Güvenlik
             </Link>
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            asChild
-          >
+          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/dashboard/news">
               <Newspaper className="mr-2 h-4 w-4" />
               Haberler
@@ -100,4 +79,4 @@ export function Sidebar() {
       )}
     </div>
   );
-} 
+}

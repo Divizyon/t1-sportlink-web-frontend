@@ -3,13 +3,24 @@ import {
   Report,
   ReportStatus,
   ReportPriority,
-  ReportFilterType,
-} from "@/types";
-import { REPORTS } from "@/mocks/reports";
+  ReportEntityType,
+  REPORT_SCHEMA,
+} from "@/mockups/schemas/reportSchema";
+import {
+  ReportListItemMock,
+  filterReportsByEntityType,
+  filterReportsByStatus,
+  filterReportsByPriority,
+  sortReportsByDate,
+  searchReports,
+  REPORT_STATUS_OPTIONS,
+  REPORT_ENTITY_TYPE_OPTIONS,
+  REPORT_PRIORITY_OPTIONS,
+} from "@/mockups/components/reports/reportList";
 import { REPORT_FILTERS } from "@/constants/dashboard";
 
 interface ReportFilters {
-  entityType?: ReportFilterType;
+  entityType?: ReportEntityType | "all";
   status?: ReportStatus | "all";
   priority?: ReportPriority | "all";
   dateRange?: {
@@ -19,7 +30,7 @@ interface ReportFilters {
 }
 
 export function useReports(initialFilters: ReportFilters = {}) {
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<ReportListItemMock[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [filters, setFilters] = useState<ReportFilters>(initialFilters);
@@ -34,8 +45,23 @@ export function useReports(initialFilters: ReportFilters = {}) {
         // const data = await response.json();
         // setReports(data);
 
-        // Using mock data for now
-        setReports(REPORTS);
+        // Using mock data from the new mockups structure
+        const allReports = REPORT_SCHEMA.reports.map((report) => ({
+          id: report.id,
+          subject: report.subject,
+          description: report.description,
+          reportedDate: report.reportedDate,
+          priority: report.priority,
+          status: report.status,
+          reportedBy: report.reportedBy,
+          assignedTo: report.assignedTo,
+          entityId: report.entityId,
+          entityType: report.entityType,
+          resolution: report.resolution,
+          resolutionDate: report.resolutionDate,
+        }));
+
+        setReports(allReports);
         setLoading(false);
       } catch (err) {
         setError(
@@ -50,80 +76,69 @@ export function useReports(initialFilters: ReportFilters = {}) {
 
   // Apply filters to reports
   const filteredReports = useMemo(() => {
-    return reports.filter((report) => {
-      // Filter by entity type
-      if (filters.entityType && filters.entityType !== REPORT_FILTERS.all) {
-        const entityTypeMatch =
-          // Convert from "users" -> "user" or "events" -> "event"
-          report.entityType === filters.entityType.slice(0, -1);
-        if (!entityTypeMatch) return false;
-      }
+    let filtered = [...reports];
 
-      // Filter by status
-      if (filters.status && filters.status !== "all") {
-        if (report.status !== filters.status) return false;
-      }
+    // Filter by entity type
+    if (filters.entityType && filters.entityType !== "all") {
+      filtered = filtered.filter(
+        (report) => report.entityType === filters.entityType
+      );
+    }
 
-      // Filter by priority
-      if (filters.priority && filters.priority !== "all") {
-        if (report.priority !== filters.priority) return false;
-      }
+    // Filter by status
+    if (filters.status && filters.status !== "all") {
+      filtered = filtered.filter((report) => report.status === filters.status);
+    }
 
-      // Filter by date range
-      if (filters.dateRange) {
+    // Filter by priority
+    if (filters.priority && filters.priority !== "all") {
+      filtered = filtered.filter(
+        (report) => report.priority === filters.priority
+      );
+    }
+
+    // Filter by date range
+    if (filters.dateRange) {
+      filtered = filtered.filter((report) => {
         const reportDate = new Date(report.reportedDate);
-        if (
-          reportDate < filters.dateRange.start ||
-          reportDate > filters.dateRange.end
-        ) {
-          return false;
-        }
-      }
+        return (
+          reportDate >= filters.dateRange!.start &&
+          reportDate <= filters.dateRange!.end
+        );
+      });
+    }
 
-      return true;
-    });
+    return filtered;
   }, [reports, filters]);
 
   // Get summary statistics
   const statistics = useMemo(() => {
-    const total = reports.length;
-    const pending = reports.filter((r) => r.status === "pending").length;
-    const reviewing = reports.filter((r) => r.status === "reviewing").length;
-    const resolved = reports.filter((r) => r.status === "resolved").length;
-    const rejected = reports.filter((r) => r.status === "rejected").length;
+    // Use the pre-calculated stats from REPORT_SCHEMA
+    const { stats } = REPORT_SCHEMA;
 
-    const highPriority = reports.filter((r) => r.priority === "high").length;
-    const mediumPriority = reports.filter(
-      (r) => r.priority === "medium"
-    ).length;
-    const lowPriority = reports.filter((r) => r.priority === "low").length;
-
-    const userReports = reports.filter((r) => r.entityType === "user").length;
-    const eventReports = reports.filter((r) => r.entityType === "event").length;
+    // Calculate resolution rate
+    const resolutionRate =
+      stats.total > 0 ? (stats.resolved / stats.total) * 100 : 0;
 
     return {
-      total,
+      total: stats.total,
       byStatus: {
-        pending,
-        reviewing,
-        resolved,
-        rejected,
+        pending: stats.pending,
+        reviewing: stats.reviewing,
+        resolved: stats.resolved,
+        rejected: stats.rejected,
       },
-      byPriority: {
-        high: highPriority,
-        medium: mediumPriority,
-        low: lowPriority,
-      },
-      byEntityType: {
-        user: userReports,
-        event: eventReports,
-      },
-      resolutionRate: total > 0 ? (resolved / total) * 100 : 0,
+      byPriority: stats.byPriority,
+      byEntityType: stats.byEntityType,
+      resolutionRate,
     };
-  }, [reports]);
+  }, []);
 
   // Update a report's status
-  const updateReportStatus = (reportId: number, newStatus: ReportStatus) => {
+  const updateReportStatus = (
+    reportId: number | string,
+    newStatus: ReportStatus
+  ) => {
     setReports((currentReports) =>
       currentReports.map((report) =>
         report.id === reportId ? { ...report, status: newStatus } : report
@@ -132,7 +147,7 @@ export function useReports(initialFilters: ReportFilters = {}) {
   };
 
   // Set entity type filter
-  const setEntityTypeFilter = (entityType: ReportFilterType) => {
+  const setEntityTypeFilter = (entityType: ReportEntityType | "all") => {
     setFilters((prev) => ({
       ...prev,
       entityType,
@@ -175,6 +190,11 @@ export function useReports(initialFilters: ReportFilters = {}) {
     loading,
     error,
     filters,
+    filterOptions: {
+      status: REPORT_STATUS_OPTIONS,
+      entityType: REPORT_ENTITY_TYPE_OPTIONS,
+      priority: REPORT_PRIORITY_OPTIONS,
+    },
     updateReportStatus,
     setEntityTypeFilter,
     setStatusFilter,
