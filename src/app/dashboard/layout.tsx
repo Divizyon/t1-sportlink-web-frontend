@@ -50,7 +50,7 @@ export default function DashboardLayout({
             <div className="flex-1 flex flex-col">
               <header className="flex h-14 items-center justify-between border-b px-6 rounded-t-lg bg-white shadow-sm mb-2">
                 <h2 className="text-lg font-semibold">
-                  SportLink Yönetim Paneli
+                  <span className="text-[#00A86B] italic">SportLink</span> Yönetim Paneli
                 </h2>
                 <div className="flex items-center space-x-4">
                   <div className="pl-2 border-l">
