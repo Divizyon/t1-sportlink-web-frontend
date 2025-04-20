@@ -14,8 +14,21 @@ interface User {
   id: string
   name: string
   email: string
-  role: string
+  role: "bireysel_kullanici" | "antrenor" | "kulup_uyesi"
   status: "active" | "inactive"
+}
+
+// Rol renkleri ve etiketleri
+const ROLE_COLORS: Record<string, { bg: string; text: string }> = {
+  "bireysel_kullanici": { bg: "bg-blue-100", text: "text-blue-800" },
+  "antrenor": { bg: "bg-green-100", text: "text-green-800" },
+  "kulup_uyesi": { bg: "bg-purple-100", text: "text-purple-800" }
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  "bireysel_kullanici": "Bireysel Kullanıcı",
+  "antrenor": "Antrenör",
+  "kulup_uyesi": "Kulüp Üyesi"
 }
 
 export default function UsersPage() {
@@ -26,14 +39,21 @@ export default function UsersPage() {
       id: "1",
       name: "Ahmet Yılmaz",
       email: "ahmet@example.com",
-      role: "admin",
+      role: "antrenor",
       status: "active"
     },
     {
       id: "2",
       name: "Ayşe Demir",
       email: "ayse@example.com",
-      role: "user",
+      role: "bireysel_kullanici",
+      status: "active"
+    },
+    {
+      id: "3",
+      name: "Mehmet Kaya",
+      email: "mehmet@example.com",
+      role: "kulup_uyesi",
       status: "active"
     }
   ])
@@ -54,6 +74,19 @@ export default function UsersPage() {
     }
   }
 
+  const handleRoleChange = (userId: string, newRole: User["role"]) => {
+    setUsers(prevUsers =>
+      prevUsers.map(user =>
+        user.id === userId ? { ...user, role: newRole } : user
+      )
+    )
+    
+    const user = users.find(u => u.id === userId)
+    if (user) {
+      toast.success(`${user.name} kullanıcısının rolü ${ROLE_LABELS[newRole]} olarak güncellendi`)
+    }
+  }
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
@@ -71,8 +104,9 @@ export default function UsersPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tümü</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="user">Kullanıcı</SelectItem>
+              <SelectItem value="bireysel_kullanici">Bireysel Kullanıcı</SelectItem>
+              <SelectItem value="antrenor">Antrenör</SelectItem>
+              <SelectItem value="kulup_uyesi">Kulüp Üyesi</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -98,7 +132,27 @@ export default function UsersPage() {
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={user.role}
+                        onValueChange={(value: User["role"]) => handleRoleChange(user.id, value)}
+                      >
+                        <SelectTrigger className={`w-[180px] ${ROLE_COLORS[user.role].bg} ${ROLE_COLORS[user.role].text}`}>
+                          <SelectValue placeholder="Rol seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bireysel_kullanici" className="text-blue-800 hover:bg-blue-100">
+                            Bireysel Kullanıcı
+                          </SelectItem>
+                          <SelectItem value="antrenor" className="text-green-800 hover:bg-green-100">
+                            Antrenör
+                          </SelectItem>
+                          <SelectItem value="kulup_uyesi" className="text-purple-800 hover:bg-purple-100">
+                            Kulüp Üyesi
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={user.status === "active" ? "default" : "secondary"}>
                         {user.status === "active" ? "Aktif" : "Pasif"}

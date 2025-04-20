@@ -16,7 +16,7 @@ export function DeleteEventModal({ eventName, onDelete }: DeleteEventModalProps)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="destructive" size="icon">
           <Trash2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>
