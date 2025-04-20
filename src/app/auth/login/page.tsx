@@ -15,6 +15,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -40,26 +41,13 @@ export default function LoginPage() {
     <Card className="w-[350px] shadow-lg">
       <div className="flex justify-center pt-6">
         <div className="flex flex-col items-center">
-          <div className="bg-primary rounded-full p-3 mb-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6"
-            >
-              <path d="M2 19h20"></path>
-              <path d="M12 3v16"></path>
-              <path d="M9 10a3 3 0 1 0 6 0 3 3 0 1 0 -6 0"></path>
-              <path d="M5 19c.7 -1.7 3.3 -3 7 -3s6.3 1.3 7 3"></path>
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold mb-1">Spor Yönetim Sistemi</h1>
+          <Image
+            src="/logo.avif"
+            alt="SportLink Logo"
+            width={100}
+            height={120}
+            className="rounded-lg mb-2"
+          />
         </div>
       </div>
       <CardHeader>

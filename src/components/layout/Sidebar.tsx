@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
@@ -67,11 +68,15 @@ export function Sidebar() {
   
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1">
-        <Link href="/dashboard" className="mb-8 flex items-center">
-          <h1 className="text-xl font-semibold">
-            SportLink
-          </h1>
+      <div className="flex-1 ">
+        <Link href="/dashboard" className="mb-8 flex items-center justify-center gap-2">
+          <Image
+            src="/logo.avif"
+            alt="SportLink Logo"
+            width={100}
+            height={120}
+            className="rounded-lg"
+          />
         </Link>
         <nav className="space-y-1">
           {routes.map((route) => (
