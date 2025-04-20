@@ -181,9 +181,15 @@ export function EventDetailModal({
     createdAt: new Date(SAMPLE_EVENT_DETAILS.startDate), // Using startDate as a fallback since createdAt is not available
     category: SAMPLE_EVENT_DETAILS.category,
     tags: [], // Providing an empty array since tags may not be available
+    reports: SAMPLE_EVENT_DETAILS.reports || [], // Include reports from the event details
   };
 
   const [formData, setFormData] = useState<Event>(mockEvent);
+
+  // Debug logs to check reports data
+  console.log("SAMPLE_EVENT_DETAILS.reports:", SAMPLE_EVENT_DETAILS.reports);
+  console.log("mockEvent.reports:", mockEvent.reports);
+  console.log("formData.reports:", formData.reports);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

@@ -25,7 +25,8 @@ interface Event {
   title: string;
   date: string;
   category: string;
-  status: "completed" | "upcoming" | "canceled";
+  status: string;
+  isOrganizer?: boolean;
 }
 
 // Define our own User interface instead of extending
@@ -66,6 +67,13 @@ export function UserDetailModal({
 }: UserDetailModalProps) {
   const [activeTab, setActiveTab] = useState("profil");
   const [localOpen, setLocalOpen] = useState(false);
+  const [userData, setUserData] = useState<User>(
+    enrichUserData(user || USER_PROFILES[0])
+  );
+  const [userEvents, setUserEvents] = useState<Event[]>([]);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [upcomingCount, setUpcomingCount] = useState(0);
+  const [canceledCount, setCanceledCount] = useState(0);
 
   // Sync the local state with the prop
   useEffect(() => {
@@ -78,46 +86,37 @@ export function UserDetailModal({
     onOpenChange(newOpenState);
   };
 
-  // Ensure consistent user data using our service
-  const userData: CommonUser = user
-    ? enrichUserData(user)
-    : enrichUserData(USER_PROFILES[0]);
+  // Fetch user events from mockup data
+  useEffect(() => {
+    if (userData.id) {
+      const userEventData = getUserEvents(String(userData.id));
+      console.log("User events from mockup:", userEventData);
 
-  // Get user event data from the new mockups
-  const userEventData = userData.id
-    ? getUserEvents(userData.id.toString())
-    : { upcoming: [], participated: [], organized: [] };
+      // Map events to the format expected by the component
+      const allEvents = userEventData.all.map((event) => ({
+        id: event.id,
+        title: event.title,
+        date: new Date(event.date).toLocaleDateString(),
+        category: event.category,
+        status:
+          event.status === "completed"
+            ? "completed"
+            : event.status === "cancelled"
+            ? "canceled"
+            : "upcoming",
+        isOrganizer: event.isOrganizer,
+      }));
 
-  // Create type-safe event data for the component
-  const userEvents: Event[] = userEventData.upcoming.map((event) => {
-    // Determine the correct status based on the event's status
-    const statusValue: "completed" | "upcoming" | "canceled" =
-      event.status === "completed"
-        ? "completed"
-        : event.status === "canceled"
-        ? "canceled"
-        : "upcoming";
-
-    return {
-      id: event.id.toString(),
-      title: event.title,
-      date: new Date(event.date).toLocaleDateString("tr-TR"),
-      category: event.category,
-      status: statusValue,
-    };
-  });
+      setUserEvents(allEvents);
+      setCompletedCount(userEventData.completed.length);
+      setUpcomingCount(userEventData.upcoming.length);
+      setCanceledCount(userEventData.canceled.length);
+    }
+  }, [userData.id]);
 
   // Normalize status to ensure consistent handling
   // This ensures that regardless of whether the status comes as "active" or "aktif", it's handled the same way
   const normalizedStatus = userData.status?.toLowerCase();
-
-  // Calculate event counts directly from the events array
-  const completedCount =
-    userData.events?.filter((e) => e.status === "completed").length || 0;
-  const upcomingCount =
-    userData.events?.filter((e) => e.status === "upcoming").length || 0;
-  const canceledCount =
-    userData.events?.filter((e) => e.status === "canceled").length || 0;
 
   const getStatusBadge = (status: string) => {
     // Normalize status to lowercase for consistent case handling
@@ -174,37 +173,32 @@ export function UserDetailModal({
     }
   };
 
-  const getEventStatusBadge = (status: Event["status"]) => {
+  const getEventStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
         return (
-          <Badge
-            variant="outline"
-            className="bg-blue-50 text-blue-700 border-blue-200"
-          >
+          <Badge variant="outline" className="bg-green-50 text-green-700">
             Tamamlandı
           </Badge>
         );
       case "upcoming":
         return (
-          <Badge
-            variant="outline"
-            className="bg-purple-50 text-purple-700 border-purple-200"
-          >
+          <Badge variant="outline" className="bg-purple-50 text-purple-700">
             Yaklaşan
           </Badge>
         );
       case "canceled":
         return (
-          <Badge
-            variant="outline"
-            className="bg-red-50 text-red-700 border-red-200"
-          >
+          <Badge variant="outline" className="bg-red-50 text-red-700">
             İptal Edildi
           </Badge>
         );
       default:
-        return null;
+        return (
+          <Badge variant="outline" className="bg-gray-50 text-gray-700">
+            {status}
+          </Badge>
+        );
     }
   };
 

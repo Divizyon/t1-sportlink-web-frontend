@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, MapPin, Users } from "lucide-react";
+import { Event, EventStatus, EventCategory } from "@/types/event";
+import { TodaysEventsProps, Participant } from "@/types/dashboard";
 import {
-  Event,
-  EventStatus,
-  TodaysEventsProps,
-  Participant,
-} from "@/types/dashboard";
-import { TODAY_EVENTS, UPCOMING_EVENTS, EVENT_PARTICIPANTS } from "@/mockups";
+  TODAY_EVENTS,
+  DASHBOARD_UPCOMING_EVENTS,
+  EVENT_PARTICIPANTS,
+} from "@/mockups";
 import {
   formatEventTime,
   formatEventLocation,
@@ -23,12 +23,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/userUtils";
 import { enrichUserData } from "@/lib/userDataService";
 
+// Import TodaysEventMock interface for type safety
+import type { TodaysEventMock } from "@/mockups/components/dashboard/todaysEvents";
+
 export function TodaysEvents({
   onEventSelect,
   onUserSelect,
   categories = [],
 }: TodaysEventsProps) {
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<TodaysEventMock[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedEvent, setExpandedEvent] = useState<string | number | null>(
     null
@@ -50,9 +53,6 @@ export function TodaysEvents({
         );
       }
 
-      // Note: In a real-world scenario, we'd convert the TodaysEventMock to Event type
-      // Since we're using mock data directly in the component,
-      // we'll use the todayEvents structure as is
       setEvents(todayEvents);
       setLoading(false);
     }, 800);
@@ -61,6 +61,36 @@ export function TodaysEvents({
   const toggleEventExpand = (eventId: string | number, e: React.MouseEvent) => {
     e.stopPropagation();
     setExpandedEvent(expandedEvent === eventId ? null : eventId);
+  };
+
+  // Convert TodaysEventMock to Event type for the onEventSelect callback
+  const convertToEventType = (mockEvent: TodaysEventMock): Event => {
+    return {
+      id: String(mockEvent.id),
+      title: mockEvent.title,
+      description: "Event details",
+      startDate: new Date().toISOString(),
+      endDate: new Date().toISOString(),
+      location: {
+        name: mockEvent.location,
+        address: "Sample Address",
+        city: "Sample City",
+      },
+      category: mockEvent.category as EventCategory,
+      participants: mockEvent.participants,
+      maxParticipants: mockEvent.maxParticipants,
+      status: mockEvent.status as EventStatus,
+      organizer: {
+        id: "1",
+        name: "Organizer",
+        email: "organizer@example.com",
+      },
+      tags: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      visibility: "public",
+      registrationRequired: false,
+    };
   };
 
   if (loading) {
@@ -104,11 +134,7 @@ export function TodaysEvents({
           <div
             className="flex items-start gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50 cursor-pointer"
             onClick={() =>
-              onEventSelect &&
-              onEventSelect({
-                ...event,
-                date: new Date(), // Add the date property required by Event type
-              } as Event)
+              onEventSelect && onEventSelect(convertToEventType(event))
             }
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -131,7 +157,7 @@ export function TodaysEvents({
                   <Users className="mr-1 h-3 w-3" />
                   {event.participants}/{event.maxParticipants}
                   <span className="text-xs ml-1">
-                    ({calculateEventFillRate(event)}%)
+                    ({calculateEventFillRate(event as any)}%)
                   </span>
                   {EVENT_PARTICIPANTS[event.id] && (
                     <button
@@ -144,9 +170,7 @@ export function TodaysEvents({
                 </div>
                 <div className="flex items-center col-span-2 truncate">
                   <MapPin className="mr-1 h-3 w-3 flex-shrink-0" />
-                  <span className="truncate">
-                    {formatEventLocation(event.location)}
-                  </span>
+                  <span className="truncate">{event.location}</span>
                 </div>
               </div>
             </div>
@@ -179,6 +203,9 @@ export function TodaysEvents({
                     </Avatar>
                     <div>
                       <p className="text-xs font-medium">{participant.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {participant.email}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -187,6 +214,49 @@ export function TodaysEvents({
           )}
         </div>
       ))}
+
+      {/* Add a section for upcoming events */}
+      {DASHBOARD_UPCOMING_EVENTS.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">
+            Yaklaşan Etkinlikler
+          </h3>
+          <div className="space-y-3">
+            {DASHBOARD_UPCOMING_EVENTS.slice(0, 3).map((event) => (
+              <div
+                key={event.id}
+                className="flex items-start gap-3 rounded-lg border p-2 transition-colors hover:bg-muted/50 cursor-pointer"
+                onClick={() =>
+                  onEventSelect && onEventSelect(convertToEventType(event))
+                }
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                  <Calendar className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{event.title}</p>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center">
+                      <Clock className="mr-1 h-3 w-3" />
+                      {formatEventTime(event.time)}
+                    </span>
+                    <span className="flex items-center">
+                      <MapPin className="mr-1 h-3 w-3" />
+                      {event.location}
+                    </span>
+                  </div>
+                </div>
+                <Badge
+                  variant="outline"
+                  style={getEventStatusStyle(event.status)}
+                >
+                  {event.category}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -49,6 +49,15 @@ export interface EventDetailsMock {
     type: string;
     url: string;
   }>;
+  reports?: Array<{
+    id: string;
+    reporterId: string;
+    reporterName: string;
+    reason: string;
+    date: string;
+    status: "pending" | "reviewed" | "dismissed";
+    details?: string;
+  }>;
 }
 
 // Get a specific event with all its details
@@ -98,8 +107,47 @@ export const getEventDetails = (
     },
   ];
 
-  // Construct the detailed event object
-  return {
+  // Create mock reports for this event
+  const reports = [
+    {
+      id: "report-1",
+      reporterId: USER_SCHEMA.users[2].id,
+      reporterName: USER_SCHEMA.users[2].name,
+      reason: "Konum bilgisi yanlış",
+      date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toLocaleDateString(
+        "tr-TR"
+      ),
+      status: "pending" as const,
+      details:
+        "Etkinlik duyurusunda belirtilen konum doğru değil. Adres bulunamıyor.",
+    },
+    {
+      id: "report-2",
+      reporterId: USER_SCHEMA.users[3].id,
+      reporterName: USER_SCHEMA.users[3].name,
+      reason: "Uygunsuz içerik",
+      date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(
+        "tr-TR"
+      ),
+      status: "reviewed" as const,
+      details:
+        "Etkinlik açıklamasında yaş sınırı belirtilmemiş ve içerik her yaşa uygun değil.",
+    },
+    {
+      id: "report-3",
+      reporterId: USER_SCHEMA.users[4].id,
+      reporterName: USER_SCHEMA.users[4].name,
+      reason: "Aşırı pahalı ücretlendirme",
+      date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toLocaleDateString(
+        "tr-TR"
+      ),
+      status: "dismissed" as const,
+      details: "Benzer etkinliklere göre fiyatı çok yüksek ve uygunsuz.",
+    },
+  ];
+
+  // Create the detailed event object with reports
+  const result = {
     id: event.id,
     title: event.title,
     description: event.description,
@@ -119,7 +167,10 @@ export const getEventDetails = (
     },
     attendees,
     resources,
+    reports,
   };
+
+  return result;
 };
 
 // Get a sample event detail

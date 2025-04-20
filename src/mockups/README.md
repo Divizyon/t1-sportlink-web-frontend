@@ -80,51 +80,57 @@ Bu bölüm, her mockup verisinin hangi bileşenlerde kullanıldığına dair do�
 
 ### Dashboard Mockupları
 
-| Mockup Verisi       | Bileşen Dosyası                                           | Kullanım                            |
-| ------------------- | --------------------------------------------------------- | ----------------------------------- |
-| TODAY_EVENTS        | src/components/dashboard/home/TodaysEvents.tsx            | Dashboard'daki ana etkinlik listesi |
-| UPCOMING_EVENTS     | src/components/dashboard/home/TodaysEvents.tsx            | İkincil etkinlik listesi            |
-| EVENT_PARTICIPANTS  | src/components/dashboard/home/TodaysEvents.tsx            | Genişletilebilir katılımcı listesi  |
-| RECENT_PARTICIPANTS | src/components/dashboard/home/RecentParticipants.tsx      | Son katılımcı listesi               |
-| MONTHLY_EVENT_DATA  | src/components/dashboard/analytics/MonthlyEventsChart.tsx | Aylık etkinlik analiz grafiği       |
+| Mockup Verisi             | Bileşen Dosyası                                           | Kullanım                            |
+| ------------------------- | --------------------------------------------------------- | ----------------------------------- |
+| TODAY_EVENTS              | src/components/dashboard/home/TodaysEvents.tsx            | Dashboard'daki ana etkinlik listesi |
+| DASHBOARD_UPCOMING_EVENTS | src/components/dashboard/home/TodaysEvents.tsx            | İkincil etkinlik listesi            |
+| EVENT_PARTICIPANTS        | src/components/dashboard/home/TodaysEvents.tsx            | Genişletilebilir katılımcı listesi  |
+| RECENT_PARTICIPANTS       | src/components/dashboard/home/RecentParticipants.tsx      | Son katılımcı listesi               |
+| MONTHLY_EVENT_DATA        | src/components/dashboard/analytics/MonthlyEventsChart.tsx | Aylık etkinlik analiz grafiği       |
+| CATEGORY_DISTRIBUTION     | src/hooks/useAnalytics.ts                                 | Kategori dağılımı analizi           |
+| EVENT_STATUS_DISTRIBUTION | src/hooks/useAnalytics.ts                                 | Etkinlik durumu dağılımı            |
 
 ### Etkinlik Mockupları
 
-| Mockup Verisi        | Bileşen Dosyası                            | Kullanım                            |
-| -------------------- | ------------------------------------------ | ----------------------------------- |
-| SAMPLE_EVENT_DETAILS | src/components/modals/EventDetailModal.tsx | Detaylı etkinlik bilgisi gösterimi  |
-| UPCOMING_EVENTS      | src/components/events/EventList.tsx        | Yaklaşan etkinlikler listesi        |
-| PAST_EVENTS          | src/components/events/EventList.tsx        | Geçmiş etkinlikler listesi          |
-| EVENT_CATEGORIES     | src/components/events/EventFilters.tsx     | Etkinlik kategorisi filtreleme      |
-| SAMPLE_EVENT_MODAL   | src/components/modals/EventModal.tsx       | Etkinlik oluşturma/düzenleme modalı |
+| Mockup Verisi          | Bileşen Dosyası                            | Kullanım                           |
+| ---------------------- | ------------------------------------------ | ---------------------------------- |
+| SAMPLE_EVENT_DETAILS   | src/components/modals/EventDetailModal.tsx | Detaylı etkinlik bilgisi gösterimi |
+| UPCOMING_EVENTS        | _Tanımlanmış fakat kullanılmıyor_          | Yaklaşan etkinlikler listesi       |
+| PAST_EVENTS            | _Tanımlanmış fakat kullanılmıyor_          | Geçmiş etkinlikler listesi         |
+| EVENT_CATEGORIES       | _Tanımlanmış fakat kullanılmıyor_          | Etkinlik kategorisi filtreleme     |
+| EVENT_CATEGORY_OPTIONS | src/components/events/EventForm.tsx        | Etkinlik kategori seçenekleri      |
+| EVENT_STATUS_OPTIONS   | src/components/events/EventForm.tsx        | Etkinlik durum seçenekleri         |
+| DEFAULT_EVENT_FORM     | src/components/events/EventForm.tsx        | Boş etkinlik formu şablonu         |
 
 ### Kullanıcı Mockupları
 
-| Mockup Verisi        | Bileşen Dosyası                          | Kullanım                           |
-| -------------------- | ---------------------------------------- | ---------------------------------- |
-| RECENT_USERS         | src/components/users/UserList.tsx        | Son kullanıcılar listesi           |
-| ACTIVE_USERS         | src/components/users/UserList.tsx        | Aktif kullanıcılar listesi         |
-| ADMIN_USERS          | src/components/users/UserList.tsx        | Yönetici kullanıcılar listesi      |
-| SAMPLE_USER_ACTIVITY | src/components/users/UserActivityLog.tsx | Kullanıcı aktivite zaman çizelgesi |
-| MOCK_MESSAGES        | src/hooks/useMessages.ts                 | Kullanıcı mesajlaşma işlevselliği  |
-| MOCK_CONVERSATIONS   | src/hooks/useMessages.ts                 | Konuşma yönetimi                   |
-| SAMPLE_USER_MODAL    | src/components/modals/UserModal.tsx      | Kullanıcı profili düzenleme modalı |
+| Mockup Verisi        | Bileşen Dosyası                                      | Kullanım                           |
+| -------------------- | ---------------------------------------------------- | ---------------------------------- |
+| RECENT_PARTICIPANTS  | src/components/dashboard/home/RecentParticipants.tsx | Son katılımcı listesi              |
+| RECENT_USERS         | _Tanımlanmış fakat kullanılmıyor_                    | Son kullanıcılar listesi           |
+| ACTIVE_USERS         | _Tanımlanmış fakat kullanılmıyor_                    | Aktif kullanıcılar listesi         |
+| ADMIN_USERS          | _Tanımlanmış fakat kullanılmıyor_                    | Yönetici kullanıcılar listesi      |
+| PARTICIPANT_DETAILS  | src/components/dashboard/home/RecentParticipants.tsx | Katılımcı detay görünümü           |
+| SAMPLE_USER_ACTIVITY | _Tanımlanmış fakat kullanılmıyor_                    | Kullanıcı aktivite zaman çizelgesi |
+| MOCK_MESSAGES        | _Tanımlanmış fakat kullanılmıyor_                    | Kullanıcı mesajlaşma işlevselliği  |
+| MOCK_CONVERSATIONS   | _Tanımlanmış fakat kullanılmıyor_                    | Konuşma yönetimi                   |
 
 ### Rapor Mockupları
 
-| Mockup Verisi              | Bileşen Dosyası                             | Kullanım                               |
-| -------------------------- | ------------------------------------------- | -------------------------------------- |
-| SAMPLE_REPORT_DETAILS      | src/components/modals/ReportDetailModal.tsx | Detaylı rapor görünümü                 |
-| RECENT_REPORTS             | src/components/reports/ReportList.tsx       | Son raporlar listesi                   |
-| HIGH_PRIORITY_REPORTS      | src/components/reports/ReportList.tsx       | Filtrelenmiş yüksek öncelikli raporlar |
-| PENDING_REPORTS            | src/components/reports/ReportList.tsx       | Filtrelenmiş bekleyen raporlar         |
-| SAMPLE_REPORT_FORM         | src/components/modals/ReportsModal.tsx      | Rapor oluşturma formu                  |
-| SAMPLE_REPORT_CONFIRMATION | src/components/modals/ReportsModal.tsx      | Rapor onay gösterimi                   |
+| Mockup Verisi              | Bileşen Dosyası                             | Kullanım                                 |
+| -------------------------- | ------------------------------------------- | ---------------------------------------- |
+| SAMPLE_REPORT_DETAILS      | src/components/modals/ReportDetailModal.tsx | Detaylı rapor görünümü                   |
+| RECENT_REPORTS             | _Tanımlanmış fakat kullanılmıyor_           | Son raporlar listesi                     |
+| HIGH_PRIORITY_REPORTS      | _Tanımlanmış fakat kullanılmıyor_           | Filtrelenmiş yüksek öncelikli raporlar   |
+| PENDING_REPORTS            | _Tanımlanmış fakat kullanılmıyor_           | Filtrelenmiş bekleyen raporlar           |
+| REPORT_ENTITY_TYPE_OPTIONS | _Tanımlanmış fakat kullanılmıyor_           | Rapor varlık tipi filtreleme seçenekleri |
+| REPORT_STATUS_OPTIONS      | _Tanımlanmış fakat kullanılmıyor_           | Rapor durum filtreleme seçenekleri       |
+| REPORT_PRIORITY_OPTIONS    | _Tanımlanmış fakat kullanılmıyor_           | Rapor öncelik filtreleme seçenekleri     |
 
 ### Haber/İçerik Mockupları
 
-| Mockup Verisi            | Bileşen Dosyası                     | Kullanım              |
-| ------------------------ | ----------------------------------- | --------------------- |
-| SAMPLE_NEWS_ITEMS        | src/hooks/useNews.ts                | Haber içerik yönetimi |
-| SAMPLE_NEWS_FORM         | src/components/modals/NewsModal.tsx | Haber oluşturma formu |
-| SAMPLE_NEWS_CONFIRMATION | src/components/modals/NewsModal.tsx | Haber yayınlama onayı |
+| Mockup Verisi     | Bileşen Dosyası                   | Kullanım                |
+| ----------------- | --------------------------------- | ----------------------- |
+| SAMPLE_NEWS_ITEMS | _Tanımlanmış fakat kullanılmıyor_ | Haber içerik yönetimi   |
+| NEWS_TYPES        | _Tanımlanmış fakat kullanılmıyor_ | Haber tipi seçenekleri  |
+| EMPTY_NEWS_FORM   | _Tanımlanmış fakat kullanılmıyor_ | Boş haber formu şablonu |

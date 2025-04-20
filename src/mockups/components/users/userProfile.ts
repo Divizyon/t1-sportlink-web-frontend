@@ -79,6 +79,20 @@ export const getUserProfile = (userId: string): UserProfileData | undefined => {
 
 // Generate events a user has participated in
 export const getUserEvents = (userId: string) => {
+  // Ensure we have a consistent today date for event generation
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const nextWeek = new Date(today);
+  nextWeek.setDate(today.getDate() + 7);
+
+  const lastWeek = new Date(today);
+  lastWeek.setDate(today.getDate() - 7);
+
+  const lastMonth = new Date(today);
+  lastMonth.setMonth(today.getMonth() - 1);
+
   // Find events where this user is the organizer
   const organizedEvents = EVENT_SCHEMA.events
     .filter((event) => event.organizer.id === userId)
@@ -91,26 +105,164 @@ export const getUserEvents = (userId: string) => {
       isOrganizer: true,
     }));
 
-  // Generate some random participated events
-  const participatedEvents = EVENT_SCHEMA.events
-    .filter((event) => event.organizer.id !== userId) // Not organizing
-    .slice(0, 3) // Just take first few events
-    .map((event) => ({
-      id: event.id,
-      title: event.title,
-      date: event.startDate,
-      category: event.category,
-      status: event.status,
+  // Generate mock completed events with past dates
+  const completedEvents = [
+    {
+      id: `completed-${userId}-1`,
+      title: "Morning Yoga Session",
+      date: lastWeek.toISOString(),
+      category: "training",
+      status: "completed",
       isOrganizer: false,
-    }));
+    },
+    {
+      id: `completed-${userId}-2`,
+      title: "Basketball Tournament",
+      date: lastMonth.toISOString(),
+      category: "tournament",
+      status: "completed",
+      isOrganizer: false,
+    },
+    {
+      id: `completed-${userId}-3`,
+      title: "Team Building Workshop",
+      date: lastMonth.toISOString(),
+      category: "workshop",
+      status: "completed",
+      isOrganizer: true,
+    },
+    {
+      id: `completed-${userId}-4`,
+      title: "Running Club",
+      date: lastWeek.toISOString(),
+      category: "sport",
+      status: "completed",
+      isOrganizer: false,
+    },
+    {
+      id: `completed-${userId}-5`,
+      title: "Swimming Competition",
+      date: lastMonth.toISOString(),
+      category: "competition",
+      status: "completed",
+      isOrganizer: false,
+    },
+  ];
+
+  // Generate mock canceled events
+  const canceledEvents = [
+    {
+      id: `canceled-${userId}-1`,
+      title: "Outdoor Soccer Game",
+      date: yesterday.toISOString(),
+      category: "sport",
+      status: "cancelled",
+      isOrganizer: false,
+    },
+    {
+      id: `canceled-${userId}-2`,
+      title: "Fitness Workshop",
+      date: lastWeek.toISOString(),
+      category: "workshop",
+      status: "cancelled",
+      isOrganizer: true,
+    },
+  ];
+
+  // Generate mock participated events
+  const participatedEvents = [
+    {
+      id: `participated-${userId}-1`,
+      title: "Weekly Tennis Practice",
+      date: yesterday.toISOString(),
+      category: "training",
+      status: "completed",
+      isOrganizer: false,
+    },
+    {
+      id: `participated-${userId}-2`,
+      title: "City Marathon",
+      date: lastMonth.toISOString(),
+      category: "competition",
+      status: "completed",
+      isOrganizer: false,
+    },
+  ];
+
+  // Generate mock upcoming events
+  const upcomingEvents = [
+    {
+      id: `upcoming-${userId}-1`,
+      title: "Volleyball Tournament",
+      date: nextWeek.toISOString(),
+      category: "tournament",
+      status: "approved",
+      isOrganizer: false,
+    },
+    {
+      id: `upcoming-${userId}-2`,
+      title: "Cycling Group",
+      date: tomorrow().toISOString(),
+      category: "sport",
+      status: "approved",
+      isOrganizer: true,
+    },
+    {
+      id: `upcoming-${userId}-3`,
+      title: "Hiking Trip",
+      date: dayAfterTomorrow().toISOString(),
+      category: "outdoor",
+      status: "pending",
+      isOrganizer: false,
+    },
+  ];
+
+  // Helper functions for date calculations
+  function tomorrow() {
+    const date = new Date(today);
+    date.setDate(today.getDate() + 1);
+    return date;
+  }
+
+  function dayAfterTomorrow() {
+    const date = new Date(today);
+    date.setDate(today.getDate() + 2);
+    return date;
+  }
+
+  // Combine all events for the "all" section
+  const allEvents = [
+    ...organizedEvents,
+    ...participatedEvents,
+    ...completedEvents,
+    ...canceledEvents,
+    ...upcomingEvents,
+  ];
+
+  // Map events for the upcoming events display
+  const upcoming = allEvents
+    .filter((event) => {
+      const eventDate = new Date(event.date);
+      return (
+        eventDate > today &&
+        (event.status === "approved" || event.status === "pending")
+      );
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 5); // Limit to 5 upcoming events
 
   return {
     organized: organizedEvents,
-    participated: participatedEvents,
-    upcoming: [...organizedEvents, ...participatedEvents]
-      .filter((event) => new Date(event.date) > new Date())
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(0, 5), // Limit to 5 upcoming events
+    participated: [
+      ...participatedEvents,
+      ...completedEvents,
+      ...canceledEvents,
+    ],
+    upcoming,
+    // Additional direct access for the modal tabs
+    completed: completedEvents,
+    canceled: canceledEvents,
+    all: allEvents,
   };
 };
 
