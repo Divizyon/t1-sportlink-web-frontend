@@ -10,7 +10,7 @@ import {
   TodaysEventsProps,
   Participant,
 } from "@/types/dashboard";
-import { TODAY_EVENTS } from "@/mocks/events";
+import { TODAY_EVENTS, EVENT_PARTICIPANTS } from "@/mocks";
 import {
   formatEventTime,
   formatEventLocation,
@@ -21,58 +21,7 @@ import { generateSkeletonArray } from "@/lib/uiUtils";
 import { filterEvents } from "@/lib/eventUtils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/userUtils";
-
-// Mock data for participants in each event
-const EVENT_PARTICIPANTS: Record<string | number, Participant[]> = {
-  1: [
-    {
-      id: "p1",
-      name: "Ali Yılmaz",
-      email: "ali@example.com",
-      lastEvent: "3 gün önce",
-    },
-    {
-      id: "p2",
-      name: "Ayşe Kaya",
-      email: "ayse@example.com",
-      lastEvent: "1 gün önce",
-    },
-    {
-      id: "p3",
-      name: "Mehmet Demir",
-      email: "mehmet@example.com",
-      lastEvent: "5 gün önce",
-    },
-  ],
-  2: [
-    {
-      id: "p4",
-      name: "Zeynep Çelik",
-      email: "zeynep@example.com",
-      lastEvent: "2 gün önce",
-    },
-    {
-      id: "p5",
-      name: "Emre Şahin",
-      email: "emre@example.com",
-      lastEvent: "Bugün",
-    },
-  ],
-  3: [
-    {
-      id: "p6",
-      name: "Deniz Yıldız",
-      email: "deniz@example.com",
-      lastEvent: "4 gün önce",
-    },
-    {
-      id: "p7",
-      name: "Selin Aksoy",
-      email: "selin@example.com",
-      lastEvent: "Dün",
-    },
-  ],
-};
+import { enrichUserData } from "@/lib/userDataService";
 
 export function TodaysEvents({
   onEventSelect,
@@ -199,7 +148,8 @@ export function TodaysEvents({
                     className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded-md cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onUserSelect && onUserSelect(participant);
+                      onUserSelect &&
+                        onUserSelect(enrichUserData(participant) as any);
                     }}
                   >
                     <Avatar className="h-6 w-6">

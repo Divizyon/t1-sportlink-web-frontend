@@ -43,8 +43,9 @@ export const RECENT_PARTICIPANTS: Participant[] = [
   },
 ];
 
-// Event participants (example data for specific events)
-export const EVENT_PARTICIPANTS: { [key: string]: Participant[] } = {
+// Event participants (example data for specific events by event ID)
+export const EVENT_PARTICIPANTS: { [key: string | number]: Participant[] } = {
+  // String IDs (for event detail page)
   "evt-1": [
     {
       id: "usr-1",
@@ -91,6 +92,56 @@ export const EVENT_PARTICIPANTS: { [key: string]: Participant[] } = {
       lastEvent: "Basketbol Turnuvası",
     },
   ],
+
+  // Numeric IDs (for TodaysEvents component)
+  1: [
+    {
+      id: "p1",
+      name: "Ali Yılmaz",
+      email: "ali@example.com",
+      lastEvent: "3 gün önce",
+    },
+    {
+      id: "p2",
+      name: "Ayşe Kaya",
+      email: "ayse@example.com",
+      lastEvent: "1 gün önce",
+    },
+    {
+      id: "p3",
+      name: "Mehmet Demir",
+      email: "mehmet@example.com",
+      lastEvent: "5 gün önce",
+    },
+  ],
+  2: [
+    {
+      id: "p4",
+      name: "Zeynep Çelik",
+      email: "zeynep@example.com",
+      lastEvent: "2 gün önce",
+    },
+    {
+      id: "p5",
+      name: "Emre Şahin",
+      email: "emre@example.com",
+      lastEvent: "Bugün",
+    },
+  ],
+  3: [
+    {
+      id: "p6",
+      name: "Deniz Yıldız",
+      email: "deniz@example.com",
+      lastEvent: "4 gün önce",
+    },
+    {
+      id: "p7",
+      name: "Selin Aksoy",
+      email: "selin@example.com",
+      lastEvent: "Dün",
+    },
+  ],
 };
 
 // Participation statistics
@@ -99,4 +150,57 @@ export const PARTICIPATION_STATS = {
   monthlyGrowth: 12.8,
   weeklyJoins: 48,
   averagePerEvent: 15.3,
+};
+
+// Extended participant data with additional details
+export const DETAILED_PARTICIPANTS: Record<string, Participant> = {
+  p1: {
+    id: "p1",
+    name: "Ali Yılmaz",
+    email: "ali@example.com",
+    lastEvent: "3 gün önce",
+    avatar: "/avatars/01.png",
+  },
+  p2: {
+    id: "p2",
+    name: "Ayşe Kaya",
+    email: "ayse@example.com",
+    lastEvent: "1 gün önce",
+    avatar: "/avatars/02.png",
+  },
+  p3: {
+    id: "p3",
+    name: "Mehmet Demir",
+    email: "mehmet@example.com",
+    lastEvent: "5 gün önce",
+    avatar: "/avatars/03.png",
+  },
+  p4: {
+    id: "p4",
+    name: "Zeynep Çelik",
+    email: "zeynep@example.com",
+    lastEvent: "2 gün önce",
+    avatar: "/avatars/04.png",
+  },
+  p5: {
+    id: "p5",
+    name: "Emre Şahin",
+    email: "emre@example.com",
+    lastEvent: "Bugün",
+    avatar: "/avatars/05.png",
+  },
+  p6: {
+    id: "p6",
+    name: "Deniz Yıldız",
+    email: "deniz@example.com",
+    lastEvent: "4 gün önce",
+    avatar: "/avatars/06.png",
+  },
+  p7: {
+    id: "p7",
+    name: "Selin Aksoy",
+    email: "selin@example.com",
+    lastEvent: "Dün",
+    avatar: "/avatars/07.png",
+  },
 };
