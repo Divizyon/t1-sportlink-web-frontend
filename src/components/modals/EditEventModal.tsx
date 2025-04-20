@@ -29,95 +29,86 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Event {
-  id: number
+  id: string | number
   title: string
-  date: string
-  type: string
+  description?: string
+  date: Date
+  time: string
   location: string
+  category: string
   participants: number
-  description: string
+  maxParticipants: number
+  status: "pending" | "approved" | "rejected" | "completed"
+  organizer?: string
+  image?: string
 }
 
 interface EditEventModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
-  eventId?: number
+  event?: Event
+  onSave?: (updatedEvent: Partial<Event>) => void
 }
 
-// Mock etkinlik verileri
-const mockEvents: Event[] = [
-  {
-    id: 1,
-    title: "Futbol Turnuvası",
-    date: "2023-04-18",
-    type: "football",
-    location: "Spor Kompleksi",
-    participants: 24,
-    description: "Yıllık futbol turnuvası, tüm takımların katılımı bekleniyor."
-  },
-  {
-    id: 2,
-    title: "Basketbol Maçı",
-    date: "2023-04-15",
-    type: "basketball",
-    location: "Kapalı Spor Salonu",
-    participants: 16,
-    description: "Dostluk karşılaşması, iki takım arasında."
-  },
-  {
-    id: 3,
-    title: "Yüzme Yarışması",
-    date: "2023-04-12",
-    type: "swimming",
-    location: "Olimpik Havuz",
-    participants: 32,
-    description: "Tüm yaş kategorilerinde yüzme yarışları."
-  },
-  {
-    id: 4,
-    title: "Tenis Turnuvası",
-    date: "2023-04-10",
-    type: "tennis",
-    location: "Tenis Kortları",
-    participants: 12,
-    description: "Tenis kulübü üyeleri arası turnuva."
-  }
+// Event kategori listesi
+const categories = [
+  "Futbol", "Basketbol", "Voleybol", "Tenis", "Yüzme", "Koşu", "Diğer"
 ]
 
-export function EditEventModal({ open, onOpenChange, onSuccess, eventId }: EditEventModalProps) {
+export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }: EditEventModalProps) {
   const [loading, setLoading] = useState(false)
-  const [event, setEvent] = useState<Event | null>(null)
+  const [formData, setFormData] = useState<Partial<Event>>({})
   const [date, setDate] = useState<Date>()
+  const { toast } = useToast()
 
   useEffect(() => {
-    if (eventId && open) {
-      // Gerçek bir API'dan etkinlik verisi çekilecek yerde mock veriden alıyoruz
-      const foundEvent = mockEvents.find(e => e.id === eventId)
-      if (foundEvent) {
-        setEvent(foundEvent)
-        setDate(new Date(foundEvent.date))
-      }
+    if (event && open) {
+      setFormData(event)
+      setDate(new Date(event.date))
     } else {
-      setEvent(null)
+      setFormData({})
       setDate(undefined)
     }
-  }, [eventId, open])
+  }, [event, open])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     
-    // Mock API isteği
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      // TODO: Replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      if (onSave) {
+        onSave({
+          ...formData,
+          date: date || new Date(),
+        })
+      }
+      
+      toast({
+        title: "Başarılı",
+        description: "Etkinlik başarıyla güncellendi.",
+      })
+      
       if (onSuccess) onSuccess()
-    }, 1500)
+      onOpenChange(false)
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Etkinlik güncellenirken bir hata oluştu.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (!event && eventId) {
+  if (!event && open) {
     return null
   }
 
@@ -133,17 +124,40 @@ export function EditEventModal({ open, onOpenChange, onSuccess, eventId }: EditE
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
+              <Label htmlFor="title" className="text-right">
                 Etkinlik Adı
               </Label>
               <Input
-                id="name"
+                id="title"
                 placeholder="Etkinlik adını girin"
                 className="col-span-3"
-                value={event?.title || ""}
-                onChange={(e) => setEvent(prev => prev ? {...prev, title: e.target.value} : null)}
+                value={formData.title || ""}
+                onChange={(e) => setFormData(prev => ({...prev, title: e.target.value}))}
                 required
               />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Kategori
+              </Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => 
+                  setFormData(prev => ({...prev, category: value}))
+                }
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Kategori seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
@@ -175,29 +189,6 @@ export function EditEventModal({ open, onOpenChange, onSuccess, eventId }: EditE
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="type" className="text-right">
-                Etkinlik Türü
-              </Label>
-              <Select
-                value={event?.type}
-                onValueChange={(value) => 
-                  setEvent(prev => prev ? {...prev, type: value} : null)
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Etkinlik türü seçin" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="football">Futbol</SelectItem>
-                  <SelectItem value="basketball">Basketbol</SelectItem>
-                  <SelectItem value="volleyball">Voleybol</SelectItem>
-                  <SelectItem value="tennis">Tenis</SelectItem>
-                  <SelectItem value="swimming">Yüzme</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="location" className="text-right">
                 Konum
               </Label>
@@ -205,26 +196,25 @@ export function EditEventModal({ open, onOpenChange, onSuccess, eventId }: EditE
                 id="location"
                 placeholder="Etkinlik konumunu girin"
                 className="col-span-3"
-                value={event?.location || ""}
+                value={formData.location || ""}
                 onChange={(e) => 
-                  setEvent(prev => prev ? {...prev, location: e.target.value} : null)
+                  setFormData(prev => ({...prev, location: e.target.value}))
                 }
               />
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="participants" className="text-right">
-                Katılımcı Sayısı
+              <Label htmlFor="maxParticipants" className="text-right">
+                Maksimum Katılımcı
               </Label>
               <Input
-                id="participants"
+                id="maxParticipants"
                 type="number"
                 placeholder="Maksimum katılımcı sayısı"
                 className="col-span-3"
-                value={event?.participants || ""}
+                value={formData.maxParticipants || ""}
                 onChange={(e) => 
-                  setEvent(prev => prev ? 
-                    {...prev, participants: parseInt(e.target.value) || 0} : null)
+                  setFormData(prev => ({...prev, maxParticipants: parseInt(e.target.value) || 0}))
                 }
               />
             </div>
@@ -238,29 +228,20 @@ export function EditEventModal({ open, onOpenChange, onSuccess, eventId }: EditE
                 placeholder="Etkinlik açıklaması"
                 className="col-span-3"
                 rows={3}
-                value={event?.description || ""}
+                value={formData.description || ""}
                 onChange={(e) => 
-                  setEvent(prev => prev ? {...prev, description: e.target.value} : null)
+                  setFormData(prev => ({...prev, description: e.target.value}))
                 }
               />
             </div>
           </div>
 
-          <div className="mb-4 rounded-md bg-blue-50 p-3">
-            <div className="flex items-center">
-              <Users className="mr-2 h-4 w-4 text-blue-600" />
-              <p className="text-sm font-medium text-blue-600">
-                Mevcut Katılımcılar: {event?.participants || 0}
-              </p>
-            </div>
-          </div>
-          
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               İptal
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Kaydediliyor..." : "Değişiklikleri Kaydet"}
+              {loading ? "Kaydediliyor..." : "Kaydet"}
             </Button>
           </DialogFooter>
         </form>

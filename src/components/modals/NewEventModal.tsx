@@ -94,15 +94,18 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
     
     // Simüle edilmiş API çağrısı
     setTimeout(() => {
-      const newEvent: Event = {
-        id: Math.random().toString(36).substr(2, 9), // Geçici ID oluşturma
-        name: formData.title,
-        date: formData.date.toISOString().split('T')[0],
+      const newEvent = {
+        id: Math.random().toString(36).substr(2, 9),
+        title: formData.title,
+        description: formData.description,
+        date: formData.date,
+        time: formData.time,
         location: formData.location,
-        capacity: formData.maxParticipants,
+        maxParticipants: formData.maxParticipants,
         participants: 0,
-        status: "active",
-        category: formData.category
+        status: "pending",
+        category: formData.category,
+        organizer: null // Ana sayfada atanacak
       }
 
       setLoading(false)
