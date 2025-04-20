@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Participant, RecentParticipantsProps } from "@/types/dashboard";
-import { RECENT_PARTICIPANTS } from "@/mocks/participants";
+import { RECENT_PARTICIPANTS } from "@/mocks";
 import { getUserInitials, sortParticipantsByLastEvent } from "@/lib/userUtils";
 import { generateSkeletonArray } from "@/lib/uiUtils";
+import { enrichUserData } from "@/lib/userDataService";
 
 export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -43,13 +44,22 @@ export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
     );
   }
 
+  // Handle participant selection with consistent data
+  const handleParticipantSelect = (participant: Participant) => {
+    if (onUserSelect) {
+      // Enrich participant data for consistent experience
+      const enrichedParticipant = enrichUserData(participant);
+      onUserSelect(enrichedParticipant as any);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {participants.map((participant) => (
         <div
           key={participant.id}
           className="flex items-center cursor-pointer hover:bg-muted/50 p-2 rounded-md -mx-2"
-          onClick={() => onUserSelect && onUserSelect(participant)}
+          onClick={() => handleParticipantSelect(participant)}
         >
           <Avatar className="h-9 w-9">
             <AvatarImage src={participant.avatar} alt={participant.name} />

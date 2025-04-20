@@ -1,41 +1,33 @@
 /**
  * User Utility Functions
- * Specialized utilities for working with user and participant data
+ *
+ * Specialized utilities for working with user and participant data.
+ * This file contains functions specific to user operations, filtering, sorting, etc.
+ *
+ * USAGE GUIDELINES:
+ * - Use these functions for user/participant-specific operations
+ * - For generic utilities, use utils.ts instead
+ * - For user data transformation/enrichment, use userDataService.ts
+ *
+ * NOTES:
+ * - Some functions from utils.ts are re-exported here for backward compatibility
+ *   (getUserInitials, formatLastActive)
+ *
+ * @example
+ * // User specific operations
+ * import { sortUsersByActivity, isAdmin } from "@/lib/userUtils";
  */
 
 import { User, Participant } from "@/types/dashboard";
-import { formatDistance, subDays } from "date-fns";
-import { tr } from "date-fns/locale";
+import { subDays } from "date-fns";
+import { calculateGrowth } from "./utils";
+
+// Re-export functions to maintain backward compatibility
+export { getUserInitials, formatLastActive } from "./utils";
 
 /**
- * Get user initials for avatar fallback
- */
-export function getUserInitials(name: string): string {
-  if (!name) return "?";
-
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-}
-
-/**
- * Format user's last active time as a relative time string
- */
-export function formatLastActive(lastActiveDate: string | Date): string {
-  const date =
-    typeof lastActiveDate === "string"
-      ? new Date(lastActiveDate)
-      : lastActiveDate;
-
-  return formatDistance(date, new Date(), {
-    addSuffix: true,
-    locale: tr,
-  });
-}
-
-/**
- * Sort users by recent activity
+ * Sort users by recent activity (most recent first)
+ * @example sortUsersByActivity(users)
  */
 export function sortUsersByActivity(users: User[]): User[] {
   return [...users].sort((a, b) => {
@@ -50,7 +42,8 @@ export function sortUsersByActivity(users: User[]): User[] {
 }
 
 /**
- * Group users by their role
+ * Groups users by their role
+ * @example const usersByRole = groupUsersByRole(users);
  */
 export function groupUsersByRole(users: User[]): Record<string, User[]> {
   return users.reduce((acc, user) => {
@@ -63,14 +56,17 @@ export function groupUsersByRole(users: User[]): Record<string, User[]> {
 }
 
 /**
- * Filter users by status
+ * Filter users by their status
+ * @example const activeUsers = filterUsersByStatus(users, "active");
  */
 export function filterUsersByStatus(users: User[], status: string): User[] {
   return users.filter((user) => user.status === status);
 }
 
 /**
- * Get active users (users who were active in the last X days)
+ * Get users who were active within the specified number of days
+ * @param days Number of days to consider as "active" (default: 30)
+ * @example const recentlyActiveUsers = getActiveUsers(users, 7);
  */
 export function getActiveUsers(users: User[], days: number = 30): User[] {
   const dateThreshold = subDays(new Date(), days);
@@ -83,26 +79,19 @@ export function getActiveUsers(users: User[], days: number = 30): User[] {
 }
 
 /**
- * Calculate new user growth
+ * Calculate growth percentage between current and previous user counts
+ * @example const growthRate = calculateUserGrowth(currentMonthUsers, lastMonthUsers);
  */
 export function calculateUserGrowth(
   currentUsers: User[],
   previousUsers: User[]
 ): number {
-  const currentCount = currentUsers.length;
-  const previousCount = previousUsers.length;
-
-  if (previousCount === 0) {
-    return currentCount > 0 ? 100 : 0;
-  }
-
-  return Number(
-    (((currentCount - previousCount) / previousCount) * 100).toFixed(1)
-  );
+  return calculateGrowth(currentUsers.length, previousUsers.length);
 }
 
 /**
- * Sort participants by their last event date
+ * Sort participants by their last event date (most recent first)
+ * @example const sortedParticipants = sortParticipantsByLastEvent(participants);
  */
 export function sortParticipantsByLastEvent(
   participants: Participant[]
@@ -116,6 +105,7 @@ export function sortParticipantsByLastEvent(
 
 /**
  * Filter participants who have participated in a specific category
+ * @example const footballParticipants = filterParticipantsByCategory(participants, "Futbol", eventsByParticipant);
  */
 export function filterParticipantsByCategory(
   participants: Participant[],
@@ -129,7 +119,8 @@ export function filterParticipantsByCategory(
 }
 
 /**
- * Format user role for display
+ * Format user role for display (capitalize first letter)
+ * @example formatUserRole("admin") // "Admin"
  */
 export function formatUserRole(role: string): string {
   // Add role-specific formatting logic here
@@ -137,7 +128,8 @@ export function formatUserRole(role: string): string {
 }
 
 /**
- * Determine if a user is admin
+ * Determine if a user has admin role
+ * @example if (isAdmin(user)) { // show admin controls }
  */
 export function isAdmin(user: User): boolean {
   return user.role === "admin";
@@ -145,6 +137,7 @@ export function isAdmin(user: User): boolean {
 
 /**
  * Calculate user participation statistics
+ * @example const stats = calculateUserParticipationStats(userId, participationData);
  */
 export function calculateUserParticipationStats(
   userId: string | number,

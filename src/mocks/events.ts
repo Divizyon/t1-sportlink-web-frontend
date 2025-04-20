@@ -60,3 +60,58 @@ export const EVENT_STATUS_COUNTS = {
   rejected: 15,
   completed: 203,
 };
+
+// User Events for UserDetailModal
+export interface UserEvent {
+  id: string;
+  title: string;
+  date: string;
+  category: string;
+  status: "completed" | "upcoming" | "canceled";
+}
+
+// Default mock user events for the UserDetailModal
+export const DEFAULT_USER_EVENTS: UserEvent[] = [
+  {
+    id: "evt-1",
+    title: "naberrer loo Koşusu",
+    date: "15.08.2023",
+    category: "Koşu",
+    status: "completed",
+  },
+  {
+    id: "evt-2",
+    title: "Hafta Sonu Basketbol",
+    date: "22.08.2023",
+    category: "Basketbol",
+    status: "completed",
+  },
+  {
+    id: "evt-3",
+    title: "Bisiklet Turu",
+    date: "29.08.2023",
+    category: "Bisiklet",
+    status: "completed",
+  },
+  {
+    id: "evt-4",
+    title: "Sabah Koşusu",
+    date: "10.09.2023",
+    category: "Koşu",
+    status: "upcoming",
+  },
+  {
+    id: "evt-5",
+    title: "Yoga Dersi",
+    date: "15.09.2023",
+    category: "Yoga",
+    status: "upcoming",
+  },
+  {
+    id: "evt-6",
+    title: "Yüzme Etkinliği",
+    date: "20.09.2023",
+    category: "Yüzme",
+    status: "upcoming",
+  },
+];

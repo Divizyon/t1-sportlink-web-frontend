@@ -1,32 +1,42 @@
 /**
  * Dashboard Utility Functions
- * Provides reusable utility functions for dashboard components
+ *
+ * Specialized utilities for dashboard components and event data visualization.
+ * This file contains functions specific to event grouping, statistics, and chart data formatting.
+ *
+ * USAGE GUIDELINES:
+ * - Use these functions for dashboard-specific operations and event analysis
+ * - For generic utilities, use utils.ts instead
+ * - For user-specific operations, use userUtils.ts
+ *
+ * NOTES:
+ * - Some functions from utils.ts are re-exported here for backward compatibility
+ *   (calculatePercentage, calculateGrowth, formatPercentage, formatGrowth)
+ *
+ * @example
+ * // Dashboard specific operations
+ * import { groupEventsByStatus, eventsToChartData } from "@/lib/dashboardUtils";
  */
 
 import { ChartData, CategoryData, Event, EventStatus } from "@/types/dashboard";
 import { EVENT_STATUS_LABELS, COLORS, DAYS_OF_WEEK, MONTHS } from "@/constants";
+import { formatDashboardDate } from "./utils";
+
+// Re-export functions to maintain backward compatibility
+export {
+  calculatePercentage,
+  calculateGrowth,
+  formatPercentage,
+  formatGrowth,
+} from "./utils";
 
 /**
  * Data Transformation Utilities
  */
 
 /**
- * Calculates percentage value
- */
-export function calculatePercentage(value: number, total: number): number {
-  return total > 0 ? Math.round((value / total) * 100) : 0;
-}
-
-/**
- * Calculates the growth percentage between current and previous values
- */
-export function calculateGrowth(current: number, previous: number): number {
-  if (previous === 0) return current > 0 ? 100 : 0;
-  return Number((((current - previous) / previous) * 100).toFixed(1));
-}
-
-/**
  * Groups events by their status
+ * @example const eventsByStatus = groupEventsByStatus(events);
  */
 export function groupEventsByStatus(
   events: Event[]
@@ -42,6 +52,7 @@ export function groupEventsByStatus(
 
 /**
  * Counts events by status
+ * @example const statusCounts = countEventsByStatus(events);
  */
 export function countEventsByStatus(
   events: Event[]
@@ -56,6 +67,7 @@ export function countEventsByStatus(
 
 /**
  * Groups events by category
+ * @example const eventsByCategory = groupEventsByCategory(events);
  */
 export function groupEventsByCategory(
   events: Event[]
@@ -74,7 +86,9 @@ export function groupEventsByCategory(
  */
 
 /**
- * Converts events to chart data format
+ * Converts events to chart data format for visualization
+ * @param timeframe "daily" or "monthly" grouping
+ * @example const chartData = eventsToChartData(events, "daily");
  */
 export function eventsToChartData(
   events: Event[],
@@ -134,7 +148,8 @@ export function eventsToChartData(
 }
 
 /**
- * Converts category data to chart format
+ * Converts category data to chart format for pie/donut charts
+ * @example const categoryChartData = categoriesToChartData(events);
  */
 export function categoriesToChartData(events: Event[]): CategoryData[] {
   const grouped = groupEventsByCategory(events);
@@ -152,6 +167,7 @@ export function categoriesToChartData(events: Event[]): CategoryData[] {
 
 /**
  * Filters events by a date range
+ * @example const eventsInRange = filterEventsByDateRange(events, startDate, endDate);
  */
 export function filterEventsByDateRange(
   events: Event[],
@@ -166,6 +182,7 @@ export function filterEventsByDateRange(
 
 /**
  * Filters events by categories
+ * @example const sportEvents = filterEventsByCategories(events, ["Futbol", "Basketbol"]);
  */
 export function filterEventsByCategories(
   events: Event[],
@@ -177,6 +194,7 @@ export function filterEventsByCategories(
 
 /**
  * Filters events by status
+ * @example const completedEvents = filterEventsByStatus(events, ["completed"]);
  */
 export function filterEventsByStatus(
   events: Event[],
@@ -187,38 +205,9 @@ export function filterEventsByStatus(
 }
 
 /**
- * Formatting Utilities
- */
-
-/**
- * Formats a number as a percentage string
- */
-export function formatPercentage(value: number): string {
-  return `${value}%`;
-}
-
-/**
- * Formats a growth value with + or - sign
- */
-export function formatGrowth(value: number): string {
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value}%`;
-}
-
-/**
  * Gets the color for an event status
+ * @example const color = getStatusColor("completed"); // Returns the color for completed status
  */
 export function getStatusColor(status: EventStatus): string {
   return COLORS.status[status] || COLORS.status.pending;
-}
-
-/**
- * Format date for display on dashboard
- */
-export function formatDashboardDate(date: Date): string {
-  return date.toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 }

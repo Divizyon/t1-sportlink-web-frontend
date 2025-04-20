@@ -57,6 +57,13 @@ import {
 } from "@/components/ui/hover-card";
 import { useRouter } from "next/navigation";
 import { UserDetailModal } from "@/components/modals/UserDetailModal";
+import {
+  DETAILED_EVENT,
+  DetailedEvent,
+  EventParticipant,
+  DEFAULT_USER_EVENTS,
+} from "@/mocks";
+import { enrichUserData } from "@/lib/userDataService";
 
 interface Participant {
   id: string;
@@ -143,86 +150,8 @@ export function EventDetailModal({
     useState<Participant | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
 
-  // Mock event verisini kullan eğer gerçek bir event yoksa
-  const mockEvent: Event = event || {
-    id: "evt-123",
-    title: "Futbol Turnuvası Finali",
-    description: "Üniversiteler arası futbol turnuvasının final maçı.",
-    date: new Date(2023, 5, 15),
-    time: "15:00",
-    location: "Ana Stadyum",
-    organizer: "Spor Koordinatörlüğü",
-    category: "Futbol",
-    tags: ["turnuva", "final", "üniversite"],
-    participants: [
-      {
-        id: "usr-1",
-        name: "Ahmet Yılmaz",
-        email: "ahmet@mail.com",
-        avatar: "/avatars/01.png",
-        age: 22,
-        gender: "Erkek",
-        registeredDate: "01.01.2023",
-        eventCount: 15,
-        status: "active",
-      },
-      {
-        id: "usr-2",
-        name: "Mehmet Demir",
-        email: "mehmet@mail.com",
-        avatar: "/avatars/02.png",
-        age: 24,
-        gender: "Erkek",
-        registeredDate: "15.02.2023",
-        eventCount: 8,
-        status: "active",
-      },
-      {
-        id: "usr-3",
-        name: "Ayşe Kaya",
-        email: "ayse@mail.com",
-        avatar: "/avatars/03.png",
-        age: 20,
-        gender: "Kadın",
-        registeredDate: "10.03.2023",
-        eventCount: 12,
-        status: "active",
-      },
-      {
-        id: "usr-4",
-        name: "Zeynep Çelik",
-        email: "zeynep@mail.com",
-        avatar: "/avatars/04.png",
-        age: 19,
-        gender: "Kadın",
-        registeredDate: "05.04.2023",
-        eventCount: 5,
-        status: "active",
-      },
-    ],
-    reports: [
-      {
-        id: "rep-1",
-        reporterId: "usr-101",
-        reporterName: "Murat Öz",
-        reason:
-          "Uygunsuz içerik - Etkinlik açıklamasında uygunsuz dil kullanımı",
-        date: "10.04.2023",
-        status: "pending",
-      },
-      {
-        id: "rep-2",
-        reporterId: "usr-102",
-        reporterName: "Deniz Yıldız",
-        reason: "Yanıltıcı bilgi - Etkinlik konumu yanlış",
-        date: "11.04.2023",
-        status: "pending",
-      },
-    ],
-    status: "pending",
-    maxParticipants: 22,
-    createdAt: new Date(2023, 4, 20),
-  };
+  // Use the mock data from the dedicated mocks file instead of inline data
+  const mockEvent: Event = event || DETAILED_EVENT;
 
   const [formData, setFormData] = useState<Event>(mockEvent);
 
@@ -992,21 +921,8 @@ export function EventDetailModal({
           setShowUserModal(open);
           if (!open) setSelectedParticipant(null);
         }}
-        user={
-          selectedParticipant
-            ? {
-                id: selectedParticipant.id,
-                name: selectedParticipant.name,
-                email: selectedParticipant.email,
-                avatar: selectedParticipant.avatar,
-                age: selectedParticipant.age || 0,
-                gender: selectedParticipant.gender || "",
-                registeredDate: selectedParticipant.registeredDate || "",
-                lastActive: "Son etkinlik",
-                status: selectedParticipant.status || "active",
-              }
-            : null
-        }
+        user={selectedParticipant as any}
+        isNested={true}
       />
     </>
   );

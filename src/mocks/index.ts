@@ -1,14 +1,20 @@
 /**
- * Mocks Index
- * Central export point for all mock data used in development and testing
+ * Central export for all mock data
+ * This ensures that we always use consistent mock data across components
  */
 
-// Export all mock data
-export * from "./events";
-export * from "./participants";
+// Users and participants
 export * from "./users";
-export * from "./reports";
-export * from "./analytics";
-export * from "./modals";
+export * from "./participants";
+
+// Events
+export * from "./events";
 export * from "./detailed-events";
+
+// Reports and analytics
+export * from "./reports";
 export * from "./dashboard-reports";
+export * from "./analytics";
+
+// Modals
+export * from "./modals";

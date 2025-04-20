@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +14,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Mail } from "lucide-react";
+import { DEFAULT_USER_EVENTS, USERS, USER_DETAILS } from "@/mocks";
+import { enrichUserData, CommonUser } from "@/lib/userDataService";
 
 interface Event {
   id: string;
@@ -23,94 +25,80 @@ interface Event {
   status: "completed" | "upcoming" | "canceled";
 }
 
+// Define our own User interface instead of extending
 interface User {
-  id: string;
+  id: string | number;
   name: string;
   email: string;
+  status: string;
   avatar?: string;
   phone?: string;
   gender?: string;
   age?: number;
-  registeredDate: string;
-  lastActive: string;
-  status: "active" | "suspended" | "blocked";
-  role?: "user" | "admin" | "moderator";
+  registeredDate?: string;
+  lastActive?: string;
+  role?: string;
   bio?: string;
   address?: string;
   favoriteCategories?: string[];
   events?: Event[];
   eventCount?: number;
   completedEvents?: number;
+  joinDate?: string;
 }
 
 interface UserDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user?: User | null;
+  // New prop to identify if this modal is nested inside another modal
+  isNested?: boolean;
 }
 
 export function UserDetailModal({
   open,
   onOpenChange,
   user,
+  isNested = false,
 }: UserDetailModalProps) {
   const [activeTab, setActiveTab] = useState("profil");
+  const [localOpen, setLocalOpen] = useState(false);
 
-  // Mock kullanıcı verisini kullan eğer gerçek bir kullanıcı yoksa
-  const mockUser: User = user || {
-    id: "usr-123",
-    name: "Ahmet Yılmaz",
-    email: "ahmet@example.com",
-    avatar: "/avatars/01.png",
-    phone: "+90 555 123 4567",
-    gender: "Erkek",
-    age: 28,
-    registeredDate: "01.01.2023",
-    lastActive: "Bugün, 10:30",
-    status: "active",
-    role: "user",
-    bio: "Spor ve açık hava aktivitelerine meraklı bir profesyonel.",
-    address: "İstanbul, Türkiye",
-    favoriteCategories: ["Futbol", "Koşu", "Bisiklet"],
-    events: [
-      {
-        id: "evt-1",
-        title: "Sahil Koşusu",
-        date: "15.08.2023",
-        category: "Koşu",
-        status: "completed",
-      },
-      {
-        id: "evt-2",
-        title: "Hafta Sonu Basketbol",
-        date: "22.08.2023",
-        category: "Basketbol",
-        status: "completed",
-      },
-      {
-        id: "evt-3",
-        title: "Bisiklet Turu",
-        date: "29.08.2023",
-        category: "Bisiklet",
-        status: "completed",
-      },
-      {
-        id: "evt-4",
-        title: "Sabah Koşusu",
-        date: "10.09.2023",
-        category: "Koşu",
-        status: "upcoming",
-      },
-    ],
-    eventCount: 12,
-    completedEvents: 8,
+  // Sync the local state with the prop
+  useEffect(() => {
+    setLocalOpen(open);
+  }, [open]);
+
+  // Handle closing the modal safely
+  const handleOpenChange = (newOpenState: boolean) => {
+    setLocalOpen(newOpenState);
+    onOpenChange(newOpenState);
   };
 
-  const userData = user || mockUser;
+  // Ensure consistent user data using our service
+  const userData: CommonUser = user
+    ? enrichUserData(user)
+    : enrichUserData(USER_DETAILS[0]);
 
-  const getStatusBadge = (status: User["status"]) => {
-    switch (status) {
+  // Normalize status to ensure consistent handling
+  // This ensures that regardless of whether the status comes as "active" or "aktif", it's handled the same way
+  const normalizedStatus = userData.status?.toLowerCase();
+
+  // Calculate event counts directly from the events array
+  const completedCount =
+    userData.events?.filter((e) => e.status === "completed").length || 0;
+  const upcomingCount =
+    userData.events?.filter((e) => e.status === "upcoming").length || 0;
+  const canceledCount =
+    userData.events?.filter((e) => e.status === "canceled").length || 0;
+
+  const getStatusBadge = (status: string) => {
+    // Normalize status to lowercase for consistent case handling
+    const normalizedStatus = status?.toLowerCase();
+
+    switch (normalizedStatus) {
       case "active":
+      case "aktif":
         return (
           <Badge
             variant="outline"
@@ -137,8 +125,25 @@ export function UserDetailModal({
             Engellendi
           </Badge>
         );
+      case "inactive":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-gray-50 text-gray-700 border-gray-200"
+          >
+            Pasif
+          </Badge>
+        );
       default:
-        return null;
+        // Return Aktif as default if status is unknown
+        return (
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200"
+          >
+            Aktif
+          </Badge>
+        );
     }
   };
 
@@ -176,9 +181,27 @@ export function UserDetailModal({
     }
   };
 
+  // Only render the dialog if the modal should be open
+  // This prevents old instances from remaining in the DOM
+  if (!open && !localOpen) {
+    return null;
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px]">
+    <Dialog
+      open={localOpen}
+      onOpenChange={handleOpenChange}
+      // Set modal to true to ensure proper stacking behavior
+      modal={true}
+    >
+      <DialogContent
+        className={`sm:max-w-[700px] ${isNested ? "z-[100]" : "z-50"}`}
+        // Fix the handler to allow closing by clicking outside
+        onPointerDownOutside={(e) => {
+          // Always allow closing by clicking outside, regardless of nesting
+          handleOpenChange(false);
+        }}
+      >
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl">Kullanıcı Detayları</DialogTitle>
@@ -219,32 +242,32 @@ export function UserDetailModal({
             <div className="grid grid-cols-2 gap-4 mt-8">
               <div>
                 <p className="text-sm text-muted-foreground">Telefon</p>
-                <p className="font-medium">+90 555 123 4567</p>
+                <p className="font-medium">{userData.phone}</p>
               </div>
 
               <div>
                 <p className="text-sm text-muted-foreground">Cinsiyet</p>
-                <p className="font-medium">Erkek</p>
+                <p className="font-medium">{userData.gender}</p>
               </div>
 
               <div>
                 <p className="text-sm text-muted-foreground">Yaş</p>
-                <p className="font-medium">28</p>
+                <p className="font-medium">{userData.age}</p>
               </div>
 
               <div>
                 <p className="text-sm text-muted-foreground">Katılım Tarihi</p>
-                <p className="font-medium">01.01.2023</p>
+                <p className="font-medium">{userData.registeredDate}</p>
               </div>
 
               <div>
                 <p className="text-sm text-muted-foreground">Son Aktivite</p>
-                <p className="font-medium">Bugün, 10:30</p>
+                <p className="font-medium">{userData.lastActive}</p>
               </div>
 
               <div>
                 <p className="text-sm text-muted-foreground">Adres</p>
-                <p className="font-medium">İstanbul, Türkiye</p>
+                <p className="font-medium">{userData.address}</p>
               </div>
             </div>
 
@@ -278,7 +301,9 @@ export function UserDetailModal({
               <div className="mt-2">
                 <div className="flex justify-between text-sm">
                   <span>Tamamlanan Etkinlikler</span>
-                  <span>8 / 12</span>
+                  <span>
+                    {userData.completedEvents} / {userData.eventCount}
+                  </span>
                 </div>
                 <Progress
                   value={
@@ -294,28 +319,47 @@ export function UserDetailModal({
           <TabsContent value="etkinlikler" className="space-y-4 pt-4">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Katıldığı Etkinlikler</h3>
-              <Badge variant="outline">
-                Toplam: {userData.events?.length || 0}
-              </Badge>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                  Tamamlanan: {completedCount}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="bg-purple-50 text-purple-700"
+                >
+                  Yaklaşan: {upcomingCount}
+                </Badge>
+                <Badge variant="outline" className="bg-red-50 text-red-700">
+                  İptal Edilen: {canceledCount}
+                </Badge>
+              </div>
             </div>
 
             <div className="space-y-3 mt-4">
-              {userData.events?.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium">{event.title}</p>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{event.date}</span>
-                      <span>•</span>
-                      <span>{event.category}</span>
+              {DEFAULT_USER_EVENTS && DEFAULT_USER_EVENTS.length > 0 ? (
+                DEFAULT_USER_EVENTS.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium">{event.title}</p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{event.date}</span>
+                        <span>•</span>
+                        <span>{event.category}</span>
+                      </div>
                     </div>
+                    <div>{getEventStatusBadge(event.status)}</div>
                   </div>
-                  <div>{getEventStatusBadge(event.status)}</div>
+                ))
+              ) : (
+                <div className="p-8 text-center">
+                  <p className="text-muted-foreground">
+                    Kullanıcının katıldığı etkinlik bulunamadı.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </TabsContent>
 
@@ -365,7 +409,7 @@ export function UserDetailModal({
         </Tabs>
 
         <DialogFooter>
-          <Button type="button" onClick={() => onOpenChange(false)}>
+          <Button type="button" onClick={() => handleOpenChange(false)}>
             Kapat
           </Button>
         </DialogFooter>
