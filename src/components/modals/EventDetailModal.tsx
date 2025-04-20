@@ -83,6 +83,7 @@ interface Report {
   reason: string;
   date: string;
   status: "pending" | "reviewed" | "dismissed";
+  details?: string;
 }
 
 interface Event {
@@ -185,11 +186,6 @@ export function EventDetailModal({
   };
 
   const [formData, setFormData] = useState<Event>(mockEvent);
-
-  // Debug logs to check reports data
-  console.log("SAMPLE_EVENT_DETAILS.reports:", SAMPLE_EVENT_DETAILS.reports);
-  console.log("mockEvent.reports:", mockEvent.reports);
-  console.log("formData.reports:", formData.reports);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -783,7 +779,12 @@ export function EventDetailModal({
                           </div>
                         </div>
                         <div className="p-3">
-                          <p className="text-sm">{report.reason}</p>
+                          <p className="text-sm font-medium">{report.reason}</p>
+                          {report.details && (
+                            <p className="text-sm mt-1 text-muted-foreground">
+                              {report.details}
+                            </p>
+                          )}
                         </div>
                         {report.status === "pending" && (
                           <div className="p-3 border-t flex justify-end gap-2">
