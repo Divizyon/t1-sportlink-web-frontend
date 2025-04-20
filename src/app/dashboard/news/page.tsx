@@ -1,127 +1,77 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Edit, Trash2 } from "lucide-react"
-import { NewNewsModal } from "@/components/modals/NewNewsModal"
-import { Badge } from "@/components/ui/badge"
-import { toast } from "sonner"
-
-interface News {
-  id: string
-  title: string
-  content: string
-  date: string
-  status: "published" | "draft"
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNews } from "@/hooks/useNews";
+import { NewsTable } from "@/components/news/NewsTable";
+import { NewsUrlInput } from "@/components/news/NewsUrlInput";
+import { Badge } from "@/components/ui/badge";
+import { useEffect } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function NewsPage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [news, setNews] = useState<News[]>([
-    {
-      id: "1",
-      title: "Yeni Spor Salonu Açılıyor",
-      content: "Yeni spor salonumuz 1 Nisan'da açılıyor...",
-      date: "2024-03-10",
-      status: "published"
-    },
-    {
-      id: "2",
-      title: "Yaz Kampı Kayıtları Başladı",
-      content: "Yaz kampı kayıtları için son başvuru tarihi...",
-      date: "2024-03-15",
-      status: "draft"
+  const { news, filteredNews, loading, filters, setFilters, pendingCount } = useNews();
+  const { toast } = useToast();
+
+  // Onay bekleyen haber sayısını takip et
+  useEffect(() => {
+    if (pendingCount > 0) {
+      toast({
+        title: "Yeni Onay Bekleyen Haberler",
+        description: `${pendingCount} haber onay bekliyor.`,
+        variant: "default",
+      });
     }
-  ])
-
-  const filteredNews = news.filter(item => 
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.content.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const handleEditNews = (id: string, updatedNews: Partial<News>) => {
-    setNews(news.map(item => 
-      item.id === id ? { ...item, ...updatedNews } : item
-    ))
-    toast.success("Haber başarıyla güncellendi")
-  }
-
-  const handleDeleteNews = (id: string) => {
-    setNews(news.filter(item => item.id !== id))
-    toast.success("Haber başarıyla silindi")
-  }
+  }, [pendingCount, toast]);
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Haber & Duyuru Yönetimi</h2>
-        <div className="flex items-center space-x-2">
-          <NewNewsModal />
-        </div>
+    <div className="container mx-auto p-4 flex flex-col min-h-screen">
+      {/* Üst Kısım - Tabs */}
+      <div className="flex-grow">
+        <Tabs defaultValue="search" className="mb-6">
+          <TabsList className="mb-4">
+            <TabsTrigger value="search">Haber Ara</TabsTrigger>
+            <TabsTrigger value="pending" className="relative">
+              Onay Bekleyenler
+              {pendingCount > 0 && (
+                <Badge variant="destructive" className="ml-2 absolute -top-2 -right-2">
+                  {pendingCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="approved">Tüm Haberler</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="search">
+            <NewsTable 
+              news={filteredNews} 
+              loading={loading}
+              showActions={false}
+            />
+          </TabsContent>
+
+          <TabsContent value="pending">
+            <NewsTable 
+              news={filteredNews.filter(item => item.status === "pending")} 
+              loading={loading}
+              showActions={true}
+              showSelect={true}
+            />
+          </TabsContent>
+
+          <TabsContent value="approved">
+            <NewsTable 
+              news={filteredNews.filter(item => item.status === "approved")} 
+              loading={loading}
+              showActions={false}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
-      <div className="flex items-center space-x-2">
-        <Input
-          placeholder="Haber ara..."
-          className="w-[300px]"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+
+      {/* Alt Kısım - URL Girişi */}
+      <div className="mt-auto pt-6 border-t">
+        <NewsUrlInput />
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Tüm Haberler</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Haber Başlığı</TableHead>
-                  <TableHead>İçerik</TableHead>
-                  <TableHead>Tarih</TableHead>
-                  <TableHead>Durum</TableHead>
-                  <TableHead>Aksiyon</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredNews.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.title}</TableCell>
-                    <TableCell>{item.content}</TableCell>
-                    <TableCell>{item.date}</TableCell>
-                    <TableCell>
-                      <Badge variant={item.status === "published" ? "default" : "secondary"}>
-                        {item.status === "published" ? "Yayında" : "Taslak"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          onClick={() => handleEditNews(item.id, { status: item.status === "published" ? "draft" : "published" })}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          onClick={() => handleDeleteNews(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
     </div>
-  )
+  );
 } 
