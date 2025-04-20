@@ -1,339 +1,316 @@
-import { useState, useEffect, useMemo } from "react";
+"use client"
+
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import type { NewsItem } from "@/types/news";
+import type { NewsFilters } from "@/types/news";
 
-// Since we don't have predefined types for news, let's create them
-interface NewsItem {
-  id: number | string;
-  title: string;
-  content: string;
-  author: string;
-  publishDate: string;
-  category: string;
-  image?: string;
-  tags?: string[];
-  featured?: boolean;
-}
-
-interface Announcement {
-  id: number | string;
-  title: string;
-  content: string;
-  publishDate: string;
-  expiryDate?: string;
-  severity: "low" | "medium" | "high";
-  isActive: boolean;
-}
-
-interface NewsFilters {
-  category?: string | string[];
-  searchTerm?: string;
-  featured?: boolean;
-  dateRange?: {
-    start: Date;
-    end: Date;
-  };
-}
-
-// Mock data for now - in a real application this would come from an API
-const MOCK_NEWS: NewsItem[] = [
+// Mock haberler
+export const MOCK_NEWS: NewsItem[] = [
   {
-    id: 1,
-    title: "Yeni Sezon Başlıyor",
-    content: "Yeni spor sezonu hakkında tüm detaylar burada!",
-    author: "Admin",
-    publishDate: "2023-09-01",
-    category: "sezon",
-    featured: true,
-    image: "/images/news/season-start.jpg",
-    tags: ["yeni sezon", "duyuru", "başlangıç"],
+    id: "1",
+    title: "Fenerbahçe'den muhteşem galibiyet",
+    content: "Fenerbahçe, Süper Lig'de oynadığı son maçta rakibini 3-0 mağlup etti. Sarı-lacivertliler, bu galibiyetle puanını 65'e yükseltti.",
+    category: "Spor",
+    image: "https://example.com/fb-galibiyet.jpg",
+    publishDate: new Date().toISOString(),
+    tags: ["futbol", "süper lig"],
+    status: "pending",
+    hasImage: true,
+    contentLength: 123,
+    imageStatus: 'available'
   },
   {
-    id: 2,
-    title: "Basketbol Turnuvası Kayıtları Açıldı",
-    content: "Üniversitelerarası basketbol turnuvası için kayıtlar başladı.",
-    author: "Spor Koordinatörlüğü",
-    publishDate: "2023-09-05",
-    category: "turnuva",
-    image: "/images/news/basketball-tournament.jpg",
-    tags: ["basketbol", "turnuva", "kayıt"],
+    id: "2",
+    title: "Basketbolda büyük başarı",
+    content: "Türkiye Basketbol Milli Takımı, Avrupa Şampiyonası'nda çeyrek finale yükseldi. Milliler, son maçında güçlü rakibini uzatmalarda mağlup etmeyi başardı.",
+    category: "Spor",
+    image: "https://example.com/basket-basari.jpg",
+    publishDate: new Date().toISOString(),
+    tags: ["basketbol", "milli takım"],
+    status: "pending",
+    hasImage: true,
+    contentLength: 156,
+    imageStatus: 'available'
   },
   {
-    id: 3,
-    title: "Yüzme Havuzu Bakım Çalışması",
-    content:
-      "Olimpik havuzumuz 15-20 Eylül tarihleri arasında bakımda olacaktır.",
-    author: "Tesis Yönetimi",
-    publishDate: "2023-09-10",
-    category: "tesis",
-    tags: ["yüzme", "bakım", "tesis"],
+    id: "3",
+    title: "Galatasaray'da transfer hareketliliği",
+    content: "Galatasaray, transfer döneminde önemli hamleler yapmaya hazırlanıyor. Teknik direktör, kadroya yeni yüzler katmak için çalışmalara başladı.",
+    category: "Spor",
+    image: "https://example.com/gs-transfer.jpg",
+    publishDate: new Date().toISOString(),
+    tags: ["futbol", "transfer"],
+    status: "pending",
+    hasImage: true,
+    contentLength: 145,
+    imageStatus: 'available'
   },
-];
+  {
+    id: "4",
+    title: "Voleybol Milli Takımı'ndan başarı",
+    content: "Türkiye Voleybol Milli Takımı, Avrupa Şampiyonası'nda grup maçlarını lider tamamladı. Milliler, çeyrek finalde güçlü rakibiyle karşılaşacak.",
+    category: "Spor",
+    image: "https://example.com/voleybol-basari.jpg",
+    publishDate: new Date().toISOString(),
+    tags: ["voleybol", "milli takım"],
+    status: "pending",
+    hasImage: true,
+    contentLength: 167,
+    imageStatus: 'available'
+  }
+]
 
-const MOCK_ANNOUNCEMENTS: Announcement[] = [
-  {
-    id: 1,
-    title: "Sistem Bakımı",
-    content:
-      "Sistem 12 Eylül gece 02:00-04:00 saatleri arasında bakımda olacaktır.",
-    publishDate: "2023-09-10",
-    expiryDate: "2023-09-12",
-    severity: "medium",
-    isActive: true,
-  },
-  {
-    id: 2,
-    title: "Önemli Duyuru: Güvenlik Güncellemesi",
-    content:
-      "Güvenlik sebebiyle tüm kullanıcıların şifrelerini değiştirmesi gerekmektedir.",
-    publishDate: "2023-09-05",
-    severity: "high",
-    isActive: true,
-  },
-];
+// Kalıcı depolama için localStorage anahtarı
+const STORAGE_KEY = 'sportlink-news';
 
-export function useNews(initialFilters: NewsFilters = {}) {
+// Haberleri localStorage'dan yükle
+const loadNewsFromStorage = (): NewsItem[] => {
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem(STORAGE_KEY);
+  console.log('Stored news:', stored);
+  if (!stored) {
+    console.log('No stored news found, using mock news');
+    return [...MOCK_NEWS];
+  }
+  return JSON.parse(stored);
+};
+
+// Haberleri localStorage'a kaydet
+const saveNewsToStorage = (news: NewsItem[]) => {
+  if (typeof window === 'undefined') return;
+  console.log('Saving news to storage:', news);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(news));
+};
+
+export const useNews = () => {
   const { toast } = useToast();
   const [news, setNews] = useState<NewsItem[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [filters, setFilters] = useState<NewsFilters>(initialFilters);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<NewsFilters>({
+    category: "",
+    searchTerm: "",
+    status: "pending"
+  });
 
-  // Fetch news and announcements
+  // Başlangıçta haberleri localStorage'dan yükle
   useEffect(() => {
-    const fetchNewsAndAnnouncements = async () => {
-      setLoading(true);
-      try {
-        // In a real application, these would be API calls
-        // const newsResponse = await fetch('/api/news');
-        // const newsData = await newsResponse.json();
-        // setNews(newsData);
-
-        // const announcementsResponse = await fetch('/api/announcements');
-        // const announcementsData = await announcementsResponse.json();
-        // setAnnouncements(announcementsData);
-
-        // Using mock data for now
-        setNews(MOCK_NEWS);
-        setAnnouncements(MOCK_ANNOUNCEMENTS);
-        setLoading(false);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error("Failed to fetch news")
-        );
-        setLoading(false);
-      }
-    };
-
-    fetchNewsAndAnnouncements();
+    const loadedNews = loadNewsFromStorage();
+    setNews(loadedNews);
   }, []);
 
-  // Filter news based on criteria
+  // Haberler değiştiğinde localStorage'a kaydet
+  useEffect(() => {
+    saveNewsToStorage(news);
+  }, [news]);
+
+  // Haberi sil
+  const deleteNews = useCallback((id: string) => {
+    setNews(prevNews => {
+      const updatedNews = prevNews.filter(item => item.id !== id);
+      saveNewsToStorage(updatedNews);
+      return updatedNews;
+    });
+
+    toast({
+      title: "Haber Silindi",
+      description: "Haber başarıyla silindi.",
+      variant: "default",
+    });
+  }, [toast]);
+
+  // Toplu haber silme
+  const deleteSelectedNews = useCallback(() => {
+    setNews(prevNews => {
+      const updatedNews = prevNews.filter(item => !item.selected);
+      saveNewsToStorage(updatedNews);
+      return updatedNews;
+    });
+
+    toast({
+      title: "Haberler Silindi",
+      description: "Seçili haberler başarıyla silindi.",
+      variant: "default",
+    });
+  }, [toast]);
+
+  // Filtrelenmiş haberler
   const filteredNews = useMemo(() => {
     return news.filter((item) => {
-      // Filter by category
+      // Kategori filtresi
       if (filters.category) {
         if (Array.isArray(filters.category)) {
-          if (
-            filters.category.length > 0 &&
-            !filters.category.includes(item.category)
-          ) {
+          if (filters.category.length > 0 && !filters.category.includes(item.category)) {
             return false;
           }
-        } else if (
-          filters.category !== "all" &&
-          item.category !== filters.category
-        ) {
+        } else if (filters.category !== "all" && item.category !== filters.category) {
           return false;
         }
       }
 
-      // Filter by search term
+      // Durum filtresi
+      if (filters.status && item.status !== filters.status) {
+        return false;
+      }
+
+      // Arama filtresi
       if (filters.searchTerm && filters.searchTerm.trim() !== "") {
         const searchTerm = filters.searchTerm.toLowerCase();
         return (
           item.title.toLowerCase().includes(searchTerm) ||
           item.content.toLowerCase().includes(searchTerm) ||
-          (item.tags &&
-            item.tags.some((tag) => tag.toLowerCase().includes(searchTerm)))
+          (item.tags && item.tags.some((tag) => tag.toLowerCase().includes(searchTerm)))
         );
-      }
-
-      // Filter by featured status
-      if (filters.featured !== undefined) {
-        return item.featured === filters.featured;
-      }
-
-      // Filter by date range
-      if (filters.dateRange) {
-        const publishDate = new Date(item.publishDate);
-        if (
-          publishDate < filters.dateRange.start ||
-          publishDate > filters.dateRange.end
-        ) {
-          return false;
-        }
       }
 
       return true;
     });
   }, [news, filters]);
 
-  // Get active announcements
-  const activeAnnouncements = useMemo(() => {
-    const today = new Date();
-    return announcements.filter((announcement) => {
-      if (!announcement.isActive) return false;
+  // Onay bekleyen haber sayısı
+  const pendingCount = useMemo(() => {
+    return news.filter(item => item.status === 'pending').length;
+  }, [news]);
 
-      if (announcement.expiryDate) {
-        const expiryDate = new Date(announcement.expiryDate);
-        if (expiryDate < today) return false;
+  // URL'den haber ekle
+  const addNewsFromUrl = useCallback(async (url: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch("/api/news/import", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Haberler eklenirken bir hata oluştu");
       }
 
-      return true;
-    });
-  }, [announcements]);
+      if (Array.isArray(data) && data.length > 0) {
+        // Haberleri onay bekleyen olarak ekle
+        const pendingNews = data.map(news => ({
+          ...news,
+          status: "pending",
+          sourceUrl: url, // Kaynak URL'yi sakla
+          addedAt: new Date().toISOString(), // Eklenme zamanını sakla
+          selected: false // Seçim durumu
+        }));
+        
+        // Yeni haberleri mevcut haberlere ekle
+        setNews(prevNews => {
+          // URL'den daha önce eklenen haberleri filtrele
+          const existingUrls = new Set(prevNews.map(item => item.sourceUrl));
+          const uniqueNews = pendingNews.filter(item => !existingUrls.has(item.sourceUrl));
+          
+          return [...prevNews, ...uniqueNews];
+        });
 
-  // Create a new news item
-  const createNews = async (newsData: Omit<NewsItem, "id">) => {
-    setLoading(true);
-    try {
-      // In a real application, this would be an API call
-      // const response = await fetch('/api/news', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(newsData)
-      // });
-      // const createdNews = await response.json();
+        toast({
+          title: "Haberler Başarıyla Eklendi",
+          description: `${data.length} yeni spor haberi onay için eklendi.`,
+          variant: "default",
+        });
 
-      // Simulating API response
-      const createdNews: NewsItem = {
-        ...newsData,
-        id: Date.now(), // Generate a temporary ID
-      };
-
-      setNews((prevNews) => [createdNews, ...prevNews]);
+        return { count: data.length };
+      } else {
+        return { error: "Spor haberi bulunamadı" };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Bir hata oluştu";
+      setError(errorMessage);
+      return { error: errorMessage };
+    } finally {
       setLoading(false);
-
-      toast({
-        title: "Haber Oluşturuldu",
-        description: `"${newsData.title}" başarıyla yayınlandı.`,
-      });
-
-      return createdNews;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to create news"));
-      setLoading(false);
-
-      toast({
-        title: "Haber Oluşturulamadı",
-        description: "Bir hata oluştu.",
-        variant: "destructive",
-      });
-
-      throw err;
     }
-  };
+  }, [toast]);
 
-  // Create a new announcement
-  const createAnnouncement = async (
-    announcementData: Omit<Announcement, "id">
-  ) => {
-    setLoading(true);
+  // Haberi seç/seçimi kaldır
+  const toggleNewsSelection = useCallback((id: string) => {
+    setNews(prevNews =>
+      prevNews.map(item =>
+        item.id === id ? { ...item, selected: !item.selected } : item
+      )
+    );
+  }, []);
+
+  // Tüm haberleri seç/seçimi kaldır
+  const toggleSelectAll = useCallback((select: boolean) => {
+    setNews(prevNews =>
+      prevNews.map(item => ({ ...item, selected: select }))
+    );
+  }, []);
+
+  // Haberi onayla
+  const approveNews = useCallback(async (id: string) => {
     try {
-      // In a real application, this would be an API call
-      // const response = await fetch('/api/announcements', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(announcementData)
-      // });
-      // const createdAnnouncement = await response.json();
-
-      // Simulating API response
-      const createdAnnouncement: Announcement = {
-        ...announcementData,
-        id: Date.now(), // Generate a temporary ID
-      };
-
-      setAnnouncements((prevAnnouncements) => [
-        createdAnnouncement,
-        ...prevAnnouncements,
-      ]);
-      setLoading(false);
-
-      toast({
-        title: "Duyuru Oluşturuldu",
-        description: `"${announcementData.title}" başarıyla yayınlandı.`,
-      });
-
-      return createdAnnouncement;
-    } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error("Failed to create announcement")
+      setNews(prevNews =>
+        prevNews.map(item =>
+          item.id === id
+            ? { ...item, status: "approved", approvedAt: new Date().toISOString() }
+            : item
+        )
       );
-      setLoading(false);
 
       toast({
-        title: "Duyuru Oluşturulamadı",
-        description: "Bir hata oluştu.",
-        variant: "destructive",
+        title: "Haber Onaylandı",
+        description: "Haber başarıyla onaylandı ve yayına alındı.",
+        variant: "default",
       });
 
-      throw err;
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Bir hata oluştu";
+      setError(errorMessage);
+      return { error: errorMessage };
     }
-  };
+  }, [toast]);
 
-  // Set category filter
-  const setCategoryFilter = (category: string | string[]) => {
-    setFilters((prev) => ({
-      ...prev,
-      category,
-    }));
-  };
+  // Haberi reddet
+  const rejectNews = useCallback(async (id: string) => {
+    try {
+      setNews(prevNews =>
+        prevNews.map(item =>
+          item.id === id
+            ? { ...item, status: "rejected", rejectedAt: new Date().toISOString() }
+            : item
+        )
+      );
 
-  // Set search filter
-  const setSearchFilter = (searchTerm: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      searchTerm,
-    }));
-  };
+      toast({
+        title: "Haber Reddedildi",
+        description: "Haber başarıyla reddedildi.",
+        variant: "default",
+      });
 
-  // Set featured filter
-  const setFeaturedFilter = (featured: boolean | undefined) => {
-    setFilters((prev) => ({
-      ...prev,
-      featured,
-    }));
-  };
-
-  // Set date range filter
-  const setDateRangeFilter = (start: Date, end: Date) => {
-    setFilters((prev) => ({
-      ...prev,
-      dateRange: { start, end },
-    }));
-  };
-
-  // Reset all filters
-  const resetFilters = () => {
-    setFilters({});
-  };
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Bir hata oluştu";
+      setError(errorMessage);
+      return { error: errorMessage };
+    }
+  }, [toast]);
 
   return {
     news,
     filteredNews,
-    announcements,
-    activeAnnouncements,
     loading,
     error,
     filters,
-    createNews,
-    createAnnouncement,
-    setCategoryFilter,
-    setSearchFilter,
-    setFeaturedFilter,
-    setDateRangeFilter,
-    resetFilters,
+    setFilters,
+    pendingCount,
+    addNewsFromUrl,
+    deleteNews,
+    deleteSelectedNews,
+    approveNews,
+    rejectNews,
+    toggleNewsSelection,
+    toggleSelectAll,
   };
-}
+};
