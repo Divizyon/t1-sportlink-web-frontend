@@ -53,54 +53,6 @@ export const TODAY_EVENTS: Event[] = [
   },
 ];
 
-// Detailed event data (for EventDetailModal and other components)
-export const EVENT_DETAILS: Event[] = [
-  {
-    id: 101,
-    title: "Haftalık Futbol Karşılaşması",
-    description:
-      "Her yaş ve seviye için açık futbol maçı. Takımlar yerinde oluşturulacak.",
-    date: new Date(new Date().setDate(new Date().getDate() + 3)),
-    time: "19:00",
-    location: "Merkez Spor Kompleksi",
-    category: "Futbol",
-    participants: 18,
-    maxParticipants: 22,
-    status: "approved",
-    organizer: "Spor Kulübü",
-    image: "/images/events/soccer.jpg",
-  },
-  {
-    id: 102,
-    title: "Sabah Yoga Dersi",
-    description:
-      "Güne enerjik başlamak için yoga dersi. Tüm seviyeler için uygundur.",
-    date: new Date(new Date().setDate(new Date().getDate() + 1)),
-    time: "07:30",
-    location: "Zen Yoga Stüdyosu",
-    category: "Yoga",
-    participants: 12,
-    maxParticipants: 15,
-    status: "approved",
-    organizer: "Zen Yoga",
-    image: "/images/events/yoga.jpg",
-  },
-  {
-    id: 103,
-    title: "Bisiklet Turu",
-    description: "Şehir çevresinde 25km'lik bisiklet turu. Kask zorunludur.",
-    date: new Date(new Date().setDate(new Date().getDate() + 5)),
-    time: "08:00",
-    location: "Sahil Parkı Girişi",
-    category: "Bisiklet",
-    participants: 25,
-    maxParticipants: 40,
-    status: "approved",
-    organizer: "Bisiklet Kulübü",
-    image: "/images/events/cycling.jpg",
-  },
-];
-
 // Sample event status distribution data
 export const EVENT_STATUS_COUNTS = {
   pending: 42,

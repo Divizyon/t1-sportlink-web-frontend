@@ -28,30 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-
-interface User {
-  id: string
-  name: string
-  surname: string
-  role: "bireysel_kullanici" | "kulup_uyesi" | "antrenor" | "tesis_sahibi"
-  email: string
-  avatar?: string
-}
-
-interface Event {
-  id: string | number
-  title: string
-  description: string
-  date: Date
-  time: string
-  location: string
-  category: string
-  participants: number
-  maxParticipants: number
-  status: "pending" | "approved" | "rejected" | "completed"
-  organizer: User
-  image?: string
-}
+import { User, Event } from "@/types"
 
 // Kategori renkleri
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
@@ -82,36 +59,31 @@ const ROLE_LABELS: Record<string, string> = {
   "tesis_sahibi": "Tesis Sahibi"
 }
 
-// Örnek kullanıcılar
+// Örnek kullanıcılar (Global User tipine uygun - ID number, surname yok)
 const sampleUsers: User[] = [
   {
-    id: "1",
-    name: "Ahmet",
-    surname: "Yılmaz",
+    id: 1, // ID number
+    name: "Ahmet Yılmaz",
     role: "antrenor",
     email: "ahmet.yilmaz@sportlink.com"
   },
   {
-    id: "2",
-    name: "Mehmet",
-    surname: "Demir",
+    id: 2, // ID number
+    name: "Mehmet Demir",
     role: "kulup_uyesi",
     email: "mehmet.demir@sportlink.com"
   },
   {
-    id: "3",
-    name: "Ayşe",
-    surname: "Kaya",
+    id: 3, // ID number
+    name: "Ayşe Kaya",
     role: "tesis_sahibi",
     email: "ayse.kaya@sportlink.com"
   }
 ]
 
-// Baş harfleri alma yardımcı fonksiyonu
-const getInitials = (name?: string, surname?: string) => {
-  const firstInitial = name?.charAt(0) || '';
-  const secondInitial = surname?.charAt(0) || '';
-  return firstInitial + secondInitial || '??';
+// Baş harfleri alma yardımcı fonksiyonu (Sadece name kullan)
+const getInitials = (name?: string) => {
+  return name?.charAt(0) || '?'; 
 };
 
 export default function EventsPage() {
@@ -124,12 +96,12 @@ export default function EventsPage() {
   const [selectedEventForPreview, setSelectedEventForPreview] = useState<Event | null>(null)
   const { toast } = useToast()
   
-  // Örnek etkinlikler
-  const defaultEvents = [
+  // Örnek etkinlikler (Global Event tipine uygun: id: number, organizer: number)
+  const defaultEvents: Event[] = [
     {
-      id: "1",
+      id: 1, // ID number
       title: "Futbol Turnuvası",
-      description: "Amatör futbol takımları arasında düzenlenecek olan dostluk turnuvası. Her yaştan futbolsever katılabilir. Takımlar 7 kişiden oluşacaktır.",
+      description: "Amatör futbol takımları arasında düzenlenecek olan dostluk turnuvası...",
       date: new Date("2024-04-15"),
       time: "14:00",
       location: "Merkez Stadyum, İstanbul",
@@ -137,12 +109,12 @@ export default function EventsPage() {
       participants: 75,
       status: "approved",
       category: "Futbol",
-      organizer: sampleUsers[0]
+      organizer: 1 // Organizer ID (number)
     },
     {
-      id: "2",
+      id: 2, // ID number
       title: "Yoga ve Meditasyon",
-      description: "Stresli şehir hayatından uzaklaşıp, doğayla iç içe yoga ve meditasyon deneyimi. Tüm seviyeler için uygundur.",
+      description: "Stresli şehir hayatından uzaklaşıp, doğayla iç içe yoga ve meditasyon deneyimi...",
       date: new Date("2024-04-20"),
       time: "09:00",
       location: "Belgrad Ormanı, İstanbul",
@@ -150,12 +122,12 @@ export default function EventsPage() {
       participants: 15,
       status: "pending",
       category: "Yoga",
-      organizer: sampleUsers[1]
+      organizer: 2 // Organizer ID (number)
     },
     {
-      id: "3",
+      id: 3, // ID number
       title: "Basketbol Eğitim Kampı",
-      description: "Profesyonel antrenörler eşliğinde 3 günlük yoğun basketbol eğitimi. Temel teknikler, taktikler ve maç stratejileri öğretilecektir.",
+      description: "Profesyonel antrenörler eşliğinde 3 günlük yoğun basketbol eğitimi...",
       date: new Date("2024-04-25"),
       time: "10:00",
       location: "Spor Kompleksi, Ankara",
@@ -163,107 +135,116 @@ export default function EventsPage() {
       participants: 25,
       status: "approved",
       category: "Basketbol",
-      organizer: sampleUsers[2]
+      organizer: 3 // Organizer ID (number)
     },
     {
-      id: "4",
+      id: 4, // ID number
       title: "Yüzme Yarışması",
-      description: "Yaz sezonunu açıyoruz! Farklı kategorilerde yüzme yarışması düzenlenecektir. Her yaş grubundan katılımcılar için uygun kategoriler mevcuttur.",
+      description: "Olimpik havuzda düzenlenecek 50m ve 100m serbest stil yüzme yarışları...",
       date: new Date("2024-05-01"),
-      time: "13:00",
+      time: "09:00",
       location: "Olimpik Yüzme Havuzu, İzmir",
-      maxParticipants: 60,
-      participants: 40,
+      maxParticipants: 50,
+      participants: 35,
       status: "pending",
       category: "Yüzme",
-      organizer: sampleUsers[0]
+      organizer: 1 // Organizer ID (number)
     },
     {
-      id: "5",
+      id: 5, // ID number
       title: "Tenis Turnuvası",
-      description: "Çiftler tenis turnuvası. A, B ve C kategorilerinde yarışmalar yapılacaktır. Katılımcılar seviyelerine göre eşleştirilecektir.",
+      description: "Çiftler tenis turnuvası. Amatör ve profesyonel kategorilerde yarışmalar...",
       date: new Date("2024-05-05"),
-      time: "15:00",
+      time: "10:00",
       location: "Tenis Kulübü, Antalya",
       maxParticipants: 32,
       participants: 24,
       status: "approved",
       category: "Tenis",
-      organizer: sampleUsers[1]
+      organizer: 2 // Organizer ID (number)
     },
     {
-      id: "6",
+      id: 6, // ID number
       title: "Fitness Boot Camp",
-      description: "4 haftalık yoğun fitness programı. HIIT, kardiyo ve kuvvet antrenmanları ile forma girin. Her seviyeye uygun egzersiz seçenekleri sunulacaktır.",
+      description: "4 haftalık yoğun fitness programı. HIIT, kardiyo ve kuvvet antrenmanları içerir...",
       date: new Date("2024-05-10"),
       time: "07:00",
       location: "Fitness Center, İstanbul",
-      maxParticipants: 20,
-      participants: 15,
+      maxParticipants: 30,
+      participants: 20,
       status: "pending",
       category: "Fitness",
-      organizer: sampleUsers[2]
+      organizer: 3 // Organizer ID (number)
+    },
+    {
+      id: 7, // ID number
+      title: "Voleybol Turnuvası",
+      description: "Plaj voleybolu turnuvası. 2'şer kişilik takımlar halinde yarışma...",
+      date: new Date("2024-06-15"),
+      time: "16:00",
+      location: "Plaj Spor Tesisi, Antalya",
+      maxParticipants: 40,
+      participants: 28,
+      status: "approved",
+      category: "Voleybol",
+      organizer: 1 // Organizer ID (number)
+    },
+    {
+      id: 8, // ID number
+      title: "Koşu Maratonu",
+      description: "Yaz maratonu etkinliği. 5km, 10km ve 21km kategorilerinde yarışlar...",
+      date: new Date("2024-06-20"),
+      time: "08:00",
+      location: "Sahil Parkuru, İzmir",
+      maxParticipants: 200,
+      participants: 145,
+      status: "pending",
+      category: "Koşu",
+      organizer: 2 // Organizer ID (number)
     }
   ]
 
-  // localStorage'dan etkinlikleri yükle
+  // localStorage'dan etkinlikleri yükle (ID ve organizer number ile)
   const [events, setEvents] = useState<Event[]>(() => {
-    console.log("Initial state loading...")
-    if (typeof window === 'undefined') return defaultEvents
+    const currentDefaultEvents: Event[] = [...defaultEvents];
+    if (typeof window === 'undefined') return currentDefaultEvents;
 
-    const savedEvents = localStorage.getItem('events')
-    if (!savedEvents) {
-      console.log("No saved events found, using defaults")
-      return defaultEvents
-    }
+    let loadedEvents: Event[] = [];
+    const savedEvents = localStorage.getItem('events');
 
-    try {
-      const parsedEvents = JSON.parse(savedEvents)
-      console.log("Loaded events from storage:", parsedEvents)
-      
-      const processedEvents = parsedEvents.map((event: any) => {
-        const organizer = sampleUsers.find(user => user.id === event.organizer?.id) || sampleUsers[0]
-        return {
+    if (savedEvents) {
+      try {
+        const parsedEvents = JSON.parse(savedEvents);
+        loadedEvents = parsedEvents.map((event: any) => ({
           ...event,
-          id: event.id || String(Date.now()),
+          id: Number(event.id) || Date.now(), // ID number
           date: new Date(event.date),
-          organizer,
+          organizer: Number(event.organizer), // Organizer ID number
           status: event.status || "pending",
-          participants: event.participants || 0,
-          maxParticipants: event.maxParticipants || 100
-        }
-      })
-      
-      console.log("Processed events:", processedEvents)
-      return processedEvents
-    } catch (error) {
-      console.error('Error parsing saved events:', error)
-      return defaultEvents
+          participants: Number(event.participants) || 0,
+          maxParticipants: Number(event.maxParticipants) || 100
+        } as Event));
+      } catch (error) { console.error('Error parsing saved events:', error); loadedEvents = []; }
     }
+
+    // Merge (ID number)
+    const combinedEventsMap = new Map<number, Event>(); 
+    currentDefaultEvents.forEach(event => combinedEventsMap.set(event.id, event));
+    loadedEvents.forEach(event => combinedEventsMap.set(event.id, event));
+    return Array.from(combinedEventsMap.values());
   })
 
-  // Etkinlikler değiştiğinde localStorage'a kaydet
+  // Etkinlikler değiştiğinde localStorage'a kaydet (ID ve organizer number)
   useEffect(() => {
     if (typeof window === 'undefined') return
-
     try {
-      console.log("Saving events to storage:", events)
       const eventsToSave = events.map(event => ({
         ...event,
         date: event.date.toISOString(),
-        organizer: {
-          id: event.organizer.id,
-          name: event.organizer.name,
-          surname: event.organizer.surname,
-          role: event.organizer.role,
-          email: event.organizer.email
-        }
+        organizer: Number(event.organizer) // Organizer ID number
       }))
       localStorage.setItem('events', JSON.stringify(eventsToSave))
-      console.log("Events saved successfully")
-    } catch (error) {
-      console.error('Error saving events:', error)
-    }
+    } catch (error) { console.error('Error saving events:', error) }
   }, [events])
 
   // Filtreleme fonksiyonunu güncelleyelim
@@ -274,9 +255,10 @@ export default function EventsPage() {
       const eventDate = new Date(event.date)
       eventDate.setHours(23, 59, 59)
       
-      // Sadece sayfa yüklendiğinde kontrol et, kullanıcı değiştirdiğinde değil
+      // Status tipini kontrol et
       if (eventDate < now && event.status === "approved") {
-        return { ...event, status: "completed" }
+        // Dönüş tipinin Event olduğundan emin ol
+        return { ...event, status: "completed" as Event["status"] } 
       }
       return event
     })
@@ -292,22 +274,19 @@ export default function EventsPage() {
       return matchesSearch && matchesStatus && matchesCategories
     })
 
-  const handleEditEvent = (id: string | number, updatedEvent: Partial<Event>) => {
+  const handleEditEvent = (id: number, updatedEvent: Partial<Omit<Event, 'id' | 'organizer'>> & { organizer?: number }) => {
     setEvents(events.map(event => 
       event.id === id ? { ...event, ...updatedEvent } : event
     ))
   }
 
-  const handleDeleteEvent = (id: string | number) => {
+  const handleDeleteEvent = (id: number) => {
     setEvents(events.filter(event => event.id !== id))
   }
 
-  const handleAddNewEvent = (newEvent: Partial<Event>) => {
-    console.log("Received new event data:", newEvent)
-    
-    // Yeni etkinlik için tam veri yapısı oluştur
+  const handleAddNewEvent = (newEvent: Partial<Omit<Event, 'id' | 'organizer'>> & { organizer?: number }) => {
     const eventToAdd: Event = {
-      id: String(Date.now()),
+      id: Date.now(), // Yeni ID number
       title: newEvent.title || '',
       description: newEvent.description || '',
       date: new Date(newEvent.date || new Date()),
@@ -317,46 +296,14 @@ export default function EventsPage() {
       participants: 0,
       maxParticipants: newEvent.maxParticipants || 100,
       status: "pending",
-      organizer: sampleUsers[0], // Varsayılan olarak ilk kullanıcıyı atıyoruz
+      organizer: newEvent.organizer || 1, // Varsayılan organizer ID (number)
       image: newEvent.image
     }
-
-    console.log("Formatted event to add:", eventToAdd)
-
-    setEvents(prevEvents => {
-      const updatedEvents = [...prevEvents, eventToAdd]
-      console.log("All events after adding:", updatedEvents)
-      
-      // localStorage'a hemen kaydet
-      try {
-        const eventsToSave = updatedEvents.map(event => ({
-          ...event,
-          date: event.date.toISOString(),
-          organizer: {
-            id: event.organizer.id,
-            name: event.organizer.name,
-            surname: event.organizer.surname,
-            role: event.organizer.role,
-            email: event.organizer.email
-          }
-        }))
-        localStorage.setItem('events', JSON.stringify(eventsToSave))
-        console.log("Events saved to localStorage immediately after add")
-      } catch (error) {
-        console.error('Error saving events after add:', error)
-      }
-
-      return updatedEvents
-    })
-
-    toast({
-      title: "Başarılı",
-      description: "Etkinlik başarıyla oluşturuldu ve onay için gönderildi.",
-    })
+    setEvents(prevEvents => [...prevEvents, eventToAdd])
+    toast({ title: "Başarılı", description: "Etkinlik başarıyla oluşturuldu." })
   }
 
-  // handleStatusChange fonksiyonunu güncelleyelim
-  const handleStatusChange = (eventId: string | number, newStatus: Event["status"]) => {
+  const handleStatusChange = (eventId: number, newStatus: Event["status"]) => {
     setEvents(prevEvents => 
       prevEvents.map(event => 
         event.id === eventId ? { ...event, status: newStatus } : event
@@ -380,6 +327,11 @@ export default function EventsPage() {
     }
   }
 
+  // Helper function to get organizer details by ID (number)
+  const getOrganizerDetails = (organizerId?: number): User | undefined => {
+    return sampleUsers.find(user => user.id === organizerId);
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -393,7 +345,10 @@ export default function EventsPage() {
       <NewEventModal
         open={isNewEventModalOpen}
         onOpenChange={setIsNewEventModalOpen}
-        onSuccess={handleAddNewEvent}
+        onSuccess={(newEvent: Partial<Omit<Event, 'id' | 'organizer'>> & { organizer?: number }) => {
+          handleAddNewEvent(newEvent)
+          setIsNewEventModalOpen(false)
+        }}
       />
 
       <Card className="p-4">
@@ -404,17 +359,6 @@ export default function EventsPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full sm:w-64"
           />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          >
-            <option value="all">Tüm Durumlar</option>
-            <option value="pending">Beklemede</option>
-            <option value="approved">Onaylandı</option>
-            <option value="rejected">Reddedildi</option>
-            <option value="completed">Tamamlandı</option>
-          </select>
           <CategoryFilterDropdown
             selectedCategories={selectedCategories}
             onSelectCategories={setSelectedCategories}
@@ -424,10 +368,11 @@ export default function EventsPage() {
               <SelectValue placeholder="Durum" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tümü</SelectItem>
-              <SelectItem value="active">Aktif</SelectItem>
+              <SelectItem value="all">Tüm Durumlar</SelectItem>
+              <SelectItem value="pending">Beklemede</SelectItem>
+              <SelectItem value="approved">Onaylandı</SelectItem>
+              <SelectItem value="rejected">Reddedildi</SelectItem>
               <SelectItem value="completed">Tamamlandı</SelectItem>
-              <SelectItem value="cancelled">İptal Edildi</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -437,94 +382,101 @@ export default function EventsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Etkinlik Adı</TableHead>
+                <TableHead>Kategori</TableHead>
                 <TableHead>Tarih</TableHead>
                 <TableHead>Konum</TableHead>
-                <TableHead>Katılımcılar</TableHead>
                 <TableHead>Organizatör</TableHead>
+                <TableHead>Katılımcı Sayısı</TableHead>
                 <TableHead>Durum</TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredEvents.map((event) => (
-                <TableRow key={event.id}>
-                  <TableCell>
-                    <TooltipProvider delayDuration={0}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button 
-                            onClick={() => setSelectedEventForPreview(event)}
-                            className={`font-medium ${CATEGORY_COLORS[event.category].text} hover:${CATEGORY_COLORS[event.category].text} hover:underline cursor-pointer text-left`}
-                          >
-                            {event.title}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-[300px] p-4 bg-white shadow-lg rounded-lg border border-gray-200">
-                          <p className="text-gray-700 text-sm whitespace-pre-wrap">
-                            {event.description}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant="outline" 
-                      className={`${CATEGORY_COLORS[event.category].bg} ${CATEGORY_COLORS[event.category].text} hover:${CATEGORY_COLORS[event.category].bg}`}
-                    >
-                      {event.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{format(event.date, "dd.MM.yyyy")}</TableCell>
-                  <TableCell>{event.location}</TableCell>
-                  <TableCell>{event.participants}/{event.maxParticipants}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">
-                        {event.organizer.name} {event.organizer.surname}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {ROLE_LABELS[event.organizer.role]}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={event.status}
-                      onValueChange={(value: Event["status"]) => handleStatusChange(event.id, value)}
-                    >
-                      <SelectTrigger className={`w-[140px] ${STATUS_COLORS[event.status].bg} ${STATUS_COLORS[event.status].text}`}>
-                        <SelectValue placeholder="Durum seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending" className="text-yellow-800 hover:bg-yellow-100">Beklemede</SelectItem>
-                        <SelectItem value="approved" className="text-green-800 hover:bg-green-100">Onaylandı</SelectItem>
-                        <SelectItem value="rejected" className="text-red-800 hover:bg-red-100">Reddedildi</SelectItem>
-                        <SelectItem value="completed" className="text-gray-800 hover:bg-gray-100">Tamamlandı</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedEvent(event)
-                          setIsEditModalOpen(true)
-                        }}
+              {filteredEvents.map((event) => {
+                const organizerDetails = getOrganizerDetails(event.organizer);
+                return (
+                  <TableRow key={event.id}>
+                    <TableCell>
+                      <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button 
+                              onClick={() => setSelectedEventForPreview(event)}
+                              className={`font-medium ${CATEGORY_COLORS[event.category]?.text || 'text-gray-800'} hover:${CATEGORY_COLORS[event.category]?.text || 'text-gray-800'} hover:underline cursor-pointer text-left`}
+                            >
+                              {event.title}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[300px] p-4 bg-white shadow-lg rounded-lg border border-gray-200">
+                            <p className="text-gray-700 text-sm whitespace-pre-wrap">
+                              {event.description}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="outline" 
+                        className={`${CATEGORY_COLORS[event.category]?.bg || 'bg-gray-100'} ${CATEGORY_COLORS[event.category]?.text || 'text-gray-800'} hover:${CATEGORY_COLORS[event.category]?.bg || 'bg-gray-100'}`}
                       >
-                        Düzenle
-                      </Button>
-                      <DeleteEventModal 
-                        eventName={event.title}
-                        onDelete={() => handleDeleteEvent(event.id)}
-                        className="bg-red-500 hover:bg-red-600 text-white"
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        {event.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{format(event.date, "dd.MM.yyyy")}</TableCell>
+                    <TableCell>{event.location}</TableCell>
+                    <TableCell>
+                      {organizerDetails ? (
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-900">
+                            {organizerDetails.name}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {ROLE_LABELS[organizerDetails.role]}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-500">Bilinmiyor</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{event.participants}/{event.maxParticipants}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={event.status}
+                        onValueChange={(value: Event["status"]) => handleStatusChange(event.id, value)}
+                      >
+                        <SelectTrigger className={`w-[140px] ${STATUS_COLORS[event.status]?.bg || 'bg-gray-100'} ${STATUS_COLORS[event.status]?.text || 'text-gray-800'}`}>
+                          <SelectValue placeholder="Durum seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending" className="text-yellow-800 hover:bg-yellow-100">Beklemede</SelectItem>
+                          <SelectItem value="approved" className="text-green-800 hover:bg-green-100">Onaylandı</SelectItem>
+                          <SelectItem value="rejected" className="text-red-800 hover:bg-red-100">Reddedildi</SelectItem>
+                          <SelectItem value="completed" className="text-gray-800 hover:bg-gray-100">Tamamlandı</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedEvent(event)
+                            setIsEditModalOpen(true)
+                          }}
+                        >
+                          Düzenle
+                        </Button>
+                        <DeleteEventModal 
+                          eventName={event.title}
+                          onDelete={() => handleDeleteEvent(event.id)}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -551,20 +503,11 @@ export default function EventsPage() {
         </div>
       </div>
 
-      <NewEventModal
-        open={isNewEventModalOpen}
-        onOpenChange={setIsNewEventModalOpen}
-        onSuccess={(newEvent) => {
-          handleAddNewEvent(newEvent)
-          setIsNewEventModalOpen(false)
-        }}
-      />
-
       <EditEventModal 
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
-        event={selectedEvent}
-        onSave={(updatedEvent) => {
+        event={selectedEvent ?? undefined} 
+        onSave={(updatedEvent: Partial<Omit<Event, 'id' | 'organizer'>> & { organizer?: number }) => { 
           if (selectedEvent) {
             handleEditEvent(selectedEvent.id, updatedEvent)
           }
