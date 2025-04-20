@@ -28,7 +28,35 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { User, Event } from "@/types"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
+// Define User interface correctly
+interface User {
+  id: string
+  name: string
+  surname: string
+  role: "bireysel_kullanici" | "kulup_uyesi" | "antrenor" | "tesis_sahibi"
+  email: string
+  avatar?: string
+}
+
+// Define Event interface correctly
+interface Event {
+  id: string | number
+  title: string
+  description: string
+  date: Date
+  time: string
+  location: string
+  category: string
+  participants: number
+  maxParticipants: number
+  status: "pending" | "approved" | "rejected" | "completed"
+  organizer: User
+  image?: string
+  participantList?: User[]
+}
 
 // Kategori renkleri
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
@@ -59,34 +87,122 @@ const ROLE_LABELS: Record<string, string> = {
   "tesis_sahibi": "Tesis Sahibi"
 }
 
-// Örnek kullanıcılar (Global User tipine uygun - ID number, surname yok)
+// Örnek kullanıcılar
 const sampleUsers: User[] = [
   {
-    id: 1, // ID number
-    name: "Ahmet Yılmaz",
+    id: "1",
+    name: "Ahmet",
+    surname: "Yılmaz",
     role: "antrenor",
     email: "ahmet.yilmaz@sportlink.com"
   },
   {
-    id: 2, // ID number
-    name: "Mehmet Demir",
+    id: "2",
+    name: "Mehmet",
+    surname: "Demir",
     role: "kulup_uyesi",
     email: "mehmet.demir@sportlink.com"
   },
   {
-    id: 3, // ID number
-    name: "Ayşe Kaya",
+    id: "3",
+    name: "Ayşe",
+    surname: "Kaya",
     role: "tesis_sahibi",
     email: "ayse.kaya@sportlink.com"
   }
 ]
 
-// Baş harfleri alma yardımcı fonksiyonu (Sadece name kullan)
-const getInitials = (name?: string) => {
-  return name?.charAt(0) || '?'; 
+// Baş harfleri alma yardımcı fonksiyonu
+const getInitials = (name?: string, surname?: string) => {
+  const firstInitial = name?.charAt(0) || '';
+  const secondInitial = surname?.charAt(0) || '';
+  return firstInitial + secondInitial || '??';
 };
 
 export default function EventsPage() {
+  // Örnek etkinlikler (Moved before useState hooks)
+  const defaultEvents: Event[] = [
+    {
+      id: "1",
+      title: "Futbol Turnuvası",
+      description: "Amatör futbol takımları arasında düzenlenecek olan dostluk turnuvası. Her yaştan futbolsever katılabilir. Takımlar 7 kişiden oluşacaktır.",
+      date: new Date("2024-04-15"),
+      time: "14:00",
+      location: "Merkez Stadyum, İstanbul",
+      maxParticipants: 100, // Keep max participants
+      participants: 3, // Sync with participantList length
+      status: "approved",
+      category: "Futbol",
+      organizer: sampleUsers[0],
+      // Add sample participants
+      participantList: [
+        { id: "p1", name: "Ali", surname: "Veli", role: "bireysel_kullanici", email: "ali@veli.com" },
+        { id: "p2", name: "Zeynep", surname: "Çalışkan", role: "kulup_uyesi", email: "z@c.com" },
+        sampleUsers[1] // Mehmet Demir
+      ]
+    },
+    {
+      id: "2",
+      title: "Yoga ve Meditasyon",
+      description: "Stresli şehir hayatından uzaklaşıp, doğayla iç içe yoga ve meditasyon deneyimi. Tüm seviyeler için uygundur.",
+      date: new Date("2024-04-20"),
+      time: "09:00",
+      location: "Belgrad Ormanı, İstanbul",
+      maxParticipants: 30,
+      participants: 1, // Sync with participantList length
+      status: "pending",
+      category: "Yoga",
+      organizer: sampleUsers[1],
+      participantList: [
+        sampleUsers[0] // Ahmet Yılmaz
+      ]
+    },
+    {
+      id: "3",
+      title: "Basketbol Eğitim Kampı",
+      description: "Profesyonel antrenörler eşliğinde 3 günlük yoğun basketbol eğitimi. Temel teknikler, taktikler ve maç stratejileri öğretilecektir.",
+      date: new Date("2024-04-25"),
+      time: "10:00",
+      location: "Spor Kompleksi, Ankara",
+      maxParticipants: 40,
+      participants: 0, // Sync with participantList length
+      status: "approved",
+      category: "Basketbol",
+      organizer: sampleUsers[2],
+      participantList: [] // Empty list example
+    },
+    {
+      id: "4",
+      title: "Yüzme",
+      description: "Profesyonel antrenörler eşliğinde 3 günlük yoğun basketbol eğitimi. Temel teknikler, taktikler ve maç stratejileri öğretilecektir.",
+      date: new Date("2024-04-25"),
+      time: "10:00",
+      location: "Spor Kompleksi, Ankara",
+      maxParticipants: 40,
+      participants: 0, // No participantList defined, so participants is 0
+      status: "approved",
+      category: "Basketbol",
+      organizer: sampleUsers[2]
+      // No participantList property example
+    },
+    {
+      id: "5",
+      title: "Tenis Maçı",
+      description: "Profesyonel antrenörler eşliğinde 3 günlük yoğun basketbol eğitimi. Temel teknikler, taktikler ve maç stratejileri öğretilecektir.",
+      date: new Date("2024-04-25"),
+      time: "10:00",
+      location: "Spor Kompleksi, Ankara",
+      maxParticipants: 40,
+      participants: 2, // Sync with participantList length
+      status: "approved",
+      category: "Basketbol",
+      organizer: sampleUsers[2],
+      participantList: [sampleUsers[0], sampleUsers[1]]
+    },
+    
+  ]
+
+  // Component State Hooks
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -94,171 +210,129 @@ export default function EventsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [selectedEventForPreview, setSelectedEventForPreview] = useState<Event | null>(null)
+  const [participantsToPreview, setParticipantsToPreview] = useState<User[] | null>(null)
+  const [isParticipantPreviewOpen, setIsParticipantPreviewOpen] = useState(false)
+  const [events, setEvents] = useState<Event[]>(defaultEvents); // Initialize with default events
   const { toast } = useToast()
   
-  // Örnek etkinlikler (Global Event tipine uygun: id: number, organizer: number)
-  const defaultEvents: Event[] = [
-    {
-      id: 1, // ID number
-      title: "Futbol Turnuvası",
-      description: "Amatör futbol takımları arasında düzenlenecek olan dostluk turnuvası...",
-      date: new Date("2024-04-15"),
-      time: "14:00",
-      location: "Merkez Stadyum, İstanbul",
-      maxParticipants: 100,
-      participants: 75,
-      status: "approved",
-      category: "Futbol",
-      organizer: 1 // Organizer ID (number)
-    },
-    {
-      id: 2, // ID number
-      title: "Yoga ve Meditasyon",
-      description: "Stresli şehir hayatından uzaklaşıp, doğayla iç içe yoga ve meditasyon deneyimi...",
-      date: new Date("2024-04-20"),
-      time: "09:00",
-      location: "Belgrad Ormanı, İstanbul",
-      maxParticipants: 30,
-      participants: 15,
-      status: "pending",
-      category: "Yoga",
-      organizer: 2 // Organizer ID (number)
-    },
-    {
-      id: 3, // ID number
-      title: "Basketbol Eğitim Kampı",
-      description: "Profesyonel antrenörler eşliğinde 3 günlük yoğun basketbol eğitimi...",
-      date: new Date("2024-04-25"),
-      time: "10:00",
-      location: "Spor Kompleksi, Ankara",
-      maxParticipants: 40,
-      participants: 25,
-      status: "approved",
-      category: "Basketbol",
-      organizer: 3 // Organizer ID (number)
-    },
-    {
-      id: 4, // ID number
-      title: "Yüzme Yarışması",
-      description: "Olimpik havuzda düzenlenecek 50m ve 100m serbest stil yüzme yarışları...",
-      date: new Date("2024-05-01"),
-      time: "09:00",
-      location: "Olimpik Yüzme Havuzu, İzmir",
-      maxParticipants: 50,
-      participants: 35,
-      status: "pending",
-      category: "Yüzme",
-      organizer: 1 // Organizer ID (number)
-    },
-    {
-      id: 5, // ID number
-      title: "Tenis Turnuvası",
-      description: "Çiftler tenis turnuvası. Amatör ve profesyonel kategorilerde yarışmalar...",
-      date: new Date("2024-05-05"),
-      time: "10:00",
-      location: "Tenis Kulübü, Antalya",
-      maxParticipants: 32,
-      participants: 24,
-      status: "approved",
-      category: "Tenis",
-      organizer: 2 // Organizer ID (number)
-    },
-    {
-      id: 6, // ID number
-      title: "Fitness Boot Camp",
-      description: "4 haftalık yoğun fitness programı. HIIT, kardiyo ve kuvvet antrenmanları içerir...",
-      date: new Date("2024-05-10"),
-      time: "07:00",
-      location: "Fitness Center, İstanbul",
-      maxParticipants: 30,
-      participants: 20,
-      status: "pending",
-      category: "Fitness",
-      organizer: 3 // Organizer ID (number)
-    },
-    {
-      id: 7, // ID number
-      title: "Voleybol Turnuvası",
-      description: "Plaj voleybolu turnuvası. 2'şer kişilik takımlar halinde yarışma...",
-      date: new Date("2024-06-15"),
-      time: "16:00",
-      location: "Plaj Spor Tesisi, Antalya",
-      maxParticipants: 40,
-      participants: 28,
-      status: "approved",
-      category: "Voleybol",
-      organizer: 1 // Organizer ID (number)
-    },
-    {
-      id: 8, // ID number
-      title: "Koşu Maratonu",
-      description: "Yaz maratonu etkinliği. 5km, 10km ve 21km kategorilerinde yarışlar...",
-      date: new Date("2024-06-20"),
-      time: "08:00",
-      location: "Sahil Parkuru, İzmir",
-      maxParticipants: 200,
-      participants: 145,
-      status: "pending",
-      category: "Koşu",
-      organizer: 2 // Organizer ID (number)
-    }
-  ]
-
-  // localStorage'dan etkinlikleri yükle (ID ve organizer number ile)
-  const [events, setEvents] = useState<Event[]>(() => {
-    const currentDefaultEvents: Event[] = [...defaultEvents];
-    if (typeof window === 'undefined') return currentDefaultEvents;
-
-    let loadedEvents: Event[] = [];
+  // Load events from localStorage on initial mount
+  useEffect(() => {
+    console.log("Attempting to load events from localStorage on mount...");
     const savedEvents = localStorage.getItem('events');
-
     if (savedEvents) {
       try {
         const parsedEvents = JSON.parse(savedEvents);
-        loadedEvents = parsedEvents.map((event: any) => ({
-          ...event,
-          id: Number(event.id) || Date.now(), // ID number
-          date: new Date(event.date),
-          organizer: Number(event.organizer), // Organizer ID number
-          status: event.status || "pending",
-          participants: Number(event.participants) || 0,
-          maxParticipants: Number(event.maxParticipants) || 100
-        } as Event));
-      } catch (error) { console.error('Error parsing saved events:', error); loadedEvents = []; }
+        console.log("Loaded raw events from storage:", parsedEvents);
+
+        // Process loaded events: ensure correct types and add missing participantList
+        const processedEvents = parsedEvents.map((loadedEvent: any): Event => {
+          console.log(`Processing loaded event ID: ${loadedEvent.id}`); // Log event being processed
+
+          // Find the corresponding default event, if it exists
+          const defaultEvent = defaultEvents.find(de => de.id === loadedEvent.id);
+
+          const organizer = sampleUsers.find(user => user.id === loadedEvent.organizer?.id) || sampleUsers[0];
+
+          // Determine the definitive participantList
+          let finalParticipantList: User[] = [];
+          const loadedList = loadedEvent.participantList;
+          console.log(`  Raw loadedList from storage for ${loadedEvent.id}:`, loadedList); // Log raw list
+          console.log(`  Default participantList for ${loadedEvent.id}:`, defaultEvent?.participantList); // Log default list
+
+          if (Array.isArray(loadedList) && loadedList.length > 0) {
+            console.log(`  Processing loaded list for ${loadedEvent.id}...`);
+            // Process loaded list: find full User objects and filter out failures
+            finalParticipantList = loadedList
+              .map((p: any) => {
+                const foundUser = sampleUsers.find(u => u.id === p?.id);
+                console.log(`    Mapping participant ID ${p?.id}: Found user ->`, foundUser ? `${foundUser.name} ${foundUser.surname}` : 'Not Found');
+                return foundUser;
+              })
+              .filter((user): user is User => Boolean(user)); // Use type guard to ensure User[] type
+          } else if (defaultEvent?.participantList && defaultEvent.participantList.length > 0) {
+            // If loaded data lacks a list, but default has one, use the default
+            console.log(`  Event ${loadedEvent.id} missing list in storage, using default list.`);
+            finalParticipantList = defaultEvent.participantList;
+          } else {
+            console.log(`  No participant list found in loaded or default for ${loadedEvent.id}.`);
+          }
+
+          // Ensure organizer is a proper User object
+          const finalOrganizer = sampleUsers.find(user => user.id === loadedEvent.organizer?.id) || defaultEvent?.organizer || sampleUsers[0];
+
+          console.log(`  Final participantList for ${loadedEvent.id}:`, finalParticipantList); // Log final list
+          const finalParticipantsCount = finalParticipantList.length;
+          console.log(`  Final participants count for ${loadedEvent.id}: ${finalParticipantsCount}`); // Log the count
+
+          return {
+            // Base properties from loaded or default event
+            id: loadedEvent.id || defaultEvent?.id || String(Date.now()),
+            title: loadedEvent.title || defaultEvent?.title || '',
+            description: loadedEvent.description || defaultEvent?.description || '',
+            date: new Date(loadedEvent.date || defaultEvent?.date || Date.now()),
+            time: loadedEvent.time || defaultEvent?.time || '',
+            location: loadedEvent.location || defaultEvent?.location || '',
+            category: loadedEvent.category || defaultEvent?.category || 'Diğer',
+            maxParticipants: loadedEvent.maxParticipants || defaultEvent?.maxParticipants || 100,
+            status: loadedEvent.status || defaultEvent?.status || "pending",
+            image: loadedEvent.image || defaultEvent?.image,
+            // Use processed data
+            organizer: finalOrganizer,
+            participantList: finalParticipantList,
+            participants: finalParticipantsCount, // Use the calculated count
+          };
+        });
+
+        console.log("Processed events from storage:", processedEvents);
+        setEvents(processedEvents);
+      } catch (error) {
+        console.error('Error parsing saved events:', error);
+        // Optional: Clear broken storage item?
+        // localStorage.removeItem('events');
+        // Keep defaultEvents if parsing fails
+        setEvents(defaultEvents);
+      }
+    } else {
+      console.log("No saved events found in localStorage, using defaults.");
+      setEvents(defaultEvents); // Ensure state is set even if nothing in storage
     }
+  }, []); // Empty dependency array ensures this runs only once on mount
 
-    // Merge (ID number)
-    const combinedEventsMap = new Map<number, Event>(); 
-    currentDefaultEvents.forEach(event => combinedEventsMap.set(event.id, event));
-    loadedEvents.forEach(event => combinedEventsMap.set(event.id, event));
-    return Array.from(combinedEventsMap.values());
-  })
-
-  // Etkinlikler değiştiğinde localStorage'a kaydet (ID ve organizer number)
+  // Save events to localStorage whenever the events state changes
   useEffect(() => {
-    if (typeof window === 'undefined') return
     try {
+      console.log("Attempting to save events to storage..."); // Add log before saving
       const eventsToSave = events.map(event => ({
         ...event,
-        date: event.date.toISOString(),
-        organizer: Number(event.organizer) // Organizer ID number
-      }))
+        date: event.date.toISOString(), // Keep date as ISO string
+        organizer: {
+          id: event.organizer.id, // Store only organizer ID
+        },
+        // Store full participant objects (ensure they are valid)
+        participantList: Array.isArray(event.participantList) ? event.participantList.filter(p => p && p.id) : []
+      }));
+
+      // Add log to show what's being saved
+      console.log("Data being saved to localStorage:", eventsToSave);
+
       localStorage.setItem('events', JSON.stringify(eventsToSave))
-    } catch (error) { console.error('Error saving events:', error) }
+      console.log("Events successfully saved to storage.");
+    } catch (error) {
+      console.error('Error saving events:', error)
+    }
   }, [events])
 
-  // Filtreleme fonksiyonunu güncelleyelim
+  // Filter events based on search, category, and status filters
   const filteredEvents = events
     // İlk olarak tarihi geçmiş onaylı etkinlikleri kontrol et
-    .map(event => {
+    .map((event): Event => {
       const now = new Date()
       const eventDate = new Date(event.date)
       eventDate.setHours(23, 59, 59)
       
-      // Status tipini kontrol et
+      // Sadece sayfa yüklendiğinde kontrol et, kullanıcı değiştirdiğinde değil
       if (eventDate < now && event.status === "approved") {
-        // Dönüş tipinin Event olduğundan emin ol
-        return { ...event, status: "completed" as Event["status"] } 
+        return { ...event, status: "completed" as const }
       }
       return event
     })
@@ -274,36 +348,72 @@ export default function EventsPage() {
       return matchesSearch && matchesStatus && matchesCategories
     })
 
-  const handleEditEvent = (id: number, updatedEvent: Partial<Omit<Event, 'id' | 'organizer'>> & { organizer?: number }) => {
+  // Add log to inspect filteredEvents before render
+  console.log("Filtered events before rendering:", filteredEvents);
+
+  const handleEditEvent = (id: string | number, updatedEvent: Partial<Event>) => {
     setEvents(events.map(event => 
       event.id === id ? { ...event, ...updatedEvent } : event
     ))
   }
 
-  const handleDeleteEvent = (id: number) => {
+  const handleDeleteEvent = (id: string | number) => {
     setEvents(events.filter(event => event.id !== id))
   }
 
-  const handleAddNewEvent = (newEvent: Partial<Omit<Event, 'id' | 'organizer'>> & { organizer?: number }) => {
+  const handleAddNewEvent = (newEvent: Partial<Event>) => {
+    console.log("Received new event data:", newEvent)
+    
+    // Yeni etkinlik için tam veri yapısı oluştur, gelen veriyi tamamla/garantile
     const eventToAdd: Event = {
-      id: Date.now(), // Yeni ID number
+      ...newEvent, // Start with the provided event data
+      id: newEvent.id || String(Date.now()), // Ensure ID exists
       title: newEvent.title || '',
       description: newEvent.description || '',
       date: new Date(newEvent.date || new Date()),
       time: newEvent.time || '',
       location: newEvent.location || '',
       category: newEvent.category || '',
-      participants: 0,
-      maxParticipants: newEvent.maxParticipants || 100,
-      status: "pending",
-      organizer: newEvent.organizer || 1, // Varsayılan organizer ID (number)
+      participants: newEvent.participants || 0, // Ensure participants exists
+      maxParticipants: newEvent.maxParticipants || 100, // Ensure maxParticipants exists
+      status: newEvent.status || "pending", // Ensure status exists
+      organizer: newEvent.organizer || sampleUsers[0], // Ensure organizer exists, default if needed
       image: newEvent.image
     }
-    setEvents(prevEvents => [...prevEvents, eventToAdd])
-    toast({ title: "Başarılı", description: "Etkinlik başarıyla oluşturuldu." })
+
+    console.log("Formatted event to add:", eventToAdd)
+
+    setEvents(prevEvents => {
+      const updatedEvents = [...prevEvents, eventToAdd]
+      console.log("All events after adding:", updatedEvents)
+      
+      // localStorage'a hemen kaydet
+      try {
+        const eventsToSave = updatedEvents.map(event => ({
+          ...event,
+          date: event.date.toISOString(),
+          organizer: {
+            id: event.organizer.id,
+          },
+          participantList: event.participantList?.map(p => ({ id: p.id })) || []
+        }))
+        localStorage.setItem('events', JSON.stringify(eventsToSave))
+        console.log("Events saved to localStorage immediately after add")
+      } catch (error) {
+        console.error('Error saving events after add:', error)
+      }
+
+      return updatedEvents
+    })
+
+    toast({
+      title: "Başarılı",
+      description: "Etkinlik başarıyla oluşturuldu ve onay için gönderildi.",
+    })
   }
 
-  const handleStatusChange = (eventId: number, newStatus: Event["status"]) => {
+  // handleStatusChange fonksiyonunu güncelleyelim
+  const handleStatusChange = (eventId: string | number, newStatus: Event["status"]) => {
     setEvents(prevEvents => 
       prevEvents.map(event => 
         event.id === eventId ? { ...event, status: newStatus } : event
@@ -327,11 +437,6 @@ export default function EventsPage() {
     }
   }
 
-  // Helper function to get organizer details by ID (number)
-  const getOrganizerDetails = (organizerId?: number): User | undefined => {
-    return sampleUsers.find(user => user.id === organizerId);
-  };
-
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -345,7 +450,7 @@ export default function EventsPage() {
       <NewEventModal
         open={isNewEventModalOpen}
         onOpenChange={setIsNewEventModalOpen}
-        onSuccess={(newEvent: Partial<Omit<Event, 'id' | 'organizer'>> & { organizer?: number }) => {
+        onSuccess={(newEvent) => {
           handleAddNewEvent(newEvent)
           setIsNewEventModalOpen(false)
         }}
@@ -393,7 +498,8 @@ export default function EventsPage() {
             </TableHeader>
             <TableBody>
               {filteredEvents.map((event) => {
-                const organizerDetails = getOrganizerDetails(event.organizer);
+                // Log the event object being rendered for this row
+                console.log(`Rendering row for event: ${event.title}`, event);
                 return (
                   <TableRow key={event.id}>
                     <TableCell>
@@ -402,7 +508,7 @@ export default function EventsPage() {
                           <TooltipTrigger asChild>
                             <button 
                               onClick={() => setSelectedEventForPreview(event)}
-                              className={`font-medium ${CATEGORY_COLORS[event.category]?.text || 'text-gray-800'} hover:${CATEGORY_COLORS[event.category]?.text || 'text-gray-800'} hover:underline cursor-pointer text-left`}
+                              className={`font-medium ${CATEGORY_COLORS[event.category].text} hover:${CATEGORY_COLORS[event.category].text} hover:underline cursor-pointer text-left`}
                             >
                               {event.title}
                             </button>
@@ -418,7 +524,7 @@ export default function EventsPage() {
                     <TableCell>
                       <Badge 
                         variant="outline" 
-                        className={`${CATEGORY_COLORS[event.category]?.bg || 'bg-gray-100'} ${CATEGORY_COLORS[event.category]?.text || 'text-gray-800'} hover:${CATEGORY_COLORS[event.category]?.bg || 'bg-gray-100'}`}
+                        className={`${CATEGORY_COLORS[event.category].bg} ${CATEGORY_COLORS[event.category].text} hover:${CATEGORY_COLORS[event.category].bg}`}
                       >
                         {event.category}
                       </Badge>
@@ -426,26 +532,46 @@ export default function EventsPage() {
                     <TableCell>{format(event.date, "dd.MM.yyyy")}</TableCell>
                     <TableCell>{event.location}</TableCell>
                     <TableCell>
-                      {organizerDetails ? (
-                        <div className="flex flex-col">
-                          <span className="font-medium text-gray-900">
-                            {organizerDetails.name}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {ROLE_LABELS[organizerDetails.role]}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-500">Bilinmiyor</span>
-                      )}
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900">
+                          {event.organizer.name} {event.organizer.surname}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {ROLE_LABELS[event.organizer.role]}
+                        </span>
+                      </div>
                     </TableCell>
-                    <TableCell>{event.participants}/{event.maxParticipants}</TableCell>
+                    <TableCell>
+                      <button 
+                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                        onClick={() => {
+                          console.log("Participant count clicked for event:", event.title);
+                          console.log("Event participantList:", event.participantList);
+                          if (event.participantList && event.participantList.length > 0) {
+                            console.log("Setting participants and opening dialog...");
+                            setParticipantsToPreview(event.participantList)
+                            setIsParticipantPreviewOpen(true)
+                          } else {
+                            console.log("No participants to show or list is empty.");
+                            // Optionally show a toast if no participants
+                            toast({
+                              title: "Bilgi",
+                              description: "Bu etkinlik için gösterilecek katılımcı bulunmamaktadır.",
+                            })
+                          }
+                        }}
+                        disabled={!event.participantList || event.participantList.length === 0} // Disable if no list or empty
+                        title={event.participantList && event.participantList.length > 0 ? "Katılımcıları Görüntüle" : "Katılımcı Yok"}
+                      >
+                        {event.participants}/{event.maxParticipants}
+                      </button>
+                    </TableCell>
                     <TableCell>
                       <Select
                         value={event.status}
                         onValueChange={(value: Event["status"]) => handleStatusChange(event.id, value)}
                       >
-                        <SelectTrigger className={`w-[140px] ${STATUS_COLORS[event.status]?.bg || 'bg-gray-100'} ${STATUS_COLORS[event.status]?.text || 'text-gray-800'}`}>
+                        <SelectTrigger className={`w-[140px] ${STATUS_COLORS[event.status].bg} ${STATUS_COLORS[event.status].text}`}>
                           <SelectValue placeholder="Durum seçin" />
                         </SelectTrigger>
                         <SelectContent>
@@ -475,7 +601,7 @@ export default function EventsPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                );
+                )
               })}
             </TableBody>
           </Table>
@@ -506,8 +632,8 @@ export default function EventsPage() {
       <EditEventModal 
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
-        event={selectedEvent ?? undefined} 
-        onSave={(updatedEvent: Partial<Omit<Event, 'id' | 'organizer'>> & { organizer?: number }) => { 
+        event={selectedEvent || undefined}
+        onSave={(updatedEvent) => {
           if (selectedEvent) {
             handleEditEvent(selectedEvent.id, updatedEvent)
           }
@@ -538,6 +664,44 @@ export default function EventsPage() {
           </div>
         </div>
       )}
+
+      {/* Participant Preview Dialog */}
+      <Dialog open={isParticipantPreviewOpen} onOpenChange={setIsParticipantPreviewOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Katılımcı Listesi</DialogTitle>
+            <DialogDescription>
+              Bu etkinliğe katılan kullanıcılar listelenmektedir.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[300px] w-full rounded-md border p-4 mt-4">
+            {participantsToPreview && participantsToPreview.length > 0 ? (
+              <ul className="space-y-3">
+                {participantsToPreview.map((user) => (
+                  <li key={user.id} className="flex items-center space-x-3">
+                    <Avatar>
+                      <AvatarImage src={user.avatar} alt={`${user.name} ${user.surname}`} />
+                      <AvatarFallback>{getInitials(user.name, user.surname)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm text-gray-900">
+                        {user.name} {user.surname}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {user.email}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500 text-center py-4">
+                Gösterilecek katılımcı bulunmamaktadır.
+              </p>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
