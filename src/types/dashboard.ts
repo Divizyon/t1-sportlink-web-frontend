@@ -3,18 +3,45 @@
  * This file contains all TypeScript interfaces and types for the dashboard components.
  */
 
-// User and Participant Types
+// Import the shared Event and User types
+import { Event, EventCategory, EventStatus } from "./event";
+
+// User type (consistent with mockups/schemas/userSchema.ts)
 export interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
-  role: string;
-  status: string;
-  joinDate: string;
   avatar?: string;
-  registeredDate?: string;
-  lastActive?: string;
+  role: UserRole;
+  status: UserStatus;
+  joinDate: string; // ISO date string
+  lastActive: string; // ISO date string
+  profile?: {
+    bio?: string;
+    location?: string;
+    phoneNumber?: string;
+    dateOfBirth?: string;
+    gender?: "male" | "female" | "other" | "prefer-not-to-say";
+    interests?: string[];
+    socialMedia?: {
+      twitter?: string;
+      instagram?: string;
+      facebook?: string;
+      linkedIn?: string;
+    };
+  };
 }
+
+// User role types
+export type UserRole = "admin" | "moderator" | "organizer" | "regular";
+
+// User status types
+export type UserStatus =
+  | "active"
+  | "inactive"
+  | "pending"
+  | "suspended"
+  | "banned";
 
 export interface Participant {
   id: string;
@@ -23,25 +50,6 @@ export interface Participant {
   avatar?: string;
   lastEvent: string;
 }
-
-// Event Types
-export interface Event {
-  id: string | number;
-  title: string;
-  description?: string;
-  date: Date;
-  time: string;
-  location: string;
-  category: string;
-  participants: number;
-  maxParticipants: number;
-  status: EventStatus;
-  organizer?: string;
-  image?: string;
-  createdAt?: string;
-}
-
-export type EventStatus = "pending" | "approved" | "rejected" | "completed";
 
 // Chart Data Types
 export interface ChartData {

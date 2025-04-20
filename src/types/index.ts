@@ -6,6 +6,18 @@
 // Re-export all dashboard types
 export * from "./dashboard";
 
+// Re-export event types
+export * from "./event";
+
+// Re-export notification types
+export * from "./notification";
+
+// Re-export news types
+export * from "./news";
+
+// Re-export faq types
+export * from "./faq";
+
 // Global Application Types
 
 // HTTP Response Types

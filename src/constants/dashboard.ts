@@ -26,19 +26,25 @@ export const EVENT_CATEGORIES = [
 ];
 
 // Event Status Constants
-export const EVENT_STATUS: Record<EventStatus, EventStatus> = {
+export const EVENT_STATUS: Record<string, EventStatus> = {
   pending: "pending",
   approved: "approved",
   rejected: "rejected",
   completed: "completed",
+  cancelled: "cancelled",
+  ongoing: "ongoing",
+  upcoming: "upcoming",
 };
 
 // Event Status Labels
-export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
+export const EVENT_STATUS_LABELS: Record<string, string> = {
   pending: "Beklemede",
   approved: "Onaylandı",
   rejected: "Reddedildi",
   completed: "Tamamlandı",
+  cancelled: "İptal Edildi",
+  ongoing: "Devam Ediyor",
+  upcoming: "Yaklaşan",
 };
 
 // Report Priority Constants
@@ -56,19 +62,21 @@ export const REPORT_PRIORITY_LABELS: Record<ReportPriority, string> = {
 };
 
 // Report Status Constants
-export const REPORT_STATUS: Record<ReportStatus, ReportStatus> = {
+export const REPORT_STATUS: Record<string, ReportStatus> = {
   pending: "pending",
   reviewing: "reviewing",
   resolved: "resolved",
   rejected: "rejected",
+  dismissed: "dismissed",
 };
 
 // Report Status Labels
-export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
+export const REPORT_STATUS_LABELS: Record<string, string> = {
   pending: "Beklemede",
   reviewing: "İnceleniyor",
   resolved: "Çözüldü",
   rejected: "Reddedildi",
+  dismissed: "Kapatıldı",
 };
 
 // Entity Type Labels
@@ -173,7 +181,6 @@ export const MODAL_TYPES = {
   NEWS: "newNews" as ModalType,
   ANNOUNCEMENT: "newAnnouncement" as ModalType,
   USER: "user" as ModalType,
-  USERS: "users" as ModalType,
   DAILY_EVENTS: "dailyEvents" as ModalType,
   ACTIVE_USERS: "activeUsers" as ModalType,
   TOTAL_PARTICIPANTS: "totalParticipants" as ModalType,

@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,108 +8,120 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { CalendarIcon, Users } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
-import { Calendar } from "@/components/ui/calendar"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { CalendarIcon, Users } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
+} from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Event {
-  id: string | number
-  title: string
-  description?: string
-  date: Date
-  time: string
-  location: string
-  category: string
-  participants: number
-  maxParticipants: number
-  status: "pending" | "approved" | "rejected" | "completed"
-  organizer?: string
-  image?: string
+  id: string | number;
+  title: string;
+  description?: string;
+  date: Date;
+  time: string;
+  location: string;
+  category: string;
+  participants: number;
+  maxParticipants: number;
+  status: "pending" | "approved" | "rejected" | "completed";
+  organizer?: string;
+  image?: string;
 }
 
 interface EditEventModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess?: () => void
-  event?: Event
-  onSave?: (updatedEvent: Partial<Event>) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+  event?: Event;
+  onSave?: (updatedEvent: Partial<Event>) => void;
 }
 
 // Event kategori listesi
 const categories = [
-  "Futbol", "Basketbol", "Voleybol", "Tenis", "Yüzme", "Koşu", "Diğer"
-]
+  "Futbol",
+  "Basketbol",
+  "Voleybol",
+  "Tenis",
+  "Yüzme",
+  "Koşu",
+  "Diğer",
+];
 
-export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }: EditEventModalProps) {
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState<Partial<Event>>({})
-  const [date, setDate] = useState<Date>()
-  const { toast } = useToast()
+export function EditEventModal({
+  open,
+  onOpenChange,
+  onSuccess,
+  event,
+  onSave,
+}: EditEventModalProps) {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState<Partial<Event>>({});
+  const [date, setDate] = useState<Date>();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (event && open) {
-      setFormData(event)
-      setDate(new Date(event.date))
+      setFormData(event);
+      setDate(new Date(event.date));
     } else {
-      setFormData({})
-      setDate(undefined)
+      setFormData({});
+      setDate(undefined);
     }
-  }, [event, open])
+  }, [event, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    
+    e.preventDefault();
+    setLoading(true);
+
     try {
       // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       if (onSave) {
         onSave({
           ...formData,
           date: date || new Date(),
-        })
+        });
       }
-      
+
       toast({
         title: "Başarılı",
         description: "Etkinlik başarıyla güncellendi.",
-      })
-      
-      if (onSuccess) onSuccess()
-      onOpenChange(false)
+      });
+
+      if (onSuccess) onSuccess();
+      onOpenChange(false);
     } catch (error) {
       toast({
         title: "Hata",
         description: "Etkinlik güncellenirken bir hata oluştu.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (!event && open) {
-    return null
+    return null;
   }
 
   return (
@@ -132,19 +144,21 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
                 placeholder="Etkinlik adını girin"
                 className="col-span-3"
                 value={formData.title || ""}
-                onChange={(e) => setFormData(prev => ({...prev, title: e.target.value}))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, title: e.target.value }))
+                }
                 required
               />
             </div>
-            
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="category" className="text-right">
                 Kategori
               </Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => 
-                  setFormData(prev => ({...prev, category: value}))
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, category: value }))
                 }
               >
                 <SelectTrigger className="col-span-3">
@@ -159,7 +173,7 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">
                 Tarih
@@ -187,7 +201,7 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
                 </PopoverContent>
               </Popover>
             </div>
-            
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="location" className="text-right">
                 Konum
@@ -197,12 +211,12 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
                 placeholder="Etkinlik konumunu girin"
                 className="col-span-3"
                 value={formData.location || ""}
-                onChange={(e) => 
-                  setFormData(prev => ({...prev, location: e.target.value}))
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, location: e.target.value }))
                 }
               />
             </div>
-            
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="maxParticipants" className="text-right">
                 Maksimum Katılımcı
@@ -213,12 +227,15 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
                 placeholder="Maksimum katılımcı sayısı"
                 className="col-span-3"
                 value={formData.maxParticipants || ""}
-                onChange={(e) => 
-                  setFormData(prev => ({...prev, maxParticipants: parseInt(e.target.value) || 0}))
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    maxParticipants: parseInt(e.target.value) || 0,
+                  }))
                 }
               />
             </div>
-            
+
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="description" className="text-right">
                 Açıklama
@@ -229,15 +246,22 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
                 className="col-span-3"
                 rows={3}
                 value={formData.description || ""}
-                onChange={(e) => 
-                  setFormData(prev => ({...prev, description: e.target.value}))
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
                 }
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               İptal
             </Button>
             <Button type="submit" disabled={loading}>
@@ -247,5 +271,5 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
