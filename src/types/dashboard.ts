@@ -76,10 +76,16 @@ export interface Report {
   entityId: number;
   priority: ReportPriority;
   status: ReportStatus;
+  reason?: string;
+  details?: string;
+  adminNote?: string;
+  adminName?: string;
+  adminActionDate?: string;
+  isBanned?: boolean;
 }
 
 export type ReportPriority = "high" | "medium" | "low";
-export type ReportStatus = "pending" | "reviewing" | "resolved" | "rejected";
+export type ReportStatus = "pending" | "reviewing" | "resolved" | "rejected" | "dismissed";
 
 // Component Props Types
 export interface EventParticipationChartProps {
@@ -92,6 +98,7 @@ export interface RecentParticipantsProps {
 
 export interface TodaysEventsProps {
   onEventSelect?: (event: Event) => void;
+  onUserSelect?: (participant: Participant) => void;
   categories?: string[];
 }
 
@@ -117,12 +124,7 @@ export type ModalType =
   | null;
 
 // Dashboard Tab Types
-export type DashboardTabValue =
-  | "overview"
-  | "analytics"
-  | "events"
-  | "reports"
-  | "messages";
+export type DashboardTabValue = "overview" | "analytics" | "reports";
 
 // Filter Types
 export type ReportFilterType = "all" | "users" | "events";

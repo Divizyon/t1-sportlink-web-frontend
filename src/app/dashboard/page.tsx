@@ -76,6 +76,7 @@ import {
 import { ReportPriority, ReportStatus, ModalType } from "@/types";
 import { REPORTS } from "@/mocks/reports";
 import { USERS } from "@/mocks/users";
+import Link from "next/link";
 
 // Raporlar için demo verileri
 type Priority = "high" | "medium" | "low";
@@ -289,21 +290,12 @@ export default function DashboardPage() {
         value={activeTab}
         onValueChange={handleTabChange}
       >
-        <TabsList className="grid grid-cols-5 w-[600px]">
+        <TabsList className="grid grid-cols-2 w-[300px]">
           <TabsTrigger value={DASHBOARD_TABS.overview}>
             {DASHBOARD_TAB_LABELS.overview}
           </TabsTrigger>
           <TabsTrigger value={DASHBOARD_TABS.analytics}>
             {DASHBOARD_TAB_LABELS.analytics}
-          </TabsTrigger>
-          <TabsTrigger value={DASHBOARD_TABS.events}>
-            {DASHBOARD_TAB_LABELS.events}
-          </TabsTrigger>
-          <TabsTrigger value={DASHBOARD_TABS.reports}>
-            {DASHBOARD_TAB_LABELS.reports}
-          </TabsTrigger>
-          <TabsTrigger value={DASHBOARD_TABS.messages}>
-            {DASHBOARD_TAB_LABELS.messages}
           </TabsTrigger>
         </TabsList>
         <TabsContent value={DASHBOARD_TABS.overview} className="space-y-4">
@@ -337,6 +329,7 @@ export default function DashboardPage() {
               <CardContent>
                 <TodaysEvents
                   onEventSelect={(event) => openModal(MODAL_TYPES.EVENT, event)}
+                  onUserSelect={(user) => openModal(MODAL_TYPES.USER, user)}
                   categories={selectedCategories}
                 />
               </CardContent>
@@ -480,316 +473,6 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-        <TabsContent value={DASHBOARD_TABS.events} className="space-y-4">
-          {/* ... existing code ... */}
-        </TabsContent>
-        <TabsContent value={DASHBOARD_TABS.reports} className="space-y-4">
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <div className="flex gap-2">
-                <Button
-                  variant={
-                    reportFilter === REPORT_FILTERS.all ? "default" : "outline"
-                  }
-                  onClick={() => setReportFilter(REPORT_FILTERS.all)}
-                >
-                  {REPORT_FILTER_LABELS.all}
-                </Button>
-                <Button
-                  variant={
-                    reportFilter === REPORT_FILTERS.users
-                      ? "default"
-                      : "outline"
-                  }
-                  onClick={() => setReportFilter(REPORT_FILTERS.users)}
-                  className="relative"
-                >
-                  {REPORT_FILTER_LABELS.users}
-                  <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
-                    {
-                      REPORTS.filter(
-                        (r) => r.entityType === "user" && r.status === "pending"
-                      ).length
-                    }
-                  </Badge>
-                </Button>
-                <Button
-                  variant={
-                    reportFilter === REPORT_FILTERS.events
-                      ? "default"
-                      : "outline"
-                  }
-                  onClick={() => setReportFilter(REPORT_FILTERS.events)}
-                  className="relative"
-                >
-                  {REPORT_FILTER_LABELS.events}
-                  <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
-                    {
-                      REPORTS.filter(
-                        (r) =>
-                          r.entityType === "event" && r.status === "pending"
-                      ).length
-                    }
-                  </Badge>
-                </Button>
-              </div>
-
-              <div className="flex space-x-2">
-                <Select
-                  value={priorityFilter}
-                  onValueChange={(value) =>
-                    setPriorityFilter(value as Priority | "all")
-                  }
-                >
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Öncelik Filtrele" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tüm Öncelikler</SelectItem>
-                    <SelectItem value="high">
-                      {REPORT_PRIORITY_LABELS.high}
-                    </SelectItem>
-                    <SelectItem value="medium">
-                      {REPORT_PRIORITY_LABELS.medium}
-                    </SelectItem>
-                    <SelectItem value="low">
-                      {REPORT_PRIORITY_LABELS.low}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={statusFilter}
-                  onValueChange={(value) =>
-                    setStatusFilter(value as Status | "all")
-                  }
-                >
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Durum Filtrele" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tüm Durumlar</SelectItem>
-                    <SelectItem value="pending">
-                      {REPORT_STATUS_LABELS.pending}
-                    </SelectItem>
-                    <SelectItem value="reviewing">
-                      {REPORT_STATUS_LABELS.reviewing}
-                    </SelectItem>
-                    <SelectItem value="resolved">
-                      {REPORT_STATUS_LABELS.resolved}
-                    </SelectItem>
-                    <SelectItem value="rejected">
-                      {REPORT_STATUS_LABELS.rejected}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {UI_TEXT.SECTION_TITLES.INCOMING_REPORTS} (
-                  {filteredReports.length})
-                </CardTitle>
-                <CardDescription>
-                  {UI_TEXT.SECTION_DESCRIPTIONS.INCOMING_REPORTS}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Konu</TableHead>
-                      <TableHead>Raporlayan</TableHead>
-                      <TableHead>Tarih</TableHead>
-                      <TableHead>Tür</TableHead>
-                      <TableHead>Öncelik</TableHead>
-                      <TableHead>Durum</TableHead>
-                      <TableHead>İşlemler</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredReports.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell className="font-medium">
-                          {report.subject}
-                        </TableCell>
-                        <TableCell>{report.reportedBy}</TableCell>
-                        <TableCell>
-                          {new Date(report.reportedDate).toLocaleDateString(
-                            "tr-TR"
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {ENTITY_TYPE_LABELS[report.entityType]}
-                        </TableCell>
-                        <TableCell>
-                          {getPriorityBadge(report.priority)}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(report.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                openModal(report.entityType, {
-                                  id: report.entityId,
-                                })
-                              }
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {report.status === "pending" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                  handleStatusChange(report.id, "reviewing")
-                                }
-                              >
-                                <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                              </Button>
-                            )}
-                            {(report.status === "pending" ||
-                              report.status === "reviewing") && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleStatusChange(report.id, "resolved")
-                                  }
-                                >
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleStatusChange(report.id, "rejected")
-                                  }
-                                >
-                                  <XCircle className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        <TabsContent value={DASHBOARD_TABS.messages} className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{UI_TEXT.SECTION_TITLES.MESSAGING}</CardTitle>
-              <CardDescription>
-                {UI_TEXT.SECTION_DESCRIPTIONS.MESSAGING}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex h-[400px] border rounded-md">
-                <div className="w-1/3 border-r">
-                  <div className="p-4 border-b">
-                    <Input placeholder="Kullanıcı ara..." />
-                  </div>
-                  <div className="overflow-auto h-[348px]">
-                    {demoUsers.map((user, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center p-4 hover:bg-accent cursor-pointer border-b"
-                      >
-                        <Avatar className="h-9 w-9 mr-2">
-                          <AvatarImage
-                            src={`https://i.pravatar.cc/150?img=${index + 10}`}
-                          />
-                          <AvatarFallback>
-                            {user.name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium">{user.name}</p>
-                          <p className="text-xs text-muted-foreground truncate w-40">
-                            Son mesaj içeriği burada gösterilecek...
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="w-2/3 flex flex-col">
-                  <div className="p-4 border-b flex items-center">
-                    <Avatar className="h-9 w-9 mr-2">
-                      <AvatarImage src="https://i.pravatar.cc/150?img=10" />
-                      <AvatarFallback>AK</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">Ahmet Koç</p>
-                      <p className="text-xs text-muted-foreground">Çevrimiçi</p>
-                    </div>
-                  </div>
-                  <div className="flex-1 p-4 overflow-auto">
-                    <div className="space-y-4">
-                      <div className="flex items-start">
-                        <Avatar className="h-8 w-8 mr-2">
-                          <AvatarImage src="https://i.pravatar.cc/150?img=10" />
-                          <AvatarFallback>AK</AvatarFallback>
-                        </Avatar>
-                        <div className="bg-accent p-3 rounded-lg max-w-[80%]">
-                          <p className="text-sm">
-                            Merhaba, etkinlik hakkında bilgi alabilir miyim?
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            09:15
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start justify-end">
-                        <div className="bg-primary text-primary-foreground p-3 rounded-lg max-w-[80%]">
-                          <p className="text-sm">
-                            Tabii ki, hangi etkinlik hakkında bilgi almak
-                            istiyorsunuz?
-                          </p>
-                          <p className="text-xs text-primary-foreground/70 mt-1">
-                            09:17
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start">
-                        <Avatar className="h-8 w-8 mr-2">
-                          <AvatarImage src="https://i.pravatar.cc/150?img=10" />
-                          <AvatarFallback>AK</AvatarFallback>
-                        </Avatar>
-                        <div className="bg-accent p-3 rounded-lg max-w-[80%]">
-                          <p className="text-sm">
-                            15 Haziran'daki futbol turnuvası için.
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            09:18
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 border-t">
-                    <div className="flex space-x-2">
-                      <Input placeholder="Mesajınızı yazın..." />
-                      <Button size="icon">
-                        <SendHorizontal className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
 

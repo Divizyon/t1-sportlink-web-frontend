@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
@@ -55,16 +55,16 @@ interface Event {
 
 // Kategori renkleri
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
-  "Futbol": { bg: "bg-blue-100", text: "text-blue-800" },
-  "Basketbol": { bg: "bg-orange-100", text: "text-orange-800" },
-  "Voleybol": { bg: "bg-green-100", text: "text-green-800" },
-  "Tenis": { bg: "bg-purple-100", text: "text-purple-800" },
-  "Yüzme": { bg: "bg-cyan-100", text: "text-cyan-800" },
-  "Koşu": { bg: "bg-red-100", text: "text-red-800" },
-  "Yoga": { bg: "bg-pink-100", text: "text-pink-800" },
-  "Fitness": { bg: "bg-yellow-100", text: "text-yellow-800" },
-  "Diğer": { bg: "bg-gray-100", text: "text-gray-800" }
-}
+  Futbol: { bg: "bg-blue-100", text: "text-blue-800" },
+  Basketbol: { bg: "bg-orange-100", text: "text-orange-800" },
+  Voleybol: { bg: "bg-green-100", text: "text-green-800" },
+  Tenis: { bg: "bg-purple-100", text: "text-purple-800" },
+  Yüzme: { bg: "bg-cyan-100", text: "text-cyan-800" },
+  Koşu: { bg: "bg-red-100", text: "text-red-800" },
+  Yoga: { bg: "bg-pink-100", text: "text-pink-800" },
+  Fitness: { bg: "bg-yellow-100", text: "text-yellow-800" },
+  Diğer: { bg: "bg-gray-100", text: "text-gray-800" },
+};
 
 // Durum renkleri
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -381,9 +381,23 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Etkinlik Yönetimi</h1>
+        <Button onClick={() => setIsNewEventModalOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Yeni Etkinlik
+        </Button>
+      </div>
+
+      <NewEventModal
+        open={isNewEventModalOpen}
+        onOpenChange={setIsNewEventModalOpen}
+        onSuccess={handleAddNewEvent}
+      />
+
+      <Card className="p-4">
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
           <Input
             placeholder="Etkinlik ara..."
             value={searchQuery}
@@ -405,20 +419,24 @@ export default function EventsPage() {
             selectedCategories={selectedCategories}
             onSelectCategories={setSelectedCategories}
           />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Durum" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tümü</SelectItem>
+              <SelectItem value="active">Aktif</SelectItem>
+              <SelectItem value="completed">Tamamlandı</SelectItem>
+              <SelectItem value="cancelled">İptal Edildi</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Button onClick={() => setIsNewEventModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Yeni Etkinlik Ekle
-        </Button>
-      </div>
 
-      <Card className="p-4">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Etkinlik Adı</TableHead>
-                <TableHead>Kategori</TableHead>
                 <TableHead>Tarih</TableHead>
                 <TableHead>Konum</TableHead>
                 <TableHead>Katılımcılar</TableHead>
@@ -578,5 +596,5 @@ export default function EventsPage() {
         </div>
       )}
     </div>
-  )
-} 
+  );
+}

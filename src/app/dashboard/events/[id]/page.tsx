@@ -41,7 +41,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar, Users, Clock, MapPin, CheckCircle, XCircle, AlertTriangle, Edit, Trash, UserCog, ChevronLeft } from "lucide-react"
-import { UserNav } from "@/components/nav/user-nav"
+import { UserNav } from "@/components/nav/UserNav"
 import { useToast } from "@/components/ui/use-toast"
 import Link from "next/link"
 
@@ -500,18 +500,15 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                                 size="sm"
                                 onClick={() => handleReportStatusChange(report.id, "resolved")}
                               >
-                                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                                <CheckCircle className="h-4 w-4 text-green-500" />
                               </Button>
                             )}
+<<<<<<< HEAD
                             {(report.status === "pending") && (
+=======
+                            {report.status === "pending" && (
+>>>>>>> b8a40a51e748b24658022b9cbb78f1a77dc8e947
                               <>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleReportStatusChange(report.id, "resolved")}
-                                >
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
-                                </Button>
                                 <Button 
                                   variant="outline" 
                                   size="sm"
