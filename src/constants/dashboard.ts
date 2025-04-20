@@ -222,7 +222,6 @@ export const UI_TEXT = {
     PUBLISH_NEWS: "Haber Yayınla",
     MANAGE_ALL_USERS: "Tüm Kullanıcıları Yönet",
     ORG_EVENTS: "Organizasyon Etkinlikleri",
-    USER_STATS: "Kullanıcı İstatistikleri",
   },
 
   // Toast Messages

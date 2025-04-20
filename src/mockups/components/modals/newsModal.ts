@@ -94,7 +94,3 @@ export const getNewsConfirmation = (
     viewLink: `/news/${newsId}`,
   };
 };
-
-// Sample for quick access
-export const SAMPLE_NEWS_FORM = EMPTY_NEWS_FORM;
-export const SAMPLE_NEWS_CONFIRMATION = getNewsConfirmation(SAMPLE_NEWS_FORM);

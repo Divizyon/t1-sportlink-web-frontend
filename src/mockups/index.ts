@@ -59,14 +59,6 @@ export {
 // User component mockups
 export * from "./components/users/userProfile";
 
-// Import userStats
-import {
-  USER_STATS,
-  USER_ACTIVITY_BY_HOUR,
-  USER_RETENTION,
-} from "./components/dashboard/userStats";
-export { USER_STATS, USER_ACTIVITY_BY_HOUR, USER_RETENTION };
-
 // Also export components/events - with renamed exports to avoid conflicts
 export * from "./components/events/eventDetails";
 
@@ -178,14 +170,8 @@ import {
   getEventModalData,
   getRegistrationConfirmation,
   CANCELLATION_REASONS,
-  SAMPLE_EVENT_MODAL,
 } from "./components/modals/eventModal";
-export {
-  getEventModalData,
-  getRegistrationConfirmation,
-  CANCELLATION_REASONS,
-  SAMPLE_EVENT_MODAL,
-};
+export { getEventModalData, getRegistrationConfirmation, CANCELLATION_REASONS };
 
 // Export from userModal with renamed exports
 import {
@@ -195,7 +181,6 @@ import {
   ROLE_OPTIONS as USER_ROLE_OPTIONS,
   STATUS_OPTIONS as USER_STATUS_OPTIONS,
   POPULAR_INTERESTS,
-  SAMPLE_USER_MODAL,
 } from "./components/modals/userModal";
 export {
   getUserModalData,
@@ -204,7 +189,6 @@ export {
   USER_ROLE_OPTIONS,
   USER_STATUS_OPTIONS,
   POPULAR_INTERESTS,
-  SAMPLE_USER_MODAL,
 };
 
 // Export from reportModal with renamed exports
@@ -214,9 +198,6 @@ import {
   getReportUpdateModalData,
   EMPTY_REPORT_FORM,
   REPORT_REASON_OPTIONS,
-  SAMPLE_REPORT_FORM,
-  SAMPLE_REPORT_CONFIRMATION,
-  SAMPLE_REPORT_UPDATE,
 } from "./components/modals/reportModal";
 export {
   getReportFormForEntity,
@@ -224,9 +205,6 @@ export {
   getReportUpdateModalData,
   EMPTY_REPORT_FORM,
   REPORT_REASON_OPTIONS,
-  SAMPLE_REPORT_FORM,
-  SAMPLE_REPORT_CONFIRMATION,
-  SAMPLE_REPORT_UPDATE,
 };
 
 // Export from newsModal with renamed exports
@@ -235,20 +213,11 @@ import {
   EMPTY_NEWS_FORM,
   SAMPLE_NEWS_ITEMS,
   getNewsConfirmation,
-  SAMPLE_NEWS_FORM,
-  SAMPLE_NEWS_CONFIRMATION,
   NewsType,
   NewsFormMock,
   NewsConfirmationMock,
 } from "./components/modals/newsModal";
-export {
-  NEWS_TYPES,
-  EMPTY_NEWS_FORM,
-  SAMPLE_NEWS_ITEMS,
-  getNewsConfirmation,
-  SAMPLE_NEWS_FORM,
-  SAMPLE_NEWS_CONFIRMATION,
-};
+export { NEWS_TYPES, EMPTY_NEWS_FORM, SAMPLE_NEWS_ITEMS, getNewsConfirmation };
 export type { NewsType, NewsFormMock, NewsConfirmationMock };
 
 /**

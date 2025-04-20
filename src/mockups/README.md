@@ -80,16 +80,13 @@ Bu bölüm, her mockup verisinin hangi bileşenlerde kullanıldığına dair do�
 
 ### Dashboard Mockupları
 
-| Mockup Verisi             | Bileşen Dosyası                                                | Kullanım                            |
-| ------------------------- | -------------------------------------------------------------- | ----------------------------------- |
-| TODAY_EVENTS              | src/components/dashboard/home/TodaysEvents.tsx                 | Dashboard'daki ana etkinlik listesi |
-| UPCOMING_EVENTS           | src/components/dashboard/home/TodaysEvents.tsx                 | İkincil etkinlik listesi            |
-| EVENT_PARTICIPANTS        | src/components/dashboard/home/TodaysEvents.tsx                 | Genişletilebilir katılımcı listesi  |
-| RECENT_PARTICIPANTS       | src/components/dashboard/home/RecentParticipants.tsx           | Son katılımcı listesi               |
-| MONTHLY_EVENT_DATA        | src/components/dashboard/analytics/MonthlyEventsChart.tsx      | Aylık etkinlik analiz grafiği       |
-| USER_STATS                | src/components/dashboard/analytics/UserStatsWidget.tsx         | Kullanıcı istatistikleri gösterimi  |
-| USER_ACTIVITY_BY_HOUR     | src/components/dashboard/analytics/ActivityByHourChart.tsx     | Saatlik aktivite grafiği            |
-| EVENT_PARTICIPATION_CHART | src/components/dashboard/analytics/EventParticipationChart.tsx | Etkinlik katılım görselleştirmesi   |
+| Mockup Verisi       | Bileşen Dosyası                                           | Kullanım                            |
+| ------------------- | --------------------------------------------------------- | ----------------------------------- |
+| TODAY_EVENTS        | src/components/dashboard/home/TodaysEvents.tsx            | Dashboard'daki ana etkinlik listesi |
+| UPCOMING_EVENTS     | src/components/dashboard/home/TodaysEvents.tsx            | İkincil etkinlik listesi            |
+| EVENT_PARTICIPANTS  | src/components/dashboard/home/TodaysEvents.tsx            | Genişletilebilir katılımcı listesi  |
+| RECENT_PARTICIPANTS | src/components/dashboard/home/RecentParticipants.tsx      | Son katılımcı listesi               |
+| MONTHLY_EVENT_DATA  | src/components/dashboard/analytics/MonthlyEventsChart.tsx | Aylık etkinlik analiz grafiği       |
 
 ### Etkinlik Mockupları
 

@@ -143,6 +143,3 @@ export const CANCELLATION_REASONS = [
   { value: "too_expensive", label: "Price Too High" },
   { value: "other", label: "Other" },
 ];
-
-// Sample event modal data for quick access
-export const SAMPLE_EVENT_MODAL = getEventModalData(EVENT_SCHEMA.events[0].id);

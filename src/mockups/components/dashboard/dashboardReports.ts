@@ -62,12 +62,3 @@ export const REPORT_BY_ENTITY = {
   comment: REPORT_SCHEMA.stats.byEntityType.comment,
   message: REPORT_SCHEMA.stats.byEntityType.message,
 };
-
-// Reports by timestamp - for timeline view
-export const REPORTS_TIMELINE = REPORT_SCHEMA.reports.map((report) => ({
-  id: report.id,
-  subject: report.subject,
-  timestamp: new Date(report.reportedDate).getTime(),
-  status: report.status,
-  priority: report.priority,
-}));

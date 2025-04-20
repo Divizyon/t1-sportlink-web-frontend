@@ -127,6 +127,3 @@ export const POPULAR_INTERESTS = [
   "table tennis",
   "badminton",
 ];
-
-// Sample user modal data for quick access
-export const SAMPLE_USER_MODAL = getUserModalData(USER_SCHEMA.users[0].id);

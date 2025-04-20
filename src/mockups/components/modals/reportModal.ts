@@ -141,14 +141,3 @@ export const getReportUpdateModalData = (
     notes: report.notes,
   };
 };
-
-// Sample instances for quick access
-export const SAMPLE_REPORT_FORM = getReportFormForEntity(
-  "user",
-  USER_SCHEMA.users[0].id
-);
-export const SAMPLE_REPORT_CONFIRMATION =
-  getReportConfirmation(SAMPLE_REPORT_FORM);
-export const SAMPLE_REPORT_UPDATE = getReportUpdateModalData(
-  REPORT_SCHEMA.reports[0].id
-);
