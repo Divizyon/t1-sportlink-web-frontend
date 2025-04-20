@@ -31,15 +31,18 @@ export function useDashboardEvents({
   // Fetch events from API or use mock data
   useEffect(() => {
     const fetchEvents = async () => {
-      setLoading(true);
       try {
         // In production, replace with actual API call
         // const response = await fetch('/api/events');
         // const data = await response.json();
-        // setEvents(data);
-
-        // Using mock data for now
-        setEvents([...TODAY_EVENTS, ...EVENT_DETAILS]);
+        
+        // Using mock data - combine and deduplicate events
+        const allEvents = [...TODAY_EVENTS, ...EVENT_DETAILS];
+        const uniqueEvents = allEvents.filter((event, index, self) =>
+          index === self.findIndex((e) => e.id === event.id)
+        );
+        
+        setEvents(uniqueEvents);
         setLoading(false);
       } catch (err) {
         setError(
@@ -50,15 +53,17 @@ export function useDashboardEvents({
     };
 
     fetchEvents();
-  }, []);
+  }, []); // Empty dependency array to run only once
 
   // Filter events based on selected categories and status
   const filteredEvents = useMemo(() => {
+    if (!events.length) return [];
     return filterEvents(events, selectedCategories, selectedStatus);
   }, [events, selectedCategories, selectedStatus]);
 
   // Group events by date for calendar view
   const eventsByDate = useMemo(() => {
+    if (!filteredEvents.length) return {};
     return groupEventsByDay(filteredEvents);
   }, [filteredEvents]);
 
@@ -76,10 +81,6 @@ export function useDashboardEvents({
     const rejected = events.filter((e) => e.status === "rejected").length;
     const completed = events.filter((e) => e.status === "completed").length;
 
-    // For growth calculation, normally would compare with previous period
-    // This is a placeholder calculation
-    const previousTotal = total * 0.8; // Assuming 20% growth for demo
-
     return {
       total,
       approved,
@@ -87,7 +88,7 @@ export function useDashboardEvents({
       rejected,
       completed,
       approvalRate: calculatePercentage(approved, total),
-      growthRate: calculateGrowth(total, previousTotal),
+      growthRate: calculateGrowth(total, Math.floor(total * 0.8)), // Assuming 20% growth for demo
       participation: events.reduce((sum, event) => sum + event.participants, 0),
       averageFillRate:
         events.length > 0
