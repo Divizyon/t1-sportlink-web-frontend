@@ -3,7 +3,8 @@ import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
   // Giriş durumunu al
-  const isLoggedIn = request.cookies.get('isLoggedIn')?.value === 'true'
+  const accessToken = request.cookies.get('accessToken')?.value
+  const isLoggedIn = !!accessToken
   
   // Kullanıcının gitmek istediği yol
   const { pathname } = request.nextUrl
