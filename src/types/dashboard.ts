@@ -120,8 +120,42 @@ export interface CategoryFilterDropdownProps {
   onChange: (categories: string[]) => void;
 }
 
+// Dashboard Tab Types
+export type TabType =
+  | "overview"
+  | "reports"
+  | "events"
+  | "users"
+  | "messages"
+  | "notifications"
+  | "analytics"
+  | "settings";
+
+// Legacy Dashboard Tab Types (for backward compatibility)
+export type DashboardTabValue = "overview" | "analytics" | "reports";
+
 // Modal Types
 export type ModalType =
+  | "newReport"
+  | "viewReport"
+  | "editReport"
+  | "deleteReport"
+  | "newEvent"
+  | "viewEvent"
+  | "editEvent"
+  | "deleteEvent"
+  | "sendMessage"
+  | "viewMessage"
+  | "newUser"
+  | "viewUser"
+  | "editUser"
+  | "deleteUser"
+  | "newNotification"
+  | "viewNotification"
+  | "settings";
+
+// Legacy Modal Types (for backward compatibility)
+export type LegacyModalType =
   | "event"
   | "newEvent"
   | "newNews"
@@ -133,11 +167,17 @@ export type ModalType =
   | "totalParticipants"
   | "reportedUsers"
   | "reportedEvents"
-  | "orgEvents"
-  | null;
+  | "orgEvents";
 
-// Dashboard Tab Types
-export type DashboardTabValue = "overview" | "analytics" | "reports";
+// Report Filter Types
+export type ReportFilterType =
+  | "all"
+  | "pending"
+  | "reviewing"
+  | "resolved"
+  | "rejected"
+  | "dismissed"
+  | "highPriority";
 
-// Filter Types
-export type ReportFilterType = "all" | "users" | "events";
+// Legacy Filter Types (for backward compatibility)
+export type LegacyReportFilterType = "all" | "users" | "events";

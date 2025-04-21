@@ -48,6 +48,7 @@ export interface EventSchema {
 
 // Event category types
 export type EventCategory =
+  | "all"
   | "tournament"
   | "training"
   | "meeting"
@@ -55,6 +56,7 @@ export type EventCategory =
   | "social"
   | "workshop"
   | "competition"
+  | "match"
   | "other";
 
 // Event status types
@@ -98,6 +100,34 @@ export const EVENT_STATUS_COLORS: Record<string, string> = {
   cancelled: "#6b7280", // gray
   ongoing: "#8b5cf6", // purple
   upcoming: "#0891b2", // cyan
+};
+
+// Event categories for UI and filtering (formerly in constants/dashboard.ts)
+export const EVENT_CATEGORIES: Record<EventCategory, EventCategory> = {
+  all: "all",
+  tournament: "tournament",
+  training: "training",
+  meeting: "meeting",
+  sport: "sport",
+  social: "social",
+  workshop: "workshop",
+  competition: "competition",
+  match: "match",
+  other: "other",
+};
+
+// Event category labels for UI display (formerly in constants/dashboard.ts)
+export const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
+  all: "Tüm Etkinlikler",
+  tournament: "Turnuvalar",
+  training: "Antrenmanlar",
+  meeting: "Toplantılar",
+  sport: "Spor Etkinlikleri",
+  social: "Sosyal Etkinlikler",
+  workshop: "Atölyeler",
+  competition: "Yarışmalar",
+  match: "Maçlar",
+  other: "Diğer",
 };
 
 // Sample event data using the schema

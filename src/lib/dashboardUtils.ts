@@ -19,7 +19,8 @@
  */
 
 import { ChartData, CategoryData, Event, EventStatus } from "@/types/dashboard";
-import { EVENT_STATUS_LABELS, COLORS, DAYS_OF_WEEK, MONTHS } from "@/constants";
+import { COLORS, DAYS_OF_WEEK, MONTHS } from "@/constants";
+import { EVENT_STATUS_LABELS } from "@/mockups";
 import {
   formatDashboardDate,
   calculatePercentage,

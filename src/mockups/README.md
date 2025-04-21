@@ -15,6 +15,135 @@ Bu dizin, bileşenlerde kullanılan tüm mockup verilerinin merkezi konumudur. Y
 >
 > Detaylı migrasyon belgeleri için [migration](./migration/) dizinine, özellikle [PHASE5_DOCUMENTATION.md](./migration/PHASE5_DOCUMENTATION.md) dosyasına bakabilirsiniz.
 
+## Veri Yönetim Mimarisi: Types, Constants ve Mockups
+
+Projemizde veri yönetimi üç ana bileşene ayrılmıştır. Her biri spesifik bir amaca hizmet eder ve bu ayrım, backend entegrasyonunu kolaylaştıracaktır:
+
+### 1. Types `/src/types`
+
+**Amacı**: Uygulama genelinde kullanılan tüm veri tipi tanımlarını içerir.
+
+- **İçerik**: TypeScript type, interface ve enum tanımları
+- **Kullanım**: Hem frontend hem de backend arasındaki veri yapılarını tanımlamak için
+- **Özellik**: Backend API'den gelen verinin nasıl şekillendirildiğini belirler
+- **Örnek**: `Event`, `User`, `Report` interface tanımları
+
+### 2. Mockups `/src/mockups`
+
+**Amacı**: Backend API'lerden gelecek olan gerçek veriyi simüle eder.
+
+- **İçerik**: JSON benzeri veri yapıları ve schema tanımları
+- **Kullanım**: Bileşenlerde gösterilecek dinamik veriler için
+- **Özellik**: API yanıtlarını taklit eden veriler; kategori listeleri, durum seçenekleri vb.
+- **Örnek**: `EVENT_SCHEMA`, `USER_SCHEMA`, event kategorileri, rapor durumları
+
+### 3. Constants `/src/constants`
+
+**Amacı**: Uygulama davranışını kontrol eden gerçek sabitleri tanımlar.
+
+- **İçerik**: Zamanlar, yollar, ayarlar, piktogramik değerler
+- **Kullanım**: Uygulama çalışma zamanı davranışları için
+- **Özellik**: API yanıtlarıyla değişmeyen, gerçek "sabit" değerler
+- **Örnek**: `API_TIMEOUT`, `LOADING_DELAY`, `DATE_FORMAT`, `UI_CONFIG`
+
+## Doğru Veri Kaynağı Kullanımı
+
+### ✅ Doğru Kullanım:
+
+- **Types**: Tip güvenliği ve API sözleşmeleri için
+
+  ```typescript
+  function handleEvent(event: Event) {
+    /* ... */
+  }
+  ```
+
+- **Mockups**: Bileşenlerin göstereceği dinamik veriler için
+
+  ```typescript
+  // ✅ Görüntülenecek veriler için mockup kullanımı
+  import { EVENT_CATEGORIES } from "@/mockups";
+  ```
+
+- **Constants**: Uygulama yapılandırması için
+  ```typescript
+  // ✅ Uygulama davranışını kontrol eden gerçek sabitler
+  import { API_TIMEOUT, DATE_FORMAT } from "@/constants";
+  ```
+
+### ❌ Hatalı Kullanım:
+
+- **Bileşenlerde Hardcoded Data**
+
+  ```typescript
+  // ❌ Hardcoded veri listeleri
+  const categories = ["training", "tournament", "social"];
+  ```
+
+- **Constants İçerisinde API Verileri**
+
+  ```typescript
+  // ❌ Aslında API'den gelmesi gereken liste/seçenekler
+  export const EVENT_CATEGORIES = {
+    /* ... */
+  }; // Bu mockups içinde olmalı
+  ```
+
+- **Karışık Sorumluluklar**
+  ```typescript
+  // ❌ Types, mockups ve constants karışımı
+  export const EVENT_TYPES: EventType[] = ["training", "social"]; // Karmaşık sorumluluk
+  ```
+
+## Backend Entegrasyonu İçin Beklenen API Yanıtları
+
+Her mockup şeması, backend API'den beklediğimiz yanıt yapısını temsil eder. Backend geliştiriciler, aşağıdaki şemalara uygun API yanıtları üretmelidir:
+
+### Temel Şemalar
+
+1. **Event API**
+
+   - Base Endpoint: `/api/events`
+   - Beklenen Şema: `src/mockups/schemas/eventSchema.ts`
+   - Mockup Örnek: `EVENT_SCHEMA`
+
+2. **User API**
+
+   - Base Endpoint: `/api/users`
+   - Beklenen Şema: `src/mockups/schemas/userSchema.ts`
+   - Mockup Örnek: `USER_SCHEMA`
+
+3. **Report API**
+   - Base Endpoint: `/api/reports`
+   - Beklenen Şema: `src/mockups/schemas/reportSchema.ts`
+   - Mockup Örnek: `REPORT_SCHEMA`
+
+## Bileşen-Spesifik API Gereksinimleri
+
+Her bileşen için gerekli olan özel veri yapıları, ilgili mockup dosyalarında belirtilmiştir. Backend ekibi, her endpoint için neyin döndürülmesi gerektiğini bu dosyalara bakarak anlayabilir.
+
+### Örnek: Dashboard Etkinlikleri
+
+```typescript
+// Frontend'in beklediği yanıt yapısı
+// GET /api/events/today
+{
+  events: [
+    {
+      id: "evt-001",
+      title: "Morning Run Club",
+      time: "07:00",
+      location: "City Park",
+      category: "sport",
+      participants: 15,
+      maxParticipants: 30,
+      status: "approved",
+    },
+    // ...
+  ];
+}
+```
+
 ## Dizin Yapısı
 
 ```
@@ -31,19 +160,8 @@ mockups/
 │   ├── users/                 # Kullanıcı bileşenleri
 │   ├── reports/               # Rapor bileşenleri
 │   └── modals/                # Modal bileşenleri
-├── migration/                 # Migrasyon belgelendirmesi
-│   └── PHASE5_DOCUMENTATION.md # Yeni yapının kullanımı için rehber
 └── index.ts                   # Ana dışa aktarma dosyası
 ```
-
-## Kullanım Yönergeleri
-
-1. `schemas` dizini, her varlık tipi için tüm veri modellerini içerir
-2. Bileşen mockupları her zaman ana şemaları referans almalı ve alt kümelerini kullanmalıdır
-3. Her bileşen mockup dosyası şunları yapmalıdır:
-   - Hangi bileşen için olduğunu belgelemek
-   - Sadece o bileşen için gereken belirli verileri içermek
-   - Ana şema ile aynı özellik isimlerini korumak
 
 ## Yeni Mockup Ekleme
 
@@ -73,6 +191,50 @@ export const TODAY_EVENTS = EVENT_SCHEMA.events.slice(0, 5).map((event) => ({
 ```
 
 Bu yapı, tutarlı veri yapılarını korurken her bileşenin hangi verilere ihtiyaç duyduğunu net bir şekilde belirtmemizi sağlar.
+
+## Constants ve Mockups Ayrımı
+
+### Mockups Klasörü
+
+- **Amaç**: Backend API'den gelecek olan dinamik verilerin simülasyonu
+- **İçerik Tipi**: API yanıtlarını taklit eden veri modelleri, şemalar ve örnekler
+- **Ne Zaman Kullanılmalı**: Bileşenlerde görüntülenecek içerikler, API'den gelecek listeler, kategoriler, kullanıcı verileri vb.
+- **Örnekler**: Etkinlik kategorileri, kullanıcı listesi, rapor durumları
+
+### Constants Klasörü
+
+- **Amaç**: Uygulama çalışması için gerekli sabit değerlerin tanımlanması
+- **İçerik Tipi**: Zaman aşımı değerleri, gecikme süreleri, API URL'leri, animasyon süreleri, format tanımları
+- **Ne Zaman Kullanılmalı**: Uygulama davranışını belirleyen, API yanıtlarına bağlı olmayan gerçek sabitler
+- **Örnekler**: API_URL, LOADING_DELAYS, DATE_FORMATS, BREAKPOINTS
+
+### Kurallar
+
+1. Bileşenlerde görüntülenecek **tüm veriler** mockups klasöründen alınmalıdır, constants'tan değil
+2. API'den gelebilecek her türlü içerik (kategoriler, statüler, seçenekler) mutlaka mockups'ta tanımlanmalıdır
+3. Constants yalnızca uygulama yapılandırması için gerekli değerleri içermelidir
+4. Bileşenlerde hard-coded veri kullanmak yerine mockups'tan alınan veriler kullanılmalıdır
+
+Bu ayrım sayesinde, API entegrasyonu geldiğinde yalnızca mockups klasörünün güncellenmesi yeterli olacaktır.
+
+## Migrate Edilmesi Gereken Constants
+
+Aşağıdaki öğeler hala `constants/dashboard.ts` içinde bulunuyor ve `mockups/` klasörüne taşınmalıdır:
+
+1. **Dashboard Tab İlgili**:
+
+   - `DASHBOARD_TABS` ve `DASHBOARD_TAB_LABELS` → `/mockups/components/dashboard/dashboardSettings.ts`
+   - `DASHBOARD_MODAL_TYPES` ve `DASHBOARD_MODAL_LABELS` → `/mockups/components/dashboard/dashboardSettings.ts`
+   - `DASHBOARD_UI_TEXT` → `/mockups/components/dashboard/dashboardSettings.ts`
+
+2. **Event İlgili**:
+
+   - `EVENT_CATEGORIES` ve `EVENT_CATEGORY_LABELS` → `/mockups/schemas/eventSchema.ts`
+
+3. **Diğer UI İlgili**:
+   - `DASHBOARD_STATUS_LABELS` → `/mockups/components/dashboard/dashboardSettings.ts`
+
+**NOT**: `DASHBOARD_SETTINGS` gibi gerçek konfigürasyon değerleri constants içinde kalmalıdır.
 
 ## Bileşen Referansları
 
@@ -135,60 +297,3 @@ Bu bölüm, her mockup verisinin hangi bileşenlerde kullanıldığına dair do�
 | SAMPLE_NEWS_ITEMS | _Tanımlanmış fakat kullanılmıyor_ | Haber içerik yönetimi   |
 | NEWS_TYPES        | _Tanımlanmış fakat kullanılmıyor_ | Haber tipi seçenekleri  |
 | EMPTY_NEWS_FORM   | _Tanımlanmış fakat kullanılmıyor_ | Boş haber formu şablonu |
-
-## Constants ve Mockups Ayrımı
-
-Projede veri yönetimi için iki ayrı yaklaşım kullanılmaktadır:
-
-### Mockups Klasörü
-
-- **Amaç**: Backend API'den gelecek olan dinamik verilerin simülasyonu
-- **İçerik Tipi**: API yanıtlarını taklit eden veri modelleri, şemalar ve örnekler
-- **Ne Zaman Kullanılmalı**: Bileşenlerde görüntülenecek içerikler, API'den gelecek listeler, kategoriler, kullanıcı verileri vb.
-- **Örnekler**: Etkinlik kategorileri, kullanıcı listesi, rapor durumları
-
-### Constants Klasörü
-
-- **Amaç**: Uygulama çalışması için gerekli sabit değerlerin tanımlanması
-- **İçerik Tipi**: Zaman aşımı değerleri, gecikme süreleri, API URL'leri, animasyon süreleri, format tanımları
-- **Ne Zaman Kullanılmalı**: Uygulama davranışını belirleyen, API yanıtlarına bağlı olmayan gerçek sabitler
-- **Örnekler**: API_URL, LOADING_DELAYS, DATE_FORMATS, BREAKPOINTS
-
-### Kurallar
-
-1. Bileşenlerde görüntülenecek **tüm veriler** mockups klasöründen alınmalıdır, constants'tan değil
-2. API'den gelebilecek her türlü içerik (kategoriler, statüler, seçenekler) mutlaka mockups'ta tanımlanmalıdır
-3. Constants yalnızca uygulama yapılandırması için gerekli değerleri içermelidir
-4. Bileşenlerde hard-coded veri kullanmak yerine mockups'tan alınan veriler kullanılmalıdır
-
-Bu ayrım sayesinde, API entegrasyonu geldiğinde yalnızca mockups klasörünün güncellenmesi yeterli olacaktır.
-
-### Constants'tan Mockups'a Taşınan Öğeler
-
-Aşağıdaki öğeler constants/dashboard.ts'den mockups klasörüne taşındı:
-
-1. **Etkinlik İlgili**:
-
-   - EVENT_STATUS ve EVENT_STATUS_LABELS → `/schemas/eventSchema.ts`
-   - EVENT_STATUS_COLORS → `/schemas/eventSchema.ts`
-
-2. **Rapor İlgili**:
-
-   - REPORT_STATUS ve REPORT_STATUS_LABELS → `/schemas/reportSchema.ts`
-   - REPORT_PRIORITY ve REPORT_PRIORITY_LABELS → `/schemas/reportSchema.ts`
-   - ENTITY_TYPE_LABELS → `/schemas/reportSchema.ts`
-   - REPORT_STATUS_COLORS ve REPORT_PRIORITY_COLORS → `/schemas/reportSchema.ts`
-   - REPORT_FILTERS ve REPORT_FILTER_LABELS → `/components/reports/index.ts`
-
-3. **Dashboard İlgili**:
-   - DASHBOARD_TABS ve DASHBOARD_TAB_LABELS → `/components/dashboard/dashboardSettings.ts`
-   - MODAL_TYPES → `/components/dashboard/dashboardSettings.ts`
-   - UI_TEXT → `/components/dashboard/dashboardSettings.ts`
-
-> **NOT**: Bazı veri tiplerinin halen constants/dashboard.ts dosyasında tanımlı olduğu tespit edildi. Backend entegrasyonu sırasında bu verilerin tamamı mockups klasöründe olmalıdır. Aşağıdakiler gibi veriler halen taşınmayı bekliyor:
->
-> - ~~EVENT_CATEGORIES (constants/dashboard.ts içinde)~~ ⚠️ _Taşındı, dashboard ve events olmak üzere iki ayrı versiyon var_
-> - ~~EVENT_STATUS, EVENT_STATUS_LABELS (ikisi de constants/dashboard.ts içinde kalmış olabilir)~~ ⚠️ _Taşındı, `/schemas/eventSchema.ts` içerisinde bulunuyor_
-> - ~~REPORT_FILTERS, REPORT_FILTER_LABELS (constants/dashboard.ts içinde)~~ ⚠️ _Taşındı, `/components/reports/index.ts` içerisinde bulunuyor_
->
-> Bu verilerin mockups klasörüne taşınması ve tüm ilgili import'ların güncellenmesi gerekiyor. Bu işlem uygulamanın herhangi bir yerinde hard-coded veri kalmamasını sağlayacaktır.

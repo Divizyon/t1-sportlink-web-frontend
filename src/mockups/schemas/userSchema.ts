@@ -71,7 +71,15 @@ export interface UserSchema {
 }
 
 // User role types
-export type UserRole = "admin" | "moderator" | "organizer" | "regular";
+export type UserRole =
+  | "admin"
+  | "director"
+  | "staff"
+  | "head_coach"
+  | "coach"
+  | "moderator"
+  | "organizer"
+  | "regular";
 
 // User status types
 export type UserStatus =
@@ -80,6 +88,39 @@ export type UserStatus =
   | "pending"
   | "suspended"
   | "banned";
+
+// User role constants (formerly in constants/dashboard.ts)
+export const USER_ROLES: Record<UserRole, UserRole> = {
+  admin: "admin",
+  director: "director",
+  staff: "staff",
+  head_coach: "head_coach",
+  coach: "coach",
+  moderator: "moderator",
+  organizer: "organizer",
+  regular: "regular",
+};
+
+// User role labels for UI display
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  admin: "Yönetici",
+  director: "Direktör",
+  staff: "Personel",
+  head_coach: "Baş Antrenör",
+  coach: "Antrenör",
+  moderator: "Moderatör",
+  organizer: "Organizatör",
+  regular: "Kullanıcı",
+};
+
+// Dashboard admin roles that have access to admin features
+export const DASHBOARD_ADMIN_ROLES: UserRole[] = [
+  "admin",
+  "director",
+  "staff",
+  "head_coach",
+  "coach",
+];
 
 // Sample user data using the schema
 export const USER_SCHEMA = {

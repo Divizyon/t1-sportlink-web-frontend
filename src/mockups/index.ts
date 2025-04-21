@@ -62,6 +62,21 @@ import {
   EVENT_PARTICIPANTS,
 } from "./components/dashboard/todaysEvents";
 export { TODAY_EVENTS, DASHBOARD_UPCOMING_EVENTS, EVENT_PARTICIPANTS };
+
+// Dashboard UI constants
+import {
+  LOADING_DELAYS,
+  DASHBOARD_VIEW_SETTINGS,
+  DASHBOARD_DATA_SETTINGS,
+  ANIMATION_TIMINGS,
+} from "./components/dashboard/loadingSettings";
+export {
+  LOADING_DELAYS,
+  DASHBOARD_VIEW_SETTINGS,
+  DASHBOARD_DATA_SETTINGS,
+  ANIMATION_TIMINGS,
+};
+
 export * from "./components/dashboard/analyticsCharts";
 export * from "./components/dashboard/recentParticipants";
 export * from "./components/dashboard/eventParticipationChart";
