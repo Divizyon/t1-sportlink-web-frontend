@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { Upload, Image as ImageIcon, Bell } from "lucide-react";
 // Import from mockups
@@ -28,6 +28,7 @@ import {
   NEWS_TYPES,
   EMPTY_NEWS_FORM,
   NewsFormMock,
+  NewsType,
   getNewsConfirmation,
 } from "@/mockups/components/modals/newsModal";
 
@@ -40,7 +41,7 @@ interface NewsModalProps {
 export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("announcement");
+  const [activeTab, setActiveTab] = useState<NewsType>("announcement");
 
   const [formData, setFormData] = useState<NewsFormMock>({
     ...EMPTY_NEWS_FORM,
@@ -59,7 +60,7 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
   };
 
   const handleTypeChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, type: value as any }));
+    setFormData((prev) => ({ ...prev, type: value as NewsType }));
   };
 
   const handleNotificationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,11 +81,11 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Form doğrulama
+    // Form validation
     if (!formData.title.trim()) {
       toast({
-        title: "Hata",
-        description: "Başlık alanı zorunludur.",
+        title: "Error",
+        description: "Title field is required.",
         variant: "destructive",
       });
       return;
@@ -92,17 +93,17 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
 
     if (!formData.content.trim()) {
       toast({
-        title: "Hata",
-        description: "İçerik alanı zorunludur.",
+        title: "Error",
+        description: "Content field is required.",
         variant: "destructive",
       });
       return;
     }
 
-    // Form gönderme
+    // Form submission
     setLoading(true);
 
-    // API çağrısı simülasyonu
+    // Simulated API call
     setTimeout(() => {
       setLoading(false);
 
@@ -110,7 +111,7 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
       const confirmation = getNewsConfirmation(formData);
 
       toast({
-        title: "Başarılı",
+        title: "Success",
         description: confirmation.message,
       });
 
@@ -146,7 +147,11 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab as (value: string) => void}
+            className="mt-4"
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="announcement">
                 <Bell className="mr-2 h-4 w-4" />

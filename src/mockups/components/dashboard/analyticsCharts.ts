@@ -127,3 +127,11 @@ export const USER_ROLE_DISTRIBUTION = {
   organizer: USER_SCHEMA.roles.organizer,
   regular: USER_SCHEMA.roles.regular,
 };
+
+// Chart data key to Turkish label mapping
+export const EVENT_DATA_KEY_LABELS: Record<string, string> = {
+  onaylanan: "Onaylanan",
+  bekleyen: "Bekleyen",
+  reddedilen: "Reddedilen",
+  tamamlanan: "Tamamlanan",
+};

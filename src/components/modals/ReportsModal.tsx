@@ -7,9 +7,6 @@ import {
   Flag,
   Search,
   Calendar,
-  Clock,
-  MapPin,
-  Users,
   User,
   ShieldAlert,
   Shield,
@@ -37,23 +34,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ReportDetailModal } from "@/components/modals/ReportDetailModal";
 // Import from mockups
 import {
   REPORT_SCHEMA,
-  RECENT_DASHBOARD_REPORTS,
-  REPORT_COUNTS,
-  REPORT_BY_PRIORITY,
-  REPORT_BY_ENTITY,
   ReportStatus,
-} from "@/mockups";
-import {
+  getSeverityBadgeClasses,
+  getSeverityBadgeLabel,
+  getStatusBadgeClasses,
+  getStatusBadgeLabel,
+  mapStatusFromSchema,
+  mapStatusToSchema,
   REPORT_REASON_OPTIONS,
-  getReportUpdateModalData,
-} from "@/mockups/components/modals/reportModal";
+} from "@/mockups";
 
 interface EventReport {
   id: string;
@@ -94,23 +88,6 @@ interface ReportsModalProps {
   reportType?: "events" | "users";
   preferredFilter?: string | null;
 }
-
-// Add status mapping helper functions
-const mapStatusFromSchema = (
-  status: string
-): "pending" | "resolved" | "dismissed" => {
-  if (status === "reviewing") return "pending";
-  if (status === "rejected") return "dismissed";
-  if (status === "resolved") return "resolved";
-  return "pending"; // Default case
-};
-
-const mapStatusToSchema = (status: string): ReportStatus => {
-  if (status === "dismissed") return "rejected";
-  if (status === "resolved") return "resolved";
-  if (status === "pending") return "reviewing";
-  return "pending"; // Default case
-};
 
 // Use type guards to check the type of report
 function isEventReport(report: Report): report is EventReport {
@@ -160,12 +137,7 @@ export function ReportsModal({
           reporterAvatar: `/avatars/0${Math.floor(Math.random() * 9) + 1}.png`,
           reason: report.subject,
           details: report.description,
-          status:
-            report.status === "rejected"
-              ? "dismissed"
-              : report.status === "reviewing"
-              ? "pending"
-              : report.status,
+          status: mapStatusFromSchema(report.status),
           severity: report.priority,
           createdAt: report.reportedDate,
         }));
@@ -184,12 +156,7 @@ export function ReportsModal({
           reporterAvatar: `/avatars/0${Math.floor(Math.random() * 9) + 1}.png`,
           reason: report.subject,
           details: report.description,
-          status:
-            report.status === "rejected"
-              ? "dismissed"
-              : report.status === "reviewing"
-              ? "pending"
-              : report.status,
+          status: mapStatusFromSchema(report.status),
           severity: report.priority,
           createdAt: report.reportedDate,
         }));
@@ -330,67 +297,19 @@ export function ReportsModal({
   const filteredUserReports = filterReports(userReports);
 
   const getSeverityBadge = (severity: "low" | "medium" | "high") => {
-    switch (severity) {
-      case "low":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-blue-50 text-blue-700 border-blue-200"
-          >
-            Düşük
-          </Badge>
-        );
-      case "medium":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-yellow-50 text-yellow-700 border-yellow-200"
-          >
-            Orta
-          </Badge>
-        );
-      case "high":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-red-50 text-red-700 border-red-200"
-          >
-            Yüksek
-          </Badge>
-        );
-    }
+    return (
+      <Badge variant="outline" className={getSeverityBadgeClasses(severity)}>
+        {getSeverityBadgeLabel(severity)}
+      </Badge>
+    );
   };
 
   const getStatusBadge = (status: "pending" | "resolved" | "dismissed") => {
-    switch (status) {
-      case "pending":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-yellow-50 text-yellow-700 border-yellow-200"
-          >
-            Beklemede
-          </Badge>
-        );
-      case "resolved":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-green-50 text-green-700 border-green-200"
-          >
-            Çözüldü
-          </Badge>
-        );
-      case "dismissed":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-gray-50 text-gray-700 border-gray-200"
-          >
-            Reddedildi
-          </Badge>
-        );
-    }
+    return (
+      <Badge variant="outline" className={getStatusBadgeClasses(status)}>
+        {getStatusBadgeLabel(status)}
+      </Badge>
+    );
   };
 
   const handleReportClick = (report: EventReport | UserReport) => {
@@ -405,12 +324,7 @@ export function ReportsModal({
     banUser?: boolean
   ) => {
     // Convert ReportStatus (from schema) to UI status (pending, resolved, dismissed)
-    const uiStatus =
-      newStatus === "rejected"
-        ? "dismissed"
-        : newStatus === "reviewing"
-        ? "pending"
-        : newStatus;
+    const uiStatus = mapStatusFromSchema(newStatus);
 
     if (activeTab === "events") {
       setEventReports((prev) =>

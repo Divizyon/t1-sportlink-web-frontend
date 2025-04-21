@@ -10,7 +10,10 @@ import {
   TODAY_EVENTS,
   DASHBOARD_UPCOMING_EVENTS,
   EVENT_PARTICIPANTS,
+  LOADING_DELAYS,
+  DASHBOARD_DATA_SETTINGS,
   type TodaysEventMock,
+  DEFAULT_EVENT_FORM,
 } from "@/mockups";
 import {
   formatEventTime,
@@ -19,10 +22,8 @@ import {
   getEventStatusStyle,
 } from "@/lib/eventUtils";
 import { generateSkeletonArray } from "@/lib/uiUtils";
-import { filterEvents } from "@/lib/eventUtils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/userUtils";
-import { enrichUserData } from "@/lib/userDataService";
 
 export function TodaysEvents({
   onEventSelect,
@@ -53,7 +54,7 @@ export function TodaysEvents({
 
       setEvents(todayEvents);
       setLoading(false);
-    }, 800);
+    }, LOADING_DELAYS.medium);
   }, [categories]);
 
   const toggleEventExpand = (eventId: string | number, e: React.MouseEvent) => {
@@ -66,14 +67,14 @@ export function TodaysEvents({
     return {
       id: String(mockEvent.id),
       title: mockEvent.title,
-      description: "Event details",
+      description: DEFAULT_EVENT_FORM.description || "Event details",
       startDate: new Date().toISOString(),
       endDate: new Date().toISOString(),
       time: mockEvent.time,
       location: {
         name: mockEvent.location,
-        address: "Sample Address",
-        city: "Sample City",
+        address: DEFAULT_EVENT_FORM.location.address || "Sample Address",
+        city: DEFAULT_EVENT_FORM.location.city || "Sample City",
       },
       category: mockEvent.category as EventCategory,
       participants: mockEvent.participants,
@@ -84,26 +85,28 @@ export function TodaysEvents({
         name: "Organizer",
         email: "organizer@example.com",
       },
-      tags: [],
+      tags: DEFAULT_EVENT_FORM.tags || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      visibility: "public",
-      registrationRequired: false,
+      visibility: DEFAULT_EVENT_FORM.visibility || "public",
+      registrationRequired: DEFAULT_EVENT_FORM.registrationRequired || false,
     };
   };
 
   if (loading) {
     return (
       <div className="space-y-4">
-        {generateSkeletonArray(3).map((index) => (
-          <div key={index} className="flex items-center space-x-4">
-            <Skeleton className="h-12 w-12 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-[250px]" />
-              <Skeleton className="h-4 w-[200px]" />
+        {generateSkeletonArray(DASHBOARD_DATA_SETTINGS.maxDisplayedItems).map(
+          (index) => (
+            <div key={index} className="flex items-center space-x-4">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-[200px]" />
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        )}
       </div>
     );
   }
@@ -221,7 +224,10 @@ export function TodaysEvents({
             Yaklaşan Etkinlikler
           </h3>
           <div className="space-y-3">
-            {DASHBOARD_UPCOMING_EVENTS.slice(0, 3).map((event) => (
+            {DASHBOARD_UPCOMING_EVENTS.slice(
+              0,
+              DASHBOARD_DATA_SETTINGS.maxDisplayedItems - 2
+            ).map((event) => (
               <div
                 key={event.id}
                 className="flex items-start gap-3 rounded-lg border p-2 transition-colors hover:bg-muted/50 cursor-pointer"

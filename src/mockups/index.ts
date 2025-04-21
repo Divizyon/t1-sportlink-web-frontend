@@ -150,6 +150,7 @@ export {
 
 // User component mockups
 export * from "./components/users/userProfile";
+export * from "./components/users/userCategories";
 
 // Also export components/events - with renamed exports to avoid conflicts
 export * from "./components/events/eventDetails";
@@ -267,6 +268,24 @@ import {
 } from "./components/modals/eventModal";
 export { getEventModalData, getRegistrationConfirmation, CANCELLATION_REASONS };
 
+// Export from eventDetailModal for the event detail modal component
+import {
+  getEventDetailMock,
+  getDefaultEventDetailMock,
+  SAMPLE_EVENT_DETAIL_MOCK,
+  EVENT_REJECTION_REASONS,
+  type EventDetailMock,
+  type EventDetailParticipant,
+  type EventReport,
+} from "./components/modals/eventDetailModal";
+export {
+  getEventDetailMock,
+  getDefaultEventDetailMock,
+  SAMPLE_EVENT_DETAIL_MOCK,
+  EVENT_REJECTION_REASONS,
+};
+export type { EventDetailMock, EventDetailParticipant, EventReport };
+
 // Export from userModal with renamed exports
 import {
   getUserModalData,
@@ -283,6 +302,22 @@ export {
   USER_ROLE_OPTIONS,
   USER_STATUS_OPTIONS,
   POPULAR_INTERESTS,
+};
+
+// Export userDetailModal utilities
+import {
+  getUserStatusBadgeClasses,
+  getUserStatusBadgeLabel,
+  getEventStatusBadgeClasses,
+  getEventStatusBadgeLabel,
+  getUserDetailModalData,
+} from "./components/modals/userDetailModal";
+export {
+  getUserStatusBadgeClasses,
+  getUserStatusBadgeLabel,
+  getEventStatusBadgeClasses,
+  getEventStatusBadgeLabel,
+  getUserDetailModalData,
 };
 
 // Export from reportModal with renamed exports
@@ -313,6 +348,20 @@ import {
 } from "./components/modals/newsModal";
 export { NEWS_TYPES, EMPTY_NEWS_FORM, SAMPLE_NEWS_ITEMS, getNewsConfirmation };
 export type { NewsType, NewsFormMock, NewsConfirmationMock };
+
+// Analytics Charts imports
+import {
+  MONTHLY_EVENT_DATA,
+  EVENT_DATA_KEY_LABELS,
+  // other imports from analyticsCharts.ts...
+} from "./components/dashboard/analyticsCharts";
+export { MONTHLY_EVENT_DATA, EVENT_DATA_KEY_LABELS /* other exports */ };
+
+// Export from reportModal with renamed exports
+export * from "./components/modals/reportModal";
+export * from "./components/modals/userModal";
+export * from "./components/modals/newsModal";
+export * from "./components/modals/reportUtils";
 
 /**
  * Usage Examples:

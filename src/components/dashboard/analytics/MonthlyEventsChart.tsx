@@ -10,21 +10,17 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
-import { MONTHLY_EVENT_DATA, EVENT_STATUS_COLORS } from "@/mockups";
+import {
+  MONTHLY_EVENT_DATA,
+  EVENT_STATUS_COLORS,
+  EVENT_DATA_KEY_LABELS,
+} from "@/mockups";
 import { formatNumber } from "@/lib/uiUtils";
 
 // Define valid data keys
 type DataKey = "onaylanan" | "bekleyen" | "reddedilen" | "tamamlanan";
 
 export function MonthlyEventsChart() {
-  // Labels for the data keys
-  const labels: Record<DataKey, string> = {
-    onaylanan: "Onaylanan",
-    bekleyen: "Bekleyen",
-    reddedilen: "Reddedilen",
-    tamamlanan: "Tamamlanan",
-  };
-
   return (
     <ResponsiveContainer width="100%" height={350}>
       <BarChart data={MONTHLY_EVENT_DATA}>
@@ -49,7 +45,7 @@ export function MonthlyEventsChart() {
             const key = name as DataKey;
             return [
               `${formatNumber(value as number)} Etkinlik`,
-              labels[key] || name,
+              EVENT_DATA_KEY_LABELS[key] || name,
             ];
           }}
           contentStyle={{
@@ -62,7 +58,7 @@ export function MonthlyEventsChart() {
         <Legend
           formatter={(value: string) => {
             // Cast value to DataKey if it's a valid key
-            return labels[value as DataKey] || value;
+            return EVENT_DATA_KEY_LABELS[value as DataKey] || value;
           }}
         />
         <Bar

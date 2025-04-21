@@ -13,19 +13,15 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CategoryCount } from "@/types/dashboard";
 import { formatNumber } from "@/lib/uiUtils";
-import { getGrowthBadgeStyle } from "@/lib/uiUtils";
-
-const categories: CategoryCount[] = [
-  { name: "Futbol", count: 156, change: "+12%" },
-  { name: "Basketbol", count: 98, change: "+5%" },
-  { name: "Yüzme", count: 65, change: "+22%" },
-  { name: "Tenis", count: 54, change: "-3%" },
-  { name: "Koşu", count: 42, change: "+9%" },
-  { name: "Yoga", count: 36, change: "+18%" },
-  { name: "Fitness", count: 28, change: "+7%" },
-];
+import { USER_CATEGORIES, getCategoryGrowthStyle } from "@/mockups";
 
 export function UserTable() {
+  // Generate dynamic categories from schema or use static USER_CATEGORIES
+  const [categories] = useState<CategoryCount[]>(() => {
+    // Using static USER_CATEGORIES from mockups
+    return USER_CATEGORIES;
+  });
+
   return (
     <div className="w-full">
       <div className="rounded-md border">
@@ -45,7 +41,7 @@ export function UserTable() {
                   {formatNumber(category.count)}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Badge style={getGrowthBadgeStyle(category.change)}>
+                  <Badge style={getCategoryGrowthStyle(category.change)}>
                     {category.change}
                   </Badge>
                 </TableCell>

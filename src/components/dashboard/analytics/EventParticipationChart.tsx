@@ -25,22 +25,16 @@ import {
   EventParticipationChartProps,
 } from "@/types/dashboard";
 import {
-  DAYS_OF_WEEK,
   LOADING_DELAYS,
   DAILY_EVENT_DATA,
   filterEventDataByCategories,
   EVENT_CATEGORY_DISTRIBUTION,
   EVENT_STATUS_COUNTS,
-  DASHBOARD_EVENT_CATEGORIES,
-  EVENT_CATEGORY_NAMES,
   EVENT_STATUS_COLORS,
 } from "@/mockups";
 
 import { calculatePercentage, formatPercentage } from "@/lib/dashboardUtils";
 import { applyColorOpacity } from "@/lib/uiUtils";
-
-// Hafta günleri için sabit değerler
-// const DAYS_OF_WEEK = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
 export function EventParticipationChart({
   categories = [],

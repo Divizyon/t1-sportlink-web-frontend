@@ -58,53 +58,17 @@ import {
 import { useRouter } from "next/navigation";
 import { UserDetailModal } from "@/components/modals/UserDetailModal";
 import {
-  SAMPLE_EVENT_DETAILS,
-  EventDetailsMock,
-  REJECTION_REASONS,
   CATEGORY_LABELS,
-  EVENT_PARTICIPANTS,
+  SAMPLE_EVENT_DETAIL_MOCK,
+  EVENT_REJECTION_REASONS,
+  type EventDetailMock,
+  type EventDetailParticipant,
+  type EventReport,
 } from "@/mockups";
-import { enrichUserData } from "@/lib/userDataService";
 
-interface Participant {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  age?: number;
-  gender?: string;
-  registeredDate?: string;
-  eventCount?: number;
-  status?: "active" | "suspended" | "blocked";
-}
-
-interface Report {
-  id: string;
-  reporterId: string;
-  reporterName: string;
-  reason: string;
-  date: string;
-  status: "pending" | "reviewed" | "dismissed";
-  details?: string;
-}
-
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  date: Date;
-  time: string;
-  location: string;
-  organizer: string;
-  participants: Participant[];
-  status: "pending" | "approved" | "rejected" | "completed";
-  maxParticipants: number;
-  createdAt: Date;
-  category?: string;
-  tags?: string[];
-  rejectionReason?: string;
-  reports?: Report[];
-}
+interface Participant extends EventDetailParticipant {}
+interface Report extends EventReport {}
+interface Event extends EventDetailMock {}
 
 interface EventDetailModalProps {
   open: boolean;
@@ -115,9 +79,6 @@ interface EventDetailModalProps {
 
 // Event kategori listesi
 const categories = CATEGORY_LABELS;
-
-// Reddetme sebepleri
-const rejectionReasons = REJECTION_REASONS;
 
 export function EventDetailModal({
   open,
@@ -137,39 +98,7 @@ export function EventDetailModal({
   const [showUserModal, setShowUserModal] = useState(false);
 
   // Use the mock data from the dedicated mockups file instead of inline data
-  const mockEvent: Event = event || {
-    id: SAMPLE_EVENT_DETAILS.id,
-    title: SAMPLE_EVENT_DETAILS.title,
-    description: SAMPLE_EVENT_DETAILS.description,
-    date: new Date(SAMPLE_EVENT_DETAILS.startDate),
-    time: new Date(SAMPLE_EVENT_DETAILS.startDate).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    location: SAMPLE_EVENT_DETAILS.location.name,
-    organizer: SAMPLE_EVENT_DETAILS.organizer.name,
-    participants: SAMPLE_EVENT_DETAILS.attendees.map((attendee) => ({
-      id: attendee.id,
-      name: attendee.name,
-      email: attendee.email,
-      avatar: attendee.avatar,
-      status: attendee.status === "confirmed" ? "active" : "suspended",
-      registeredDate: attendee.registrationDate,
-      eventCount: Math.floor(Math.random() * 10) + 1,
-      age: Math.floor(Math.random() * 30) + 18,
-      gender: Math.random() > 0.5 ? "Erkek" : "Kadın",
-    })),
-    status: SAMPLE_EVENT_DETAILS.status as
-      | "pending"
-      | "approved"
-      | "rejected"
-      | "completed",
-    maxParticipants: SAMPLE_EVENT_DETAILS.maxParticipants,
-    createdAt: new Date(SAMPLE_EVENT_DETAILS.startDate), // Using startDate as a fallback since createdAt is not available
-    category: SAMPLE_EVENT_DETAILS.category,
-    tags: [], // Providing an empty array since tags may not be available
-    reports: SAMPLE_EVENT_DETAILS.reports || [], // Include reports from the event details
-  };
+  const mockEvent: Event = event || SAMPLE_EVENT_DETAIL_MOCK;
 
   const [formData, setFormData] = useState<Event>(mockEvent);
 
@@ -847,7 +776,7 @@ export function EventDetailModal({
                             <SelectValue placeholder="Reddetme nedeni seçin" />
                           </SelectTrigger>
                           <SelectContent>
-                            {rejectionReasons.map((reason) => (
+                            {EVENT_REJECTION_REASONS.map((reason) => (
                               <SelectItem key={reason} value={reason}>
                                 {reason}
                               </SelectItem>

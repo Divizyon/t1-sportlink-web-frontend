@@ -6,8 +6,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Participant, RecentParticipantsProps } from "@/types/dashboard";
 import { getUserInitials } from "@/lib/userUtils";
 import { generateSkeletonArray } from "@/lib/uiUtils";
-import { enrichUserData } from "@/lib/userDataService";
-import { RECENT_PARTICIPANTS, PARTICIPANT_DETAILS } from "@/mockups";
+import {
+  RECENT_PARTICIPANTS,
+  PARTICIPANT_DETAILS,
+  LOADING_DELAYS,
+  DASHBOARD_DATA_SETTINGS,
+} from "@/mockups";
 
 export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -25,31 +29,31 @@ export function RecentParticipants({ onUserSelect }: RecentParticipantsProps) {
           id: participant.id.toString(),
           name: participant.name,
           email: participant.email,
-          avatar:
-            participant.avatar ||
-            `/avatars/0${Math.floor(Math.random() * 9) + 1}.png`,
+          avatar: participant.avatar || "/avatars/default.png",
           lastEvent: participant.lastEvent,
         })
       );
 
       setParticipants(recentParticipants);
       setLoading(false);
-    }, 800);
+    }, LOADING_DELAYS.medium);
   }, []);
 
   if (loading) {
     return (
       <div className="space-y-4">
-        {generateSkeletonArray(5).map((index) => (
-          <div key={index} className="flex items-center space-x-4">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-[120px]" />
-              <Skeleton className="h-4 w-[80px]" />
+        {generateSkeletonArray(DASHBOARD_DATA_SETTINGS.maxDisplayedItems).map(
+          (index) => (
+            <div key={index} className="flex items-center space-x-4">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-[120px]" />
+                <Skeleton className="h-4 w-[80px]" />
+              </div>
+              <Skeleton className="ml-auto h-4 w-[50px]" />
             </div>
-            <Skeleton className="ml-auto h-4 w-[50px]" />
-          </div>
-        ))}
+          )
+        )}
       </div>
     );
   }

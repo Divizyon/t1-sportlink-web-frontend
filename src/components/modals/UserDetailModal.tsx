@@ -14,11 +14,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Mail } from "lucide-react";
-import { enrichUserData, CommonUser } from "@/lib/userDataService";
 import {
-  USER_PROFILES,
-  getUserEvents,
-} from "@/mockups/components/users/userProfile";
+  getUserStatusBadgeClasses,
+  getUserStatusBadgeLabel,
+  getEventStatusBadgeClasses,
+  getEventStatusBadgeLabel,
+  getUserDetailModalData,
+} from "@/mockups";
 
 interface Event {
   id: string;
@@ -67,9 +69,7 @@ export function UserDetailModal({
 }: UserDetailModalProps) {
   const [activeTab, setActiveTab] = useState("profil");
   const [localOpen, setLocalOpen] = useState(false);
-  const [userData, setUserData] = useState<User>(
-    enrichUserData(user || USER_PROFILES[0])
-  );
+  const [userData, setUserData] = useState<User | null>(user || null);
   const [userEvents, setUserEvents] = useState<Event[]>([]);
   const [completedCount, setCompletedCount] = useState(0);
   const [upcomingCount, setUpcomingCount] = useState(0);
@@ -86,125 +86,66 @@ export function UserDetailModal({
     onOpenChange(newOpenState);
   };
 
-  // Fetch user events from mockup data
+  // Fetch user data and events from mockup data
   useEffect(() => {
-    if (userData.id) {
-      const userEventData = getUserEvents(String(userData.id));
-      console.log("User events from mockup:", userEventData);
-
-      // Map events to the format expected by the component
-      const allEvents = userEventData.all.map((event) => ({
-        id: event.id,
-        title: event.title,
-        date: new Date(event.date).toLocaleDateString(),
-        category: event.category,
-        status:
-          event.status === "completed"
-            ? "completed"
-            : event.status === "cancelled"
-            ? "canceled"
-            : "upcoming",
-        isOrganizer: event.isOrganizer,
-      }));
-
-      setUserEvents(allEvents);
-      setCompletedCount(userEventData.completed.length);
-      setUpcomingCount(userEventData.upcoming.length);
-      setCanceledCount(userEventData.canceled.length);
+    if (!userData && user) {
+      setUserData(user);
     }
-  }, [userData.id]);
 
-  // Normalize status to ensure consistent handling
-  // This ensures that regardless of whether the status comes as "active" or "aktif", it's handled the same way
-  const normalizedStatus = userData.status?.toLowerCase();
+    if (userData?.id) {
+      // Use getUserDetailModalData to get complete data
+      const detailData = getUserDetailModalData(String(userData.id));
+
+      if (detailData) {
+        // Update stats
+        setCompletedCount(detailData.stats.completedCount);
+        setUpcomingCount(detailData.stats.upcomingCount);
+        setCanceledCount(detailData.stats.canceledCount);
+
+        // Map events to the format expected by the component
+        const allEvents = detailData.userEvents.all.map((event) => ({
+          id: event.id,
+          title: event.title,
+          date: new Date(event.date).toLocaleDateString(),
+          category: event.category,
+          status:
+            event.status === "completed"
+              ? "completed"
+              : event.status === "cancelled"
+              ? "canceled"
+              : "upcoming",
+          isOrganizer: event.isOrganizer,
+        }));
+
+        setUserEvents(allEvents);
+      }
+    }
+  }, [userData?.id, user]);
 
   const getStatusBadge = (status: string) => {
-    // Normalize status to lowercase for consistent case handling
-    const normalizedStatus = status?.toLowerCase();
-
-    switch (normalizedStatus) {
-      case "active":
-      case "aktif":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-green-50 text-green-700 border-green-200"
-          >
-            Aktif
-          </Badge>
-        );
-      case "suspended":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-yellow-50 text-yellow-700 border-yellow-200"
-          >
-            Askıya Alınmış
-          </Badge>
-        );
-      case "blocked":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-red-50 text-red-700 border-red-200"
-          >
-            Engellendi
-          </Badge>
-        );
-      case "inactive":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-gray-50 text-gray-700 border-gray-200"
-          >
-            Pasif
-          </Badge>
-        );
-      default:
-        // Return Aktif as default if status is unknown
-        return (
-          <Badge
-            variant="outline"
-            className="bg-green-50 text-green-700 border-green-200"
-          >
-            Aktif
-          </Badge>
-        );
-    }
+    return (
+      <Badge variant="outline" className={getUserStatusBadgeClasses(status)}>
+        {getUserStatusBadgeLabel(status)}
+      </Badge>
+    );
   };
 
   const getEventStatusBadge = (status: string) => {
-    switch (status) {
-      case "completed":
-        return (
-          <Badge variant="outline" className="bg-green-50 text-green-700">
-            Tamamlandı
-          </Badge>
-        );
-      case "upcoming":
-        return (
-          <Badge variant="outline" className="bg-purple-50 text-purple-700">
-            Yaklaşan
-          </Badge>
-        );
-      case "canceled":
-        return (
-          <Badge variant="outline" className="bg-red-50 text-red-700">
-            İptal Edildi
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline" className="bg-gray-50 text-gray-700">
-            {status}
-          </Badge>
-        );
-    }
+    return (
+      <Badge variant="outline" className={getEventStatusBadgeClasses(status)}>
+        {getEventStatusBadgeLabel(status)}
+      </Badge>
+    );
   };
 
   // Only render the dialog if the modal should be open
   // This prevents old instances from remaining in the DOM
   if (!open && !localOpen) {
+    return null;
+  }
+
+  // If we don't have user data, don't render anything
+  if (!userData) {
     return null;
   }
 
@@ -283,7 +224,9 @@ export function UserDetailModal({
 
               <div>
                 <p className="text-sm text-muted-foreground">Katılım Tarihi</p>
-                <p className="font-medium">{userData.registeredDate}</p>
+                <p className="font-medium">
+                  {userData.registeredDate || userData.joinDate}
+                </p>
               </div>
 
               <div>
@@ -328,12 +271,15 @@ export function UserDetailModal({
                 <div className="flex justify-between text-sm">
                   <span>Tamamlanan Etkinlikler</span>
                   <span>
-                    {userData.completedEvents} / {userData.eventCount}
+                    {userData.completedEvents || completedCount} /{" "}
+                    {userData.eventCount || userEvents.length}
                   </span>
                 </div>
                 <Progress
                   value={
-                    (userData.completedEvents! / userData.eventCount!) * 100
+                    ((userData.completedEvents || completedCount) /
+                      (userData.eventCount || userEvents.length || 1)) *
+                    100
                   }
                   className="h-2 mt-1"
                 />
@@ -400,7 +346,7 @@ export function UserDetailModal({
                     Tamamlanan Etkinlikler
                   </p>
                   <p className="font-medium">
-                    {userData.completedEvents} etkinlik
+                    {userData.completedEvents || completedCount} etkinlik
                   </p>
                 </div>
 
@@ -408,7 +354,9 @@ export function UserDetailModal({
                   <p className="text-sm text-muted-foreground">
                     Toplam Etkinlikler
                   </p>
-                  <p className="font-medium">{userData.eventCount} etkinlik</p>
+                  <p className="font-medium">
+                    {userData.eventCount || userEvents.length} etkinlik
+                  </p>
                 </div>
 
                 <div>
@@ -417,7 +365,9 @@ export function UserDetailModal({
                   </p>
                   <p className="font-medium">
                     {Math.round(
-                      (userData.completedEvents! / userData.eventCount!) * 100
+                      ((userData.completedEvents || completedCount) /
+                        (userData.eventCount || userEvents.length || 1)) *
+                        100
                     )}
                     %
                   </p>

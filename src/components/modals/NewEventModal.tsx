@@ -31,7 +31,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EVENT_CATEGORY_OPTIONS, DEFAULT_EVENT_FORM } from "@/mockups";
+import {
+  EVENT_CATEGORY_OPTIONS,
+  DEFAULT_EVENT_FORM,
+  EVENT_STATUS,
+} from "@/mockups";
 
 // Custom event interface to avoid conflict with DOM Event
 interface EventData {
@@ -92,7 +96,7 @@ export function NewEventModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Form validasyonu
+    // Form validation
     if (
       !formData.title ||
       !formData.description ||
@@ -107,7 +111,7 @@ export function NewEventModal({
 
     setLoading(true);
 
-    // Simüle edilmiş API çağrısı
+    // Simulated API call
     setTimeout(() => {
       const newEvent: EventData = {
         id: Math.random().toString(36).substr(2, 9),
@@ -118,9 +122,9 @@ export function NewEventModal({
         location: formData.location,
         maxParticipants: formData.maxParticipants,
         participants: 0,
-        status: "pending",
+        status: EVENT_STATUS.PENDING,
         category: formData.category,
-        organizer: null, // Ana sayfada atanacak
+        organizer: null, // Will be assigned on the main page
       };
 
       setLoading(false);
@@ -213,8 +217,8 @@ export function NewEventModal({
                   <Calendar
                     mode="single"
                     selected={formData.date || undefined}
-                    onSelect={(date) =>
-                      setFormData((prev) => ({ ...prev, date }))
+                    onSelect={(date: Date | undefined) =>
+                      setFormData((prev) => ({ ...prev, date: date || null }))
                     }
                     initialFocus
                     locale={tr}

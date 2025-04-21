@@ -30,22 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { EVENT_CATEGORY_OPTIONS } from "@/mockups";
-
-interface Event {
-  id: string | number;
-  title: string;
-  description?: string;
-  date: Date;
-  time: string;
-  location: string;
-  category: string;
-  participants: number;
-  maxParticipants: number;
-  status: "pending" | "approved" | "rejected" | "completed";
-  organizer?: string;
-  image?: string;
-}
+import { EVENT_CATEGORY_OPTIONS, DEFAULT_EVENT_FORM } from "@/mockups";
+import { Event, EventCategory, EventStatus } from "@/types/event";
 
 interface EditEventModalProps {
   open: boolean;
@@ -69,10 +55,22 @@ export function EditEventModal({
 
   useEffect(() => {
     if (event && open) {
+      // Use the provided event data
       setFormData(event);
-      setDate(new Date(event.date));
+      setDate(event.date || new Date(event.startDate));
     } else {
-      setFormData({});
+      // Reset form with default values from mockups
+      setFormData({
+        title: "",
+        description: DEFAULT_EVENT_FORM.description,
+        category: DEFAULT_EVENT_FORM.category as EventCategory,
+        location:
+          typeof event?.location === "string"
+            ? event.location
+            : DEFAULT_EVENT_FORM.location.name,
+        maxParticipants: DEFAULT_EVENT_FORM.maxParticipants,
+        status: DEFAULT_EVENT_FORM.status as EventStatus,
+      });
       setDate(undefined);
     }
   }, [event, open]);
@@ -89,6 +87,8 @@ export function EditEventModal({
         onSave({
           ...formData,
           date: date || new Date(),
+          // Ensure startDate is updated for API consistency
+          startDate: date ? date.toISOString() : new Date().toISOString(),
         });
       }
 
@@ -146,9 +146,12 @@ export function EditEventModal({
                 Kategori
               </Label>
               <Select
-                value={formData.category}
+                value={formData.category as string}
                 onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, category: value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    category: value as EventCategory,
+                  }))
                 }
               >
                 <SelectTrigger className="col-span-3">
@@ -200,7 +203,11 @@ export function EditEventModal({
                 id="location"
                 placeholder="Etkinlik konumunu girin"
                 className="col-span-3"
-                value={formData.location || ""}
+                value={
+                  typeof formData.location === "string"
+                    ? formData.location
+                    : formData.location?.name || ""
+                }
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, location: e.target.value }))
                 }

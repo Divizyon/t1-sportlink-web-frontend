@@ -5,21 +5,12 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import {
-  CheckCircle,
-  XCircle,
-  Flag,
-  Calendar,
-  User,
-  MessageSquare,
-} from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -29,8 +20,6 @@ import { ReportStatus } from "@/mockups";
 import {
   REPORT_STATUS_LABELS,
   REPORT_PRIORITY_LABELS,
-  REPORT_PRIORITY_COLORS,
-  REPORT_STATUS_COLORS,
   ENTITY_TYPE_LABELS,
 } from "@/mockups";
 
