@@ -31,24 +31,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EVENT_CATEGORY_OPTIONS, DEFAULT_EVENT_FORM } from "@/mockups";
+
+// Custom event interface to avoid conflict with DOM Event
+interface EventData {
+  id: string | number;
+  title: string;
+  description: string;
+  date: Date | null;
+  time: string;
+  location: string;
+  category: string;
+  participants: number;
+  maxParticipants: number;
+  status: string;
+  organizer: any;
+}
 
 interface NewEventModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: (newEvent: Event) => void;
+  onSuccess?: (newEvent: EventData) => void;
 }
-
-const EVENT_CATEGORIES = [
-  "Futbol",
-  "Basketbol",
-  "Voleybol",
-  "Tenis",
-  "Yüzme",
-  "Koşu",
-  "Yoga",
-  "Fitness",
-  "Diğer",
-];
 
 export function NewEventModal({
   open,
@@ -57,24 +61,24 @@ export function NewEventModal({
 }: NewEventModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
+    title: DEFAULT_EVENT_FORM.title,
+    description: DEFAULT_EVENT_FORM.description,
     date: null as Date | null,
-    time: "",
-    location: "",
-    category: "",
-    maxParticipants: 20,
+    time: DEFAULT_EVENT_FORM.time,
+    location: DEFAULT_EVENT_FORM.location.name,
+    category: DEFAULT_EVENT_FORM.category,
+    maxParticipants: DEFAULT_EVENT_FORM.maxParticipants,
   });
 
   const resetForm = () => {
     setFormData({
-      title: "",
-      description: "",
+      title: DEFAULT_EVENT_FORM.title,
+      description: DEFAULT_EVENT_FORM.description,
       date: null,
-      time: "",
-      location: "",
-      category: "",
-      maxParticipants: 20,
+      time: DEFAULT_EVENT_FORM.time,
+      location: DEFAULT_EVENT_FORM.location.name,
+      category: DEFAULT_EVENT_FORM.category,
+      maxParticipants: DEFAULT_EVENT_FORM.maxParticipants,
     });
   };
 
@@ -105,7 +109,7 @@ export function NewEventModal({
 
     // Simüle edilmiş API çağrısı
     setTimeout(() => {
-      const newEvent = {
+      const newEvent: EventData = {
         id: Math.random().toString(36).substr(2, 9),
         title: formData.title,
         description: formData.description,
@@ -176,9 +180,9 @@ export function NewEventModal({
                 <SelectValue placeholder="Kategori seçin" />
               </SelectTrigger>
               <SelectContent>
-                {EVENT_CATEGORIES.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                {EVENT_CATEGORY_OPTIONS.map((category) => (
+                  <SelectItem key={category.value} value={category.value}>
+                    {category.label}
                   </SelectItem>
                 ))}
               </SelectContent>

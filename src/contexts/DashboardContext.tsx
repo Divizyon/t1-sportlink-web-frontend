@@ -2,12 +2,13 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { ModalType } from "@/types";
-import { DASHBOARD_TABS } from "@/constants/dashboard";
+import { DASHBOARD_TABS } from "@/mockups";
+import { DashboardTabValue } from "@/types";
 
 interface DashboardContextType {
   // Active section/tab state
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
+  activeTab: DashboardTabValue;
+  setActiveTab: (tab: DashboardTabValue) => void;
 
   // Selected categories for filtering
   selectedCategories: string[];
@@ -22,6 +23,12 @@ interface DashboardContextType {
   // Loading state
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
+
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+
+  showSidebar: boolean;
+  toggleSidebar: () => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
@@ -40,7 +47,7 @@ export function useDashboardContext() {
 
 interface DashboardProviderProps {
   children: ReactNode;
-  initialTab?: string;
+  initialTab?: DashboardTabValue;
 }
 
 export function DashboardProvider({
@@ -48,7 +55,7 @@ export function DashboardProvider({
   initialTab = DASHBOARD_TABS.overview,
 }: DashboardProviderProps) {
   // Active section state
-  const [activeTab, setActiveTab] = useState<string>(initialTab);
+  const [activeTab, setActiveTab] = useState<DashboardTabValue>(initialTab);
 
   // Filter state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -59,6 +66,12 @@ export function DashboardProvider({
 
   // Loading state
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Sidebar state
+  const [showSidebar, setShowSidebar] = useState(true);
 
   // Set active modal with associated data
   const setActiveModal = (modal: ModalType, entityData: any = null) => {
@@ -72,6 +85,10 @@ export function DashboardProvider({
     setModalData(null);
   };
 
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar);
+  };
+
   const value = {
     activeTab,
     setActiveTab,
@@ -83,6 +100,10 @@ export function DashboardProvider({
     modalData,
     isLoading,
     setIsLoading,
+    searchQuery,
+    setSearchQuery,
+    showSidebar,
+    toggleSidebar,
   };
 
   return (

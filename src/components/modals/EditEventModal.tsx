@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { EVENT_CATEGORY_OPTIONS } from "@/mockups";
 
 interface Event {
   id: string | number;
@@ -53,17 +54,6 @@ interface EditEventModalProps {
   event?: Event;
   onSave?: (updatedEvent: Partial<Event>) => void;
 }
-
-// Event kategori listesi
-const categories = [
-  "Futbol",
-  "Basketbol",
-  "Voleybol",
-  "Tenis",
-  "Yüzme",
-  "Koşu",
-  "Diğer",
-];
 
 export function EditEventModal({
   open,
@@ -165,9 +155,9 @@ export function EditEventModal({
                   <SelectValue placeholder="Kategori seçin" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                  {EVENT_CATEGORY_OPTIONS.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -10,8 +10,7 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
-import { MONTHLY_EVENT_DATA } from "@/mockups";
-import { COLORS } from "@/constants";
+import { MONTHLY_EVENT_DATA, EVENT_STATUS_COLORS } from "@/mockups";
 import { formatNumber } from "@/lib/uiUtils";
 
 // Define valid data keys
@@ -68,28 +67,28 @@ export function MonthlyEventsChart() {
         />
         <Bar
           dataKey="onaylanan"
-          fill={COLORS.status.approved}
+          fill={EVENT_STATUS_COLORS.approved}
           radius={[4, 4, 0, 0]}
           barSize={30}
           stackId="a"
         />
         <Bar
           dataKey="bekleyen"
-          fill={COLORS.status.pending}
+          fill={EVENT_STATUS_COLORS.pending}
           radius={[4, 4, 0, 0]}
           barSize={30}
           stackId="a"
         />
         <Bar
           dataKey="reddedilen"
-          fill={COLORS.status.rejected}
+          fill={EVENT_STATUS_COLORS.rejected}
           radius={[4, 4, 0, 0]}
           barSize={30}
           stackId="a"
         />
         <Bar
           dataKey="tamamlanan"
-          fill={COLORS.status.completed}
+          fill={EVENT_STATUS_COLORS.completed}
           radius={[4, 4, 0, 0]}
           barSize={30}
           stackId="a"

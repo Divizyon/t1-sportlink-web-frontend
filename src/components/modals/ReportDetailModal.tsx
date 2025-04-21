@@ -12,14 +12,27 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Flag, Calendar, User } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Flag,
+  Calendar,
+  User,
+  MessageSquare,
+} from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDate } from "@/lib/utils";
 import { ReportStatus } from "@/mockups";
-import { REPORT_STATUS_LABELS } from "@/constants";
+import {
+  REPORT_STATUS_LABELS,
+  REPORT_PRIORITY_LABELS,
+  REPORT_PRIORITY_COLORS,
+  REPORT_STATUS_COLORS,
+  ENTITY_TYPE_LABELS,
+} from "@/mockups";
 
 interface ReportDetailModalProps {
   open: boolean;
@@ -112,14 +125,16 @@ export function ReportDetailModal({
   };
 
   const getSeverityBadge = (severity: "low" | "medium" | "high") => {
+    const label = REPORT_PRIORITY_LABELS[severity];
+
     switch (severity) {
       case "low":
         return (
           <Badge
             variant="outline"
-            className="bg-blue-50 text-blue-700 border-blue-200"
+            className="bg-green-50 text-green-700 border-green-200"
           >
-            Düşük
+            {label}
           </Badge>
         );
       case "medium":
@@ -128,7 +143,7 @@ export function ReportDetailModal({
             variant="outline"
             className="bg-yellow-50 text-yellow-700 border-yellow-200"
           >
-            Orta
+            {label}
           </Badge>
         );
       case "high":
@@ -137,13 +152,24 @@ export function ReportDetailModal({
             variant="outline"
             className="bg-red-50 text-red-700 border-red-200"
           >
-            Yüksek
+            {label}
+          </Badge>
+        );
+      default:
+        return (
+          <Badge
+            variant="outline"
+            className="bg-gray-50 text-gray-700 border-gray-200"
+          >
+            {label || severity}
           </Badge>
         );
     }
   };
 
   const getStatusBadge = (status: ReportStatus) => {
+    const label = REPORT_STATUS_LABELS[status];
+
     switch (status) {
       case "pending":
         return (
@@ -151,16 +177,16 @@ export function ReportDetailModal({
             variant="outline"
             className="bg-yellow-50 text-yellow-700 border-yellow-200"
           >
-            Beklemede
+            {label}
           </Badge>
         );
       case "reviewing":
         return (
           <Badge
             variant="outline"
-            className="bg-blue-50 text-blue-700 border-blue-200"
+            className="bg-purple-50 text-purple-700 border-purple-200"
           >
-            İnceleniyor
+            {label}
           </Badge>
         );
       case "resolved":
@@ -169,16 +195,26 @@ export function ReportDetailModal({
             variant="outline"
             className="bg-green-50 text-green-700 border-green-200"
           >
-            Çözüldü
+            {label}
           </Badge>
         );
       case "rejected":
+      case "dismissed":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-200"
+          >
+            {label}
+          </Badge>
+        );
+      default:
         return (
           <Badge
             variant="outline"
             className="bg-gray-50 text-gray-700 border-gray-200"
           >
-            Reddedildi
+            {label || status}
           </Badge>
         );
     }
@@ -196,7 +232,9 @@ export function ReportDetailModal({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="font-medium">Rapor Türü:</span>
-              <Badge variant="outline">{report.type}</Badge>
+              <Badge variant="outline">
+                {ENTITY_TYPE_LABELS[report.type] || report.type}
+              </Badge>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-medium">Durum:</span>

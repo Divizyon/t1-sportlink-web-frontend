@@ -50,9 +50,8 @@ import {
   REPORT_PRIORITY_LABELS,
   REPORT_STATUS_LABELS,
   UI_TEXT,
-  REPORT_FILTER_LABELS,
   REPORT_FILTERS,
-} from "@/constants/dashboard";
+} from "@/mockups";
 import { ReportDetailModal } from "@/components/modals/ReportDetailModal";
 import { formatDate } from "@/lib/utils";
 
@@ -104,12 +103,40 @@ export default function ReportsPage() {
     switch (priority) {
       case "high":
         return (
-          <Badge variant="destructive">{REPORT_PRIORITY_LABELS.high}</Badge>
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-200"
+          >
+            {REPORT_PRIORITY_LABELS.high}
+          </Badge>
         );
       case "medium":
-        return <Badge variant="default">{REPORT_PRIORITY_LABELS.medium}</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-200"
+          >
+            {REPORT_PRIORITY_LABELS.medium}
+          </Badge>
+        );
       case "low":
-        return <Badge variant="outline">{REPORT_PRIORITY_LABELS.low}</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200"
+          >
+            {REPORT_PRIORITY_LABELS.low}
+          </Badge>
+        );
+      default:
+        return (
+          <Badge
+            variant="outline"
+            className="bg-gray-50 text-gray-700 border-gray-200"
+          >
+            {REPORT_PRIORITY_LABELS[priority] || priority}
+          </Badge>
+        );
     }
   };
 
@@ -117,25 +144,33 @@ export default function ReportsPage() {
     switch (status) {
       case "pending":
         return (
-          <Badge className="bg-yellow-500">
+          <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
             {REPORT_STATUS_LABELS.pending}
           </Badge>
         );
       case "reviewing":
         return (
-          <Badge className="bg-blue-500">
+          <Badge className="bg-purple-50 text-purple-700 border-purple-200">
             {REPORT_STATUS_LABELS.reviewing}
           </Badge>
         );
       case "resolved":
         return (
-          <Badge className="bg-green-500">
+          <Badge className="bg-green-50 text-green-700 border-green-200">
             {REPORT_STATUS_LABELS.resolved}
           </Badge>
         );
       case "rejected":
         return (
-          <Badge className="bg-gray-500">{REPORT_STATUS_LABELS.rejected}</Badge>
+          <Badge className="bg-gray-50 text-gray-700 border-gray-200">
+            {REPORT_STATUS_LABELS.rejected}
+          </Badge>
+        );
+      default:
+        return (
+          <Badge className="bg-gray-50 text-gray-700 border-gray-200">
+            {REPORT_STATUS_LABELS[status] || status}
+          </Badge>
         );
     }
   };

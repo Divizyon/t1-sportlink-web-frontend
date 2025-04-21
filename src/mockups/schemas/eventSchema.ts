@@ -68,7 +68,41 @@ export type EventStatus =
   | "rejected"
   | "completed"
   | "cancelled"
-  | "ongoing";
+  | "ongoing"
+  | "upcoming";
+
+// Event status constants (formerly in constants/dashboard.ts)
+export const EVENT_STATUS: Record<string, EventStatus> = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+  completed: "completed",
+  cancelled: "cancelled",
+  ongoing: "ongoing",
+  upcoming: "upcoming",
+};
+
+// Event status labels for UI display (formerly in constants/dashboard.ts)
+export const EVENT_STATUS_LABELS: Record<string, string> = {
+  pending: "Beklemede",
+  approved: "Onaylandı",
+  rejected: "Reddedildi",
+  completed: "Tamamlandı",
+  cancelled: "İptal Edildi",
+  ongoing: "Devam Ediyor",
+  upcoming: "Yaklaşan",
+};
+
+// Event status colors for UI (formerly used from COLORS in constants/dashboard.ts)
+export const EVENT_STATUS_COLORS: Record<string, string> = {
+  approved: "#22c55e", // green
+  pending: "#eab308", // yellow
+  rejected: "#ef4444", // red
+  completed: "#3b82f6", // blue
+  cancelled: "#6b7280", // gray
+  ongoing: "#8b5cf6", // purple
+  upcoming: "#0891b2", // cyan
+};
 
 // Sample event data using the schema
 export const EVENT_SCHEMA = {
@@ -265,13 +299,14 @@ export const EVENT_SCHEMA = {
     "other",
   ],
 
-  // Event status statistics
+  // Event statistics
   stats: {
-    pending: 42,
-    approved: 187,
-    rejected: 15,
-    completed: 203,
-    cancelled: 8,
-    ongoing: 12,
+    total: 25,
+    approved: 18,
+    pending: 4,
+    rejected: 1,
+    completed: 12,
+    cancelled: 2,
+    ongoing: 4,
   },
 };

@@ -9,6 +9,52 @@
 // Export schemas (complete data structures)
 export * from "./schemas";
 
+// Explicitly export event schema constants
+import {
+  EVENT_STATUS,
+  EVENT_STATUS_LABELS,
+  EVENT_STATUS_COLORS,
+} from "./schemas/eventSchema";
+export { EVENT_STATUS, EVENT_STATUS_LABELS, EVENT_STATUS_COLORS };
+
+// Explicitly export report schema constants
+import {
+  REPORT_STATUS,
+  REPORT_STATUS_LABELS,
+  REPORT_STATUS_COLORS,
+  REPORT_PRIORITY,
+  REPORT_PRIORITY_LABELS,
+  REPORT_PRIORITY_COLORS,
+  ENTITY_TYPE_LABELS,
+} from "./schemas/reportSchema";
+export {
+  REPORT_STATUS,
+  REPORT_STATUS_LABELS,
+  REPORT_STATUS_COLORS,
+  REPORT_PRIORITY,
+  REPORT_PRIORITY_LABELS,
+  REPORT_PRIORITY_COLORS,
+  ENTITY_TYPE_LABELS,
+};
+
+// Explicitly export dashboard settings
+import {
+  DASHBOARD_TABS,
+  DASHBOARD_TAB_LABELS,
+  MODAL_TYPES,
+  UI_TEXT,
+  REPORT_FILTERS,
+  REPORT_FILTER_LABELS,
+} from "./components/dashboard/dashboardSettings";
+export {
+  DASHBOARD_TABS,
+  DASHBOARD_TAB_LABELS,
+  MODAL_TYPES,
+  UI_TEXT,
+  REPORT_FILTERS,
+  REPORT_FILTER_LABELS,
+};
+
 // Dashboard component mockups - with renamed exports to avoid conflicts
 import {
   TODAY_EVENTS,
@@ -20,6 +66,7 @@ export * from "./components/dashboard/analyticsCharts";
 export * from "./components/dashboard/recentParticipants";
 export * from "./components/dashboard/eventParticipationChart";
 export * from "./components/dashboard/dashboardReports";
+export * from "./components/dashboard/dashboardSettings";
 
 // Report components with explicit exports
 import {

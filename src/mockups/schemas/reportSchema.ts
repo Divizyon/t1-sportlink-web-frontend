@@ -6,13 +6,74 @@
  */
 
 // Report status types
-export type ReportStatus = "pending" | "reviewing" | "resolved" | "rejected";
+export type ReportStatus =
+  | "pending"
+  | "reviewing"
+  | "resolved"
+  | "rejected"
+  | "dismissed";
 
 // Report priority levels
 export type ReportPriority = "low" | "medium" | "high";
 
 // Entity types that can be reported
 export type ReportEntityType = "user" | "event" | "comment" | "message";
+
+// Report status constants (formerly in constants/dashboard.ts)
+export const REPORT_STATUS: Record<string, ReportStatus> = {
+  pending: "pending",
+  reviewing: "reviewing",
+  resolved: "resolved",
+  rejected: "rejected",
+  dismissed: "dismissed",
+};
+
+// Report status labels (formerly in constants/dashboard.ts)
+export const REPORT_STATUS_LABELS: Record<string, string> = {
+  pending: "Beklemede",
+  reviewing: "İnceleniyor",
+  resolved: "Çözüldü",
+  rejected: "Reddedildi",
+  dismissed: "Kapatıldı",
+};
+
+// Report status colors (formerly used from COLORS in constants/dashboard.ts)
+export const REPORT_STATUS_COLORS: Record<string, string> = {
+  pending: "#eab308", // yellow
+  reviewing: "#8b5cf6", // purple
+  resolved: "#22c55e", // green
+  rejected: "#ef4444", // red
+  dismissed: "#6b7280", // gray
+};
+
+// Report priority constants (formerly in constants/dashboard.ts)
+export const REPORT_PRIORITY: Record<ReportPriority, ReportPriority> = {
+  high: "high",
+  medium: "medium",
+  low: "low",
+};
+
+// Report priority labels (formerly in constants/dashboard.ts)
+export const REPORT_PRIORITY_LABELS: Record<ReportPriority, string> = {
+  high: "Yüksek",
+  medium: "Orta",
+  low: "Düşük",
+};
+
+// Report priority colors (formerly used from COLORS in constants/dashboard.ts)
+export const REPORT_PRIORITY_COLORS: Record<ReportPriority, string> = {
+  high: "#ef4444", // red
+  medium: "#eab308", // yellow
+  low: "#22c55e", // green
+};
+
+// Entity type labels (formerly in constants/dashboard.ts)
+export const ENTITY_TYPE_LABELS: Record<ReportEntityType, string> = {
+  user: "Kullanıcı",
+  event: "Etkinlik",
+  comment: "Yorum",
+  message: "Mesaj",
+};
 
 // Base report interface
 export interface Report {
@@ -39,6 +100,7 @@ export interface ReportStats {
   reviewing: number;
   resolved: number;
   rejected: number;
+  dismissed: number;
   byPriority: {
     low: number;
     medium: number;
@@ -163,6 +225,7 @@ const calculateReportStats = (reports: Report[]): ReportStats => {
     reviewing: 0,
     resolved: 0,
     rejected: 0,
+    dismissed: 0,
     byPriority: {
       low: 0,
       medium: 0,

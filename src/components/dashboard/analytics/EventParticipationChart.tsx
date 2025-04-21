@@ -24,23 +24,23 @@ import {
   CategoryData,
   EventParticipationChartProps,
 } from "@/types/dashboard";
-import {
-  EVENT_CATEGORIES,
-  COLORS,
-  DAYS_OF_WEEK,
-  LOADING_DELAYS,
-} from "@/constants";
+import { LOADING_DELAYS } from "@/constants";
 
-// Import from mockups instead of mocks
+// Tüm veri kaynakları mockups'tan alınacak
 import {
   DAILY_EVENT_DATA,
   filterEventDataByCategories,
   EVENT_CATEGORY_DISTRIBUTION,
   EVENT_STATUS_COUNTS,
+  EVENT_CATEGORIES,
+  EVENT_STATUS_COLORS,
 } from "@/mockups";
 
 import { calculatePercentage, formatPercentage } from "@/lib/dashboardUtils";
 import { applyColorOpacity } from "@/lib/uiUtils";
+
+// Hafta günleri için sabit değerler
+const DAYS_OF_WEEK = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
 export function EventParticipationChart({
   categories = [],
@@ -205,25 +205,25 @@ export function EventParticipationChart({
               <Bar
                 dataKey="onaylanan"
                 stackId="a"
-                fill={COLORS.status.approved}
+                fill={EVENT_STATUS_COLORS.approved}
                 name="Onaylı"
               />
               <Bar
                 dataKey="bekleyen"
                 stackId="a"
-                fill={COLORS.status.pending}
+                fill={EVENT_STATUS_COLORS.pending}
                 name="Bekleyen"
               />
               <Bar
                 dataKey="reddedilen"
                 stackId="a"
-                fill={COLORS.status.rejected}
+                fill={EVENT_STATUS_COLORS.rejected}
                 name="Reddedilen"
               />
               <Bar
                 dataKey="tamamlanan"
                 stackId="a"
-                fill={COLORS.status.completed}
+                fill={EVENT_STATUS_COLORS.completed}
                 name="Tamamlanan"
               />
             </BarChart>

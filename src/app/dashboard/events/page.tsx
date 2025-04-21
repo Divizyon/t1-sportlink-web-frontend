@@ -27,28 +27,58 @@ import { CategoryFilterDropdown } from "@/components/CategoryFilterDropdown";
 import { Plus } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
-import { EVENT_SCHEMA } from "@/mockups/schemas/eventSchema";
+import { EVENT_SCHEMA, EVENT_STATUS_COLORS } from "@/mockups";
 import { User, Event as DashboardEvent, EventStatus } from "@/types/dashboard";
+import { EVENT_CATEGORY_OPTIONS } from "@/mockups";
 
-// Kategori renkleri
+// Kategori renkleri - daha sonra mockups'a taşınabilir
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
-  Futbol: { bg: "bg-blue-100", text: "text-blue-800" },
-  Basketbol: { bg: "bg-orange-100", text: "text-orange-800" },
-  Voleybol: { bg: "bg-green-100", text: "text-green-800" },
-  Tenis: { bg: "bg-purple-100", text: "text-purple-800" },
-  Yüzme: { bg: "bg-cyan-100", text: "text-cyan-800" },
-  Koşu: { bg: "bg-red-100", text: "text-red-800" },
-  Yoga: { bg: "bg-pink-100", text: "text-pink-800" },
-  Fitness: { bg: "bg-yellow-100", text: "text-yellow-800" },
-  Diğer: { bg: "bg-gray-100", text: "text-gray-800" },
+  tournament: { bg: "bg-blue-100", text: "text-blue-800" },
+  training: { bg: "bg-orange-100", text: "text-orange-800" },
+  meeting: { bg: "bg-green-100", text: "text-green-800" },
+  sport: { bg: "bg-purple-100", text: "text-purple-800" },
+  social: { bg: "bg-cyan-100", text: "text-cyan-800" },
+  workshop: { bg: "bg-red-100", text: "text-red-800" },
+  competition: { bg: "bg-pink-100", text: "text-pink-800" },
+  other: { bg: "bg-gray-100", text: "text-gray-800" },
 };
 
-// Durum renkleri
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  pending: { bg: "bg-yellow-100", text: "text-yellow-800" },
-  approved: { bg: "bg-green-100", text: "text-green-800" },
-  rejected: { bg: "bg-red-100", text: "text-red-800" },
-  completed: { bg: "bg-gray-100", text: "text-gray-800" },
+// Renk kodundan background ve text renk sınıflarını oluşturan yardımcı fonksiyon
+const getStatusColorClasses = (
+  status: string
+): { bg: string; text: string } => {
+  // Varsayılan değerler
+  let bg = "bg-gray-100";
+  let text = "text-gray-800";
+
+  switch (status) {
+    case "pending":
+      bg = "bg-yellow-100";
+      text = "text-yellow-800";
+      break;
+    case "approved":
+      bg = "bg-green-100";
+      text = "text-green-800";
+      break;
+    case "rejected":
+      bg = "bg-red-100";
+      text = "text-red-800";
+      break;
+    case "completed":
+      bg = "bg-blue-100";
+      text = "text-blue-800";
+      break;
+    case "cancelled":
+      bg = "bg-gray-100";
+      text = "text-gray-800";
+      break;
+    case "ongoing":
+      bg = "bg-purple-100";
+      text = "text-purple-800";
+      break;
+  }
+
+  return { bg, text };
 };
 
 // Rol açıklamaları
@@ -358,48 +388,13 @@ export default function EventsPage() {
                     {event.participants}/{event.maxParticipants}
                   </TableCell>
                   <TableCell>
-                    <Select
-                      value={event.status}
-                      onValueChange={(value) =>
-                        handleStatusChange(event.id, value as EventStatus)
-                      }
+                    <Badge
+                      className={`${getStatusColorClasses(event.status).bg} ${
+                        getStatusColorClasses(event.status).text
+                      }`}
                     >
-                      <SelectTrigger
-                        className={`w-[140px] ${
-                          STATUS_COLORS[event.status]?.bg || "bg-gray-100"
-                        } ${
-                          STATUS_COLORS[event.status]?.text || "text-gray-800"
-                        }`}
-                      >
-                        <SelectValue placeholder="Durum seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem
-                          value="pending"
-                          className="text-yellow-800 hover:bg-yellow-100"
-                        >
-                          Beklemede
-                        </SelectItem>
-                        <SelectItem
-                          value="approved"
-                          className="text-green-800 hover:bg-green-100"
-                        >
-                          Onaylandı
-                        </SelectItem>
-                        <SelectItem
-                          value="rejected"
-                          className="text-red-800 hover:bg-red-100"
-                        >
-                          Reddedildi
-                        </SelectItem>
-                        <SelectItem
-                          value="completed"
-                          className="text-gray-800 hover:bg-gray-100"
-                        >
-                          Tamamlandı
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                      {event.status}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Check, ChevronsUpDown, Filter } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Check, ChevronsUpDown, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -11,53 +11,41 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/components/ui/command"
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-
-// Etkinlik kategorileri
-const EVENT_CATEGORIES = [
-  "Futbol",
-  "Basketbol",
-  "Voleybol",
-  "Tenis",
-  "Yüzme",
-  "Koşu",
-  "Yoga",
-  "Fitness",
-  "Diğer"
-]
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { EVENT_CATEGORY_OPTIONS } from "@/mockups";
 
 interface CategoryFilterDropdownProps {
-  selectedCategories: string[]
-  onSelectCategories: (categories: string[]) => void
+  selectedCategories: string[];
+  onSelectCategories: (categories: string[]) => void;
 }
 
 export function CategoryFilterDropdown({
   selectedCategories,
   onSelectCategories,
 }: CategoryFilterDropdownProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   // Kategori seçimini değiştirme işlevi
   const toggleCategory = (category: string) => {
     if (selectedCategories.includes(category)) {
-      onSelectCategories(selectedCategories.filter((c) => c !== category))
+      onSelectCategories(selectedCategories.filter((c) => c !== category));
     } else {
-      onSelectCategories([...selectedCategories, category])
+      onSelectCategories([...selectedCategories, category]);
     }
-  }
+  };
 
   // Tüm seçimleri temizleme
   const clearSelections = () => {
-    onSelectCategories([])
-    setOpen(false)
-  }
+    onSelectCategories([]);
+    setOpen(false);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -71,7 +59,10 @@ export function CategoryFilterDropdown({
           <Filter className="mr-2 h-4 w-4" />
           <span>Kategoriler</span>
           {selectedCategories.length > 0 && (
-            <Badge variant="secondary" className="ml-2 rounded-sm px-1 font-normal">
+            <Badge
+              variant="secondary"
+              className="ml-2 rounded-sm px-1 font-normal"
+            >
               {selectedCategories.length}
             </Badge>
           )}
@@ -84,21 +75,21 @@ export function CategoryFilterDropdown({
           <CommandList>
             <CommandEmpty>Kategori bulunamadı.</CommandEmpty>
             <CommandGroup>
-              {EVENT_CATEGORIES.map((category) => (
+              {EVENT_CATEGORY_OPTIONS.map((category) => (
                 <CommandItem
-                  key={category}
-                  value={category}
-                  onSelect={() => toggleCategory(category)}
+                  key={category.value}
+                  value={category.label}
+                  onSelect={() => toggleCategory(category.value)}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedCategories.includes(category)
+                      selectedCategories.includes(category.value)
                         ? "opacity-100"
                         : "opacity-0"
                     )}
                   />
-                  {category}
+                  {category.label}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -119,5 +110,5 @@ export function CategoryFilterDropdown({
         </Command>
       </PopoverContent>
     </Popover>
-  )
-} 
+  );
+}
