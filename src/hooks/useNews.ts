@@ -18,7 +18,8 @@ export const MOCK_NEWS: NewsItem[] = [
     status: "pending",
     hasImage: true,
     contentLength: 123,
-    imageStatus: 'available'
+    imageStatus: 'available',
+    showDetails: false
   },
   {
     id: "2",
@@ -31,7 +32,8 @@ export const MOCK_NEWS: NewsItem[] = [
     status: "pending",
     hasImage: true,
     contentLength: 156,
-    imageStatus: 'available'
+    imageStatus: 'available',
+    showDetails: false
   },
   {
     id: "3",
@@ -44,7 +46,8 @@ export const MOCK_NEWS: NewsItem[] = [
     status: "pending",
     hasImage: true,
     contentLength: 145,
-    imageStatus: 'available'
+    imageStatus: 'available',
+    showDetails: false
   },
   {
     id: "4",
@@ -57,7 +60,8 @@ export const MOCK_NEWS: NewsItem[] = [
     status: "pending",
     hasImage: true,
     contentLength: 167,
-    imageStatus: 'available'
+    imageStatus: 'available',
+    showDetails: false
   }
 ]
 
@@ -137,7 +141,9 @@ export const useNews = () => {
 
   // Filtrelenmiş haberler
   const filteredNews = useMemo(() => {
-    return news.filter((item) => {
+    console.log('Filtreleme yapılıyor:', { filters, news });
+    
+    const filtered = news.filter((item) => {
       // Kategori filtresi
       if (filters.category) {
         if (Array.isArray(filters.category)) {
@@ -150,8 +156,12 @@ export const useNews = () => {
       }
 
       // Durum filtresi
-      if (filters.status && item.status !== filters.status) {
-        return false;
+      if (filters.status) {
+        // Status filtresindeki değeri ve haberin durumunu logla 
+        console.log(`Haber ID: ${item.id}, Status: ${item.status}, Filtre: ${filters.status}`);
+        if (item.status !== filters.status) {
+          return false;
+        }
       }
 
       // Arama filtresi
@@ -166,6 +176,9 @@ export const useNews = () => {
 
       return true;
     });
+    
+    console.log(`Filtreleme sonucu: ${filtered.length} haber bulundu`);
+    return filtered;
   }, [news, filters]);
 
   // Onay bekleyen haber sayısı
@@ -174,53 +187,32 @@ export const useNews = () => {
   }, [news]);
 
   // URL'den haber ekle
-  const addNewsFromUrl = useCallback(async (url: string) => {
+  const addNewsFromUrl = useCallback(async (mockNews: any[] = [], url: string = "") => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/news/import", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ url }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Haberler eklenirken bir hata oluştu");
-      }
-
-      if (Array.isArray(data) && data.length > 0) {
+      // Gelen haberleri kontrol et
+      const newsData = Array.isArray(mockNews) && mockNews.length > 0 
+        ? mockNews 
+        : [];
+      
+      if (newsData.length > 0) {
         // Haberleri onay bekleyen olarak ekle
-        const pendingNews = data.map(news => ({
+        const pendingNews = newsData.map(news => ({
           ...news,
           status: "pending",
-          sourceUrl: url, // Kaynak URL'yi sakla
-          addedAt: new Date().toISOString(), // Eklenme zamanını sakla
-          selected: false // Seçim durumu
+          sourceUrl: url || news.sourceUrl || "",
+          addedAt: new Date().toISOString(),
+          selected: false
         }));
         
         // Yeni haberleri mevcut haberlere ekle
-        setNews(prevNews => {
-          // URL'den daha önce eklenen haberleri filtrele
-          const existingUrls = new Set(prevNews.map(item => item.sourceUrl));
-          const uniqueNews = pendingNews.filter(item => !existingUrls.has(item.sourceUrl));
-          
-          return [...prevNews, ...uniqueNews];
-        });
+        setNews(prevNews => [...prevNews, ...pendingNews]);
 
-        toast({
-          title: "Haberler Başarıyla Eklendi",
-          description: `${data.length} yeni spor haberi onay için eklendi.`,
-          variant: "default",
-        });
-
-        return { count: data.length };
+        return { count: newsData.length };
       } else {
-        return { error: "Spor haberi bulunamadı" };
+        return { error: "Haber bulunamadı" };
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Bir hata oluştu";
@@ -229,7 +221,7 @@ export const useNews = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   // Haberi seç/seçimi kaldır
   const toggleNewsSelection = useCallback((id: string) => {
@@ -250,13 +242,17 @@ export const useNews = () => {
   // Haberi onayla
   const approveNews = useCallback(async (id: string) => {
     try {
-      setNews(prevNews =>
-        prevNews.map(item =>
+      console.log(`${id} ID'li haber onaylanıyor...`);
+      
+      setNews(prevNews => {
+        const updatedNews = prevNews.map(item =>
           item.id === id
-            ? { ...item, status: "approved", approvedAt: new Date().toISOString() }
+            ? { ...item, status: "approved" as const, approvedAt: new Date().toISOString() }
             : item
-        )
-      );
+        );
+        console.log('Onaylamadan sonra haberler:', updatedNews);
+        return updatedNews;
+      });
 
       toast({
         title: "Haber Onaylandı",
@@ -312,5 +308,6 @@ export const useNews = () => {
     rejectNews,
     toggleNewsSelection,
     toggleSelectAll,
+    setNews,
   };
 };

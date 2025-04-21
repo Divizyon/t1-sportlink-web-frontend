@@ -12,6 +12,7 @@ export type NewsItem = {
   imageStatus: 'available' | 'error' | 'loading';
   sourceUrl?: string;
   selected?: boolean;
+  showDetails?: boolean;
   details?: {
     author?: string;
     source?: string;

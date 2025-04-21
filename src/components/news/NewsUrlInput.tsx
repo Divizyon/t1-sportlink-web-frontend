@@ -1,106 +1,130 @@
 "use client"
 
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
+import React, { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { useNews } from "@/hooks/useNews";
-import { Loader2, Globe, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/components/ui/use-toast";
+import { useNews } from "@/hooks/useNews";
+import { NewsItem } from "@/types/news";
 
-export function NewsUrlInput() {
-  const [url, setUrl] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { addNewsFromUrl } = useNews();
+// Form şeması
+const formSchema = z.object({
+  url: z.string().url({ message: "Geçerli bir URL girmelisiniz." }),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+const NewsUrlInput: React.FC = () => {
   const { toast } = useToast();
+  const { addNewsFromUrl } = useNews();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!url) return;
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      url: "",
+    },
+  });
 
+  // Mock haber verileri oluştur
+  const generateMockNews = (): NewsItem[] => {
+    const count = Math.floor(Math.random() * 5) + 1; // 1-5 arası rastgele haber sayısı
+    const categoryOptions = ["Spor", "Futbol", "Basketbol", "Voleybol", "Tenis"];
+    
+    return Array.from({ length: count }, (_, index) => {
+      const id = Date.now().toString() + index;
+      const title = `Haber Başlığı ${id}`;
+      const category = categoryOptions[Math.floor(Math.random() * categoryOptions.length)];
+      const hasImage = Math.random() > 0.3;
+      
+      return {
+        id,
+        title,
+        content: `Bu ${category} ile ilgili bir haber içeriğidir. Bu içerik otomatik olarak oluşturulmuştur.`,
+        category,
+        image: hasImage ? `https://picsum.photos/seed/${id}/800/400` : undefined,
+        publishDate: new Date().toISOString(),
+        tags: ["spor", category.toLowerCase()],
+        status: "pending" as "pending" | "approved" | "rejected",
+        hasImage,
+        contentLength: Math.floor(Math.random() * 500) + 100,
+        imageStatus: 'available' as 'available' | 'error' | 'loading',
+        sourceUrl: "",
+        selected: false,
+        showDetails: false
+      };
+    });
+  };
+
+  const handleSubmit = async (values: FormValues) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      setError(null);
-
-      // URL'yi doğrula
-      let validUrl;
-      try {
-        validUrl = new URL(url);
-        if (!validUrl.protocol.startsWith('http')) {
-          throw new Error('Geçersiz protokol');
-        }
-      } catch {
-        setError("Lütfen geçerli bir URL girin (örn: https://www.example.com)");
-        return;
-      }
-
-      const result = await addNewsFromUrl(url);
+      // Mock veriler ile işlem yapalım
+      const mockNews = generateMockNews();
+      
+      // URL'den haberleri ekle (burada mock verileri kullanıyoruz)
+      const result = await addNewsFromUrl(mockNews, values.url);
       
       if (result.error) {
-        setError(result.error);
-      } else if (result.count) {
         toast({
-          title: "Haberler başarıyla alındı",
-          description: `${result.count} yeni haber eklendi ve onaya düştü.`,
-          variant: "default",
+          title: "Hata",
+          description: result.error,
+          variant: "destructive",
         });
-        setUrl("");
+      } else {
+        toast({
+          title: "Başarılı",
+          description: `${result.count} haber başarıyla eklendi.`,
+        });
+        
+        // Formu sıfırla
+        form.reset();
       }
-    } catch (err) {
-      setError("Haberler alınırken bir hata oluştu. Lütfen tekrar deneyin.");
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Haberler alınırken bir hata oluştu.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg font-medium">
-          <Globe className="h-5 w-5" />
-          Haber Kaynağı Ekle
-        </CardTitle>
-        <CardDescription>
-          Herhangi bir haber sitesinin URL'sini girin, yapay zeka otomatik olarak spor haberlerini bulup getirecektir.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        <form onSubmit={handleSubmit} className="flex gap-3">
-          <div className="flex-1">
-            <Input
-              type="url"
-              placeholder="Haber sitesi URL'sini girin (örn: https://www.example.com)"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              disabled={isLoading}
-              className="w-full"
-            />
-          </div>
-          <Button 
-            type="submit" 
-            disabled={isLoading || !url.trim()}
-            size="lg"
-            className="min-w-[150px]"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Haberler Alınıyor...
-              </>
-            ) : (
-              "Haberleri Al"
+    <div className="flex flex-col space-y-4 p-6 bg-card rounded-lg shadow-sm">
+      <h2 className="text-xl font-semibold">Haber URL'si</h2>
+      <p className="text-muted-foreground">
+        Haberleri almak istediğiniz kaynağın URL'sini girin.
+      </p>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="url"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Haber URL'si</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://spor-haber-kaynagi.com/haberler" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
+          />
+          
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Haberler Alınıyor..." : "Haberleri Al"}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </Form>
+    </div>
   );
-} 
+};
+
+export default NewsUrlInput; 
