@@ -128,7 +128,7 @@ export default function EventsPage() {
       description: "Amatör futbol takımları arasında düzenlenecek olan dostluk turnuvası. Her yaştan futbolsever katılabilir. Takımlar 7 kişiden oluşacaktır.",
       date: new Date("2024-04-15"),
       time: "14:00",
-      location: "Merkez Stadyum, İstanbul",
+      location: "Merkez Stadyum, Konya",
       maxParticipants: 100, // Keep max participants
       participants: 3, // Sync with participantList length
       status: "approved",
@@ -147,7 +147,7 @@ export default function EventsPage() {
       description: "Stresli şehir hayatından uzaklaşıp, doğayla iç içe yoga ve meditasyon deneyimi. Tüm seviyeler için uygundur.",
       date: new Date("2024-04-20"),
       time: "09:00",
-      location: "Belgrad Ormanı, İstanbul",
+      location: "Meram Ormanı, Konya",
       maxParticipants: 30,
       participants: 1, // Sync with participantList length
       status: "pending",
@@ -163,7 +163,7 @@ export default function EventsPage() {
       description: "Profesyonel antrenörler eşliğinde 3 günlük yoğun basketbol eğitimi. Temel teknikler, taktikler ve maç stratejileri öğretilecektir.",
       date: new Date("2024-04-25"),
       time: "10:00",
-      location: "Spor Kompleksi, Ankara",
+      location: "Spor Kompleksi, Konya",
       maxParticipants: 40,
       participants: 0, // Sync with participantList length
       status: "approved",
@@ -174,14 +174,14 @@ export default function EventsPage() {
     {
       id: "4",
       title: "Yüzme",
-      description: "Profesyonel antrenörler eşliğinde 3 günlük yoğun basketbol eğitimi. Temel teknikler, taktikler ve maç stratejileri öğretilecektir.",
+      description: "Temel teknikler, taktikler ve stratejiler öğretilecektir.",
       date: new Date("2024-04-25"),
       time: "10:00",
-      location: "Spor Kompleksi, Ankara",
+      location: "Spor Kompleksi, Konya",
       maxParticipants: 40,
       participants: 0, // No participantList defined, so participants is 0
       status: "approved",
-      category: "Basketbol",
+      category: "Yüzme",
       organizer: sampleUsers[2]
       // No participantList property example
     },
@@ -191,11 +191,11 @@ export default function EventsPage() {
       description: "Profesyonel antrenörler eşliğinde 3 günlük yoğun basketbol eğitimi. Temel teknikler, taktikler ve maç stratejileri öğretilecektir.",
       date: new Date("2024-04-25"),
       time: "10:00",
-      location: "Spor Kompleksi, Ankara",
+      location: "Spor Kompleksi, Konya",
       maxParticipants: 40,
       participants: 2, // Sync with participantList length
       status: "approved",
-      category: "Basketbol",
+      category: "Tenis",
       organizer: sampleUsers[2],
       participantList: [sampleUsers[0], sampleUsers[1]]
     },
