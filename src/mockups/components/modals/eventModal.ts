@@ -28,10 +28,6 @@ export interface EventModalMock {
   };
   participants: number;
   maxParticipants: number;
-  price?: {
-    amount: number;
-    currency: string;
-  };
   registrationDeadline?: string;
 }
 
@@ -61,7 +57,6 @@ export const getEventModalData = (
     },
     participants: event.participants,
     maxParticipants: event.maxParticipants,
-    price: event.price,
     registrationDeadline: event.registrationDeadline,
   };
 };
@@ -84,9 +79,6 @@ export interface RegistrationConfirmationMock {
   status: RegistrationStatus;
   message: string;
   qrCode?: string;
-  paymentRequired?: boolean;
-  paymentAmount?: number;
-  paymentCurrency?: string;
 }
 
 // Generate registration confirmation data
@@ -130,9 +122,6 @@ export const getRegistrationConfirmation = (
       status === "confirmed"
         ? `/qrcodes/registration-${event.id}-${user.id}.png`
         : undefined,
-    paymentRequired: event.price && event.price.amount > 0,
-    paymentAmount: event.price?.amount,
-    paymentCurrency: event.price?.currency,
   };
 };
 
@@ -140,6 +129,5 @@ export const getRegistrationConfirmation = (
 export const CANCELLATION_REASONS = [
   { value: "schedule_conflict", label: "Schedule Conflict" },
   { value: "no_longer_interested", label: "No Longer Interested" },
-  { value: "too_expensive", label: "Price Too High" },
   { value: "other", label: "Other" },
 ];

@@ -17,7 +17,7 @@ import {
   REPORT_ENTITY_TYPE_OPTIONS,
   REPORT_PRIORITY_OPTIONS,
 } from "@/mockups/components/reports/reportList";
-import { REPORT_FILTERS } from "@/constants/dashboard";
+import { REPORT_FILTERS } from "@/mockups";
 
 interface ReportFilters {
   entityType?: ReportEntityType | "all";

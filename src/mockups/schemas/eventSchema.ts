@@ -36,10 +36,6 @@ export interface EventSchema {
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
   tags: string[];
-  price?: {
-    amount: number;
-    currency: string;
-  };
   recurrence?: {
     type: "daily" | "weekly" | "monthly";
     interval: number;
@@ -174,10 +170,6 @@ export const EVENT_SCHEMA = {
       createdAt: "2023-07-15T11:30:00Z",
       updatedAt: "2023-08-05T16:45:00Z",
       tags: ["basketball", "tournament", "competition", "team"],
-      price: {
-        amount: 250,
-        currency: "TRY",
-      },
       visibility: "public",
       registrationRequired: true,
       registrationDeadline: "2023-09-10T23:59:59Z",
@@ -277,10 +269,6 @@ export const EVENT_SCHEMA = {
       createdAt: "2023-08-28T15:00:00Z",
       updatedAt: "2023-08-28T15:00:00Z",
       tags: ["fitness", "workshop", "training", "health"],
-      price: {
-        amount: 50,
-        currency: "TRY",
-      },
       visibility: "public",
       registrationRequired: true,
       registrationDeadline: "2023-09-18T23:59:59Z",

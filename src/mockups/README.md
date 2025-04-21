@@ -92,16 +92,16 @@ Bu bölüm, her mockup verisinin hangi bileşenlerde kullanıldığına dair do�
 
 ### Etkinlik Mockupları
 
-| Mockup Verisi             | Bileşen Dosyası                                                                                           | Kullanım                           |
-| ------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| SAMPLE_EVENT_DETAILS      | src/components/modals/EventDetailModal.tsx                                                                | Detaylı etkinlik bilgisi gösterimi |
-| UPCOMING_EVENTS           | _Tanımlanmış fakat kullanılmıyor_                                                                         | Yaklaşan etkinlikler listesi       |
-| DASHBOARD_UPCOMING_EVENTS | src/components/dashboard/home/TodaysEvents.tsx                                                            | İkincil etkinlik listesi           |
-| PAST_EVENTS               | _Tanımlanmış fakat kullanılmıyor_                                                                         | Geçmiş etkinlikler listesi         |
-| EVENT_CATEGORIES          | src/components/CategoryFilterDropdown.tsx, src/components/dashboard/analytics/EventParticipationChart.tsx | Etkinlik kategorisi listesi        |
-| EVENT_CATEGORY_OPTIONS    | src/components/modals/NewEventModal.tsx, src/components/modals/EditEventModal.tsx                         | Etkinlik kategori seçenekleri      |
-| EVENT_STATUS_OPTIONS      | _Tanımlanmış fakat kullanılmıyor_                                                                         | Etkinlik durum seçenekleri         |
-| DEFAULT_EVENT_FORM        | src/components/modals/NewEventModal.tsx                                                                   | Boş etkinlik formu şablonu         |
+| Mockup Verisi             | Bileşen Dosyası                                                                                                              | Kullanım                           |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| SAMPLE_EVENT_DETAILS      | src/components/modals/EventDetailModal.tsx                                                                                   | Detaylı etkinlik bilgisi gösterimi |
+| UPCOMING_EVENTS           | _Tanımlanmış fakat kullanılmıyor_                                                                                            | Yaklaşan etkinlikler listesi       |
+| DASHBOARD_UPCOMING_EVENTS | src/components/dashboard/home/TodaysEvents.tsx                                                                               | İkincil etkinlik listesi           |
+| PAST_EVENTS               | _Tanımlanmış fakat kullanılmıyor_                                                                                            | Geçmiş etkinlikler listesi         |
+| EVENT_CATEGORIES          | src/components/dashboard/analytics/EventParticipationChart.tsx                                                               | Etkinlik kategorisi listesi        |
+| EVENT_CATEGORY_OPTIONS    | src/components/CategoryFilterDropdown.tsx, src/components/modals/NewEventModal.tsx, src/components/modals/EditEventModal.tsx | Etkinlik kategori seçenekleri      |
+| EVENT_STATUS_OPTIONS      | _Tanımlanmış fakat kullanılmıyor_                                                                                            | Etkinlik durum seçenekleri         |
+| DEFAULT_EVENT_FORM        | src/components/modals/NewEventModal.tsx                                                                                      | Boş etkinlik formu şablonu         |
 
 ### Kullanıcı Mockupları
 
@@ -178,8 +178,17 @@ Aşağıdaki öğeler constants/dashboard.ts'den mockups klasörüne taşındı:
    - REPORT_PRIORITY ve REPORT_PRIORITY_LABELS → `/schemas/reportSchema.ts`
    - ENTITY_TYPE_LABELS → `/schemas/reportSchema.ts`
    - REPORT_STATUS_COLORS ve REPORT_PRIORITY_COLORS → `/schemas/reportSchema.ts`
+   - REPORT_FILTERS ve REPORT_FILTER_LABELS → `/components/reports/index.ts`
 
 3. **Dashboard İlgili**:
    - DASHBOARD_TABS ve DASHBOARD_TAB_LABELS → `/components/dashboard/dashboardSettings.ts`
    - MODAL_TYPES → `/components/dashboard/dashboardSettings.ts`
    - UI_TEXT → `/components/dashboard/dashboardSettings.ts`
+
+> **NOT**: Bazı veri tiplerinin halen constants/dashboard.ts dosyasında tanımlı olduğu tespit edildi. Backend entegrasyonu sırasında bu verilerin tamamı mockups klasöründe olmalıdır. Aşağıdakiler gibi veriler halen taşınmayı bekliyor:
+>
+> - ~~EVENT_CATEGORIES (constants/dashboard.ts içinde)~~ ⚠️ _Taşındı, dashboard ve events olmak üzere iki ayrı versiyon var_
+> - ~~EVENT_STATUS, EVENT_STATUS_LABELS (ikisi de constants/dashboard.ts içinde kalmış olabilir)~~ ⚠️ _Taşındı, `/schemas/eventSchema.ts` içerisinde bulunuyor_
+> - ~~REPORT_FILTERS, REPORT_FILTER_LABELS (constants/dashboard.ts içinde)~~ ⚠️ _Taşındı, `/components/reports/index.ts` içerisinde bulunuyor_
+>
+> Bu verilerin mockups klasörüne taşınması ve tüm ilgili import'ların güncellenmesi gerekiyor. Bu işlem uygulamanın herhangi bir yerinde hard-coded veri kalmamasını sağlayacaktır.

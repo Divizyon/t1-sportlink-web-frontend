@@ -3,8 +3,10 @@
  * Utilities for handling filters in dashboard components
  */
 
-import { EVENT_CATEGORIES, REPORT_FILTERS } from "@/constants";
-import { EventStatus, ReportFilterType } from "@/types/dashboard";
+import { EVENT_CATEGORIES } from "@/constants";
+import { REPORT_FILTERS } from "@/mockups";
+import { EventStatus } from "@/types/dashboard";
+import { EventCategory, ReportFilterType } from "@/types";
 
 /**
  * Toggle a category in a category filter array

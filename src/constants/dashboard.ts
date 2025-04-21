@@ -1,6 +1,8 @@
 /**
  * Dashboard Constants
- * Centralized constants for the dashboard
+ *
+ * This file contains centralized constants for the dashboard component including
+ * labels, status values, and configuration settings.
  */
 
 import {
@@ -10,20 +12,32 @@ import {
   DashboardTabValue,
   ModalType,
   ReportFilterType,
+  EventCategory,
+  UserRole,
+  TabType,
 } from "@/types";
+import { REPORT_FILTERS, REPORT_FILTER_LABELS } from "@/mockups";
 
-// Event Categories
-export const EVENT_CATEGORIES = [
-  "Futbol",
-  "Basketbol",
-  "Voleybol",
-  "Tenis",
-  "Yüzme",
-  "Koşu",
-  "Yoga",
-  "Fitness",
-  "Diğer",
+// User Roles and Dashboard Access
+export const DASHBOARD_ADMIN_ROLES: UserRole[] = [
+  "admin",
+  "director",
+  "staff",
+  "head_coach",
+  "coach",
 ];
+
+// Event Categories for Filtering
+export const EVENT_CATEGORIES: Record<EventCategory, EventCategory> = {
+  all: "all",
+  match: "match",
+  training: "training",
+  tournament: "tournament",
+  other: "other",
+};
+
+// Export here to keep backward compatibility
+export { REPORT_FILTERS, REPORT_FILTER_LABELS };
 
 // Event Status Constants
 export const EVENT_STATUS: Record<string, EventStatus> = {
@@ -86,29 +100,119 @@ export const ENTITY_TYPE_LABELS: Record<string, string> = {
 };
 
 // Dashboard Tab Values
-export const DASHBOARD_TABS = {
+export const DASHBOARD_TABS: Record<TabType, TabType> = {
   overview: "overview",
-  analytics: "analytics",
-} as const satisfies Record<DashboardTabValue, DashboardTabValue>;
-
-// Dashboard Tab Labels
-export const DASHBOARD_TAB_LABELS = {
-  overview: "Genel Bakış",
-  analytics: "Analitik",
-} as const satisfies Record<DashboardTabValue, string>;
-
-// Report Filter Values
-export const REPORT_FILTERS: Record<ReportFilterType, ReportFilterType> = {
-  all: "all",
-  users: "users",
+  reports: "reports",
   events: "events",
+  users: "users",
+  messages: "messages",
+  notifications: "notifications",
+  analytics: "analytics",
+  settings: "settings",
 };
 
-// Report Filter Labels
-export const REPORT_FILTER_LABELS: Record<ReportFilterType, string> = {
-  all: "Tüm Raporlar",
-  users: "Kullanıcı Raporları",
-  events: "Etkinlik Raporları",
+// Dashboard Tab Labels
+export const DASHBOARD_TAB_LABELS: Record<TabType, string> = {
+  overview: "Genel Bakış",
+  reports: "Raporlar",
+  events: "Etkinlikler",
+  users: "Kullanıcılar",
+  messages: "Mesajlar",
+  notifications: "Bildirimler",
+  analytics: "Analizler",
+  settings: "Ayarlar",
+};
+
+// Status Labels for Dashboard Items
+export const DASHBOARD_STATUS_LABELS = {
+  pending: "Beklemede",
+  processing: "İşleniyor",
+  resolved: "Çözüldü",
+  approved: "Onaylandı",
+  rejected: "Reddedildi",
+};
+
+// Modal Types for Dashboard
+export const DASHBOARD_MODAL_TYPES: Record<ModalType, ModalType> = {
+  newReport: "newReport",
+  viewReport: "viewReport",
+  editReport: "editReport",
+  deleteReport: "deleteReport",
+  newEvent: "newEvent",
+  viewEvent: "viewEvent",
+  editEvent: "editEvent",
+  deleteEvent: "deleteEvent",
+  sendMessage: "sendMessage",
+  viewMessage: "viewMessage",
+  newUser: "newUser",
+  viewUser: "viewUser",
+  editUser: "editUser",
+  deleteUser: "deleteUser",
+  newNotification: "newNotification",
+  viewNotification: "viewNotification",
+  settings: "settings",
+};
+
+// Event Category Labels
+export const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
+  all: "Tüm Etkinlikler",
+  match: "Maçlar",
+  training: "Antrenmanlar",
+  tournament: "Turnuvalar",
+  other: "Diğer",
+};
+
+// Dashboard Modal Labels
+export const DASHBOARD_MODAL_LABELS: Record<ModalType, string> = {
+  newReport: "Yeni Rapor Oluştur",
+  viewReport: "Raporu Görüntüle",
+  editReport: "Raporu Düzenle",
+  deleteReport: "Raporu Sil",
+  newEvent: "Yeni Etkinlik Oluştur",
+  viewEvent: "Etkinliği Görüntüle",
+  editEvent: "Etkinliği Düzenle",
+  deleteEvent: "Etkinliği Sil",
+  sendMessage: "Mesaj Gönder",
+  viewMessage: "Mesajı Görüntüle",
+  newUser: "Yeni Kullanıcı Oluştur",
+  viewUser: "Kullanıcıyı Görüntüle",
+  editUser: "Kullanıcıyı Düzenle",
+  deleteUser: "Kullanıcıyı Sil",
+  newNotification: "Yeni Bildirim Oluştur",
+  viewNotification: "Bildirimi Görüntüle",
+  settings: "Ayarlar",
+};
+
+// Dashboard Settings
+export const DASHBOARD_SETTINGS = {
+  itemsPerPage: 10,
+  defaultTab: DASHBOARD_TABS.overview,
+  defaultFilter: REPORT_FILTERS.all,
+  defaultCategory: EVENT_CATEGORIES.all,
+  refreshInterval: 60000, // 1 minute in milliseconds
+};
+
+// Dashboard UI Text
+export const DASHBOARD_UI_TEXT = {
+  noReports: "Henüz rapor bulunmamaktadır.",
+  noEvents: "Henüz etkinlik bulunmamaktadır.",
+  noUsers: "Henüz kullanıcı bulunmamaktadır.",
+  noMessages: "Henüz mesaj bulunmamaktadır.",
+  noNotifications: "Henüz bildirim bulunmamaktadır.",
+  loadMore: "Daha Fazla Yükle",
+  search: "Ara...",
+  filter: "Filtrele",
+  sort: "Sırala",
+  create: "Oluştur",
+  edit: "Düzenle",
+  delete: "Sil",
+  view: "Görüntüle",
+  save: "Kaydet",
+  cancel: "İptal",
+  confirm: "Onayla",
+  loading: "Yükleniyor...",
+  error: "Bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+  success: "İşlem başarıyla tamamlandı.",
 };
 
 // Color Constants
@@ -172,21 +276,6 @@ export const PAGINATION_DEFAULTS = {
   defaultLimit: 10,
   defaultPage: 1,
   pageSizeOptions: [5, 10, 25, 50, 100],
-};
-
-// Modal Types (for more semantic references)
-export const MODAL_TYPES = {
-  EVENT: "event" as ModalType,
-  NEW_EVENT: "newEvent" as ModalType,
-  NEWS: "newNews" as ModalType,
-  ANNOUNCEMENT: "newAnnouncement" as ModalType,
-  USER: "user" as ModalType,
-  DAILY_EVENTS: "dailyEvents" as ModalType,
-  ACTIVE_USERS: "activeUsers" as ModalType,
-  TOTAL_PARTICIPANTS: "totalParticipants" as ModalType,
-  REPORTED_USERS: "reportedUsers" as ModalType,
-  REPORTED_EVENTS: "reportedEvents" as ModalType,
-  ORG_EVENTS: "orgEvents" as ModalType,
 };
 
 // Common UI Text

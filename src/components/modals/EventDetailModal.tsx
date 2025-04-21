@@ -60,7 +60,9 @@ import { UserDetailModal } from "@/components/modals/UserDetailModal";
 import {
   SAMPLE_EVENT_DETAILS,
   EventDetailsMock,
-} from "@/mockups/components/events/eventDetails";
+  REJECTION_REASONS,
+  CATEGORY_LABELS,
+} from "@/mockups";
 import { EVENT_PARTICIPANTS } from "@/mockups/components/dashboard/todaysEvents";
 import { enrichUserData } from "@/lib/userDataService";
 
@@ -112,26 +114,10 @@ interface EventDetailModalProps {
 }
 
 // Event kategori listesi
-const categories = [
-  "Futbol",
-  "Basketbol",
-  "Voleybol",
-  "Tenis",
-  "Yüzme",
-  "Koşu",
-  "Diğer",
-];
+const categories = CATEGORY_LABELS;
 
 // Reddetme sebepleri
-const rejectionReasons = [
-  "Uygunsuz içerik",
-  "Yetersiz detay",
-  "Tarihi geçmiş",
-  "Konum uygun değil",
-  "Kapasite sorunu",
-  "Güvenlik riski",
-  "Diğer",
-];
+const rejectionReasons = REJECTION_REASONS;
 
 export function EventDetailModal({
   open,

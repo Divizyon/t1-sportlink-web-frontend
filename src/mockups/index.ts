@@ -68,6 +68,13 @@ export * from "./components/dashboard/eventParticipationChart";
 export * from "./components/dashboard/dashboardReports";
 export * from "./components/dashboard/dashboardSettings";
 
+// Also explicitly import and export dashboard-specific event categories
+import {
+  EVENT_CATEGORIES as DASHBOARD_EVENT_CATEGORIES,
+  EVENT_CATEGORY_NAMES,
+} from "./components/dashboard/eventParticipationChart";
+export { DASHBOARD_EVENT_CATEGORIES, EVENT_CATEGORY_NAMES };
+
 // Report components with explicit exports
 import {
   getReportDetails,
@@ -139,8 +146,9 @@ import {
   VISIBILITY_OPTIONS,
   POPULAR_TAGS,
   COMMON_LOCATIONS,
-  CURRENCY_OPTIONS,
   validateEventDates,
+  REJECTION_REASONS,
+  CATEGORY_LABELS,
 } from "./components/events/eventForm";
 export {
   DEFAULT_EVENT_FORM,
@@ -149,8 +157,9 @@ export {
   VISIBILITY_OPTIONS,
   POPULAR_TAGS,
   COMMON_LOCATIONS,
-  CURRENCY_OPTIONS,
   validateEventDates,
+  REJECTION_REASONS,
+  CATEGORY_LABELS,
 };
 
 // Export from userList with renamed exports

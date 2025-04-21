@@ -32,10 +32,6 @@ export const DEFAULT_EVENT_FORM = {
   registrationDeadline: new Date(Date.now() + 78400000)
     .toISOString()
     .split("T")[0], // Day before event
-  price: {
-    amount: 0,
-    currency: "TRY",
-  },
   tags: [] as string[],
 };
 
@@ -123,12 +119,26 @@ export const COMMON_LOCATIONS = [
   },
 ];
 
-// Currency options
-export const CURRENCY_OPTIONS = [
-  { value: "TRY", label: "Turkish Lira (₺)" },
-  { value: "USD", label: "US Dollar ($)" },
-  { value: "EUR", label: "Euro (€)" },
-  { value: "GBP", label: "British Pound (£)" },
+// Rejection reasons for event rejection
+export const REJECTION_REASONS = [
+  "Uygunsuz içerik",
+  "Yetersiz detay",
+  "Tarihi geçmiş",
+  "Konum uygun değil",
+  "Kapasite sorunu",
+  "Güvenlik riski",
+  "Diğer",
+];
+
+// Turkish category labels for display
+export const CATEGORY_LABELS = [
+  "Futbol",
+  "Basketbol",
+  "Voleybol",
+  "Tenis",
+  "Yüzme",
+  "Koşu",
+  "Diğer",
 ];
 
 // Helper function to validate event dates

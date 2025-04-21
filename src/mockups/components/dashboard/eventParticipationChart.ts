@@ -122,3 +122,20 @@ export const EVENT_STATUS_COUNTS = {
     return this.approved + this.pending + this.rejected + this.completed;
   },
 };
+
+// Event categories for the EventParticipationChart
+export const EVENT_CATEGORIES = EVENT_SCHEMA.categories.map(
+  (category) => category
+);
+
+// Define Turkish display names for categories
+export const EVENT_CATEGORY_NAMES = {
+  tournament: "Turnuva",
+  training: "Antrenman",
+  meeting: "Toplantı",
+  sport: "Spor",
+  social: "Sosyal",
+  workshop: "Atölye",
+  competition: "Yarışma",
+  other: "Diğer",
+};

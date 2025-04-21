@@ -63,15 +63,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
-  DASHBOARD_TAB_LABELS,
-  DASHBOARD_TABS,
   ENTITY_TYPE_LABELS,
   REPORT_PRIORITY_LABELS,
   REPORT_STATUS_LABELS,
-  UI_TEXT,
-  MODAL_TYPES,
-  REPORT_FILTER_LABELS,
-  REPORT_FILTERS,
 } from "@/constants/dashboard";
 import { ModalType } from "@/types";
 import {
@@ -80,6 +74,14 @@ import {
   filterReportsByPriority,
   filterReportsByStatus,
 } from "@/mockups/components/reports/reportList";
+import {
+  DASHBOARD_TAB_LABELS,
+  DASHBOARD_TABS,
+  MODAL_TYPES,
+  UI_TEXT,
+  REPORT_FILTERS,
+  REPORT_FILTER_LABELS,
+} from "@/mockups";
 import Link from "next/link";
 
 // Raporlar için demo verileri
