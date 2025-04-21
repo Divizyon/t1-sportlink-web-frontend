@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { DashboardTabValue, ModalType, Event, User, Report } from "@/types";
-import { DASHBOARD_TABS } from "@/constants/dashboard";
+import { DASHBOARD_TABS } from "@/mockups/components/dashboard/dashboardSettings";
 import { useToast } from "@/components/ui/use-toast";
 
 interface DashboardState {

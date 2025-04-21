@@ -39,7 +39,12 @@ import {
 import { UserNav } from "@/components/nav/UserNav";
 import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
-import { Report, ReportPriority, ReportStatus } from "@/types/dashboard";
+import {
+  Report,
+  ReportPriority,
+  ReportStatus,
+  ReportEntityType,
+} from "@/types";
 import {
   RECENT_DASHBOARD_REPORTS,
   DashboardReport,

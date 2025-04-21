@@ -69,7 +69,7 @@ export function useFilteredData<T, F extends Record<string, any>>(
       const currentCategories = prev[filterKey] as string[];
       return {
         ...prev,
-        [filterKey]: toggleCategory(category, currentCategories),
+        [filterKey]: toggleCategory(currentCategories, category),
       };
     });
   };

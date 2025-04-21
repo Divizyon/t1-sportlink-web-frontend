@@ -1,13 +1,16 @@
 /**
  * Types Index
- * Central export point for all type definitions
+ * This file exports all the types used in the application
  */
 
-// Re-export all dashboard types
+// Export all types from event.ts
+export * from "./event";
+
+// Export all types from dashboard.ts
 export * from "./dashboard";
 
-// Re-export event types
-export * from "./event";
+// Export all types from report.ts
+export * from "./report";
 
 // Re-export notification types
 export * from "./notification";
@@ -17,6 +20,15 @@ export * from "./news";
 
 // Re-export faq types
 export * from "./faq";
+
+// Explicitly re-export Event and EventStatus to fix import errors
+export type { Event, EventStatus, EventCategory } from "./event";
+export type {
+  Report,
+  ReportStatus,
+  ReportPriority,
+  ReportEntityType,
+} from "./report";
 
 // Global Application Types
 
@@ -53,5 +65,3 @@ export interface PaginatedResponse<T> {
     totalPages: number;
   };
 }
-
-export type DashboardTabValue = "overview" | "analytics";

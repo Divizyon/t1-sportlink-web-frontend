@@ -60,8 +60,11 @@ import {
   TODAY_EVENTS,
   UPCOMING_EVENTS as DASHBOARD_UPCOMING_EVENTS,
   EVENT_PARTICIPANTS,
+  type TodaysEventMock,
+  type EventParticipant,
 } from "./components/dashboard/todaysEvents";
 export { TODAY_EVENTS, DASHBOARD_UPCOMING_EVENTS, EVENT_PARTICIPANTS };
+export type { TodaysEventMock, EventParticipant };
 
 // Dashboard UI constants
 import {
@@ -76,6 +79,26 @@ export {
   DASHBOARD_DATA_SETTINGS,
   ANIMATION_TIMINGS,
 };
+
+// Dashboard date settings
+import {
+  DAYS_OF_WEEK,
+  MONTHS,
+  DATE_DISPLAY_FORMATS,
+  DATE_RANGES,
+  CALENDAR_SETTINGS,
+} from "./components/dashboard/dateSettings";
+export {
+  DAYS_OF_WEEK,
+  MONTHS,
+  DATE_DISPLAY_FORMATS,
+  DATE_RANGES,
+  CALENDAR_SETTINGS,
+};
+
+// Dashboard color settings
+import { COLORS } from "./components/dashboard/colorSettings";
+export { COLORS };
 
 export * from "./components/dashboard/analyticsCharts";
 export * from "./components/dashboard/recentParticipants";

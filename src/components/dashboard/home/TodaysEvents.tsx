@@ -10,6 +10,7 @@ import {
   TODAY_EVENTS,
   DASHBOARD_UPCOMING_EVENTS,
   EVENT_PARTICIPANTS,
+  type TodaysEventMock,
 } from "@/mockups";
 import {
   formatEventTime,
@@ -22,9 +23,6 @@ import { filterEvents } from "@/lib/eventUtils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/userUtils";
 import { enrichUserData } from "@/lib/userDataService";
-
-// Import TodaysEventMock interface for type safety
-import type { TodaysEventMock } from "@/mockups/components/dashboard/todaysEvents";
 
 export function TodaysEvents({
   onEventSelect,
@@ -71,6 +69,7 @@ export function TodaysEvents({
       description: "Event details",
       startDate: new Date().toISOString(),
       endDate: new Date().toISOString(),
+      time: mockEvent.time,
       location: {
         name: mockEvent.location,
         address: "Sample Address",

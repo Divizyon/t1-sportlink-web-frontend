@@ -62,8 +62,8 @@ import {
   EventDetailsMock,
   REJECTION_REASONS,
   CATEGORY_LABELS,
+  EVENT_PARTICIPANTS,
 } from "@/mockups";
-import { EVENT_PARTICIPANTS } from "@/mockups/components/dashboard/todaysEvents";
 import { enrichUserData } from "@/lib/userDataService";
 
 interface Participant {

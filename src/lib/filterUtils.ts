@@ -42,9 +42,7 @@ export function filterEventsByStatus(
  */
 export function searchEvents(events: Event[], term: string): Event[] {
   const searchTerm = term.toLowerCase();
-  return events.filter((event) =>
-    event.title.toLowerCase().includes(searchTerm)
-  );
+  return events.filter((item) => item.title.toLowerCase().includes(searchTerm));
 }
 
 /**
@@ -88,4 +86,86 @@ export function toggleCategory(
   } else {
     return [...selectedCategories, category];
   }
+}
+
+/**
+ * Durum seçimini günceller
+ * @param selectedStatuses Mevcut seçili durumlar
+ * @param status Eklenecek veya çıkarılacak durum
+ * @returns Güncellenmiş durum listesi
+ */
+export function toggleStatus(
+  status: EventStatus | "all",
+  selectedStatuses: EventStatus[]
+): EventStatus[] {
+  if (status === "all") {
+    if (selectedStatuses.length === Object.keys(EVENT_STATUS).length) {
+      return [];
+    } else {
+      return Object.keys(EVENT_STATUS) as EventStatus[];
+    }
+  }
+
+  const isSelected = selectedStatuses.includes(status);
+  if (isSelected) {
+    return selectedStatuses.filter((s) => s !== status);
+  } else {
+    return [...selectedStatuses, status];
+  }
+}
+
+/**
+ * URL parametrelerinden filtre değerlerini ayıklar
+ * @param urlParams URL parametreleri
+ * @returns Ayıklanmış filtre nesnesi
+ */
+export function parseFilterParams(urlParams: URLSearchParams): {
+  categories: string[];
+  statuses: EventStatus[];
+} {
+  const categoriesParam = urlParams.get("categories");
+  const statusesParam = urlParams.get("statuses");
+
+  return {
+    categories: categoriesParam ? categoriesParam.split(",") : [],
+    statuses: statusesParam ? (statusesParam.split(",") as EventStatus[]) : [],
+  };
+}
+
+/**
+ * Filtre değerlerinden URL sorgu dizesini oluşturur
+ * @param categories Kategori listesi
+ * @param statuses Durum listesi
+ * @returns URL sorgu dizesi
+ */
+export function buildFilterQueryString(
+  categories: string[],
+  statuses: EventStatus[]
+): string {
+  const params = new URLSearchParams();
+
+  if (categories.length > 0) {
+    params.set("categories", categories.join(","));
+  }
+
+  if (statuses.length > 0) {
+    params.set("statuses", statuses.join(","));
+  }
+
+  return params.toString();
+}
+
+/**
+ * Filtre öğesinin aktif olup olmadığını belirler
+ * @param key Filtre anahtarı
+ * @param value Filtre değeri
+ * @returns Filtre aktif ise true
+ */
+export function isFilterActive(key: string, value: any): boolean {
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  return (
+    value !== "" && value !== "all" && value !== null && value !== undefined
+  );
 }

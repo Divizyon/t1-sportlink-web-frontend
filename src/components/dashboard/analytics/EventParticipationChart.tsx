@@ -24,11 +24,9 @@ import {
   CategoryData,
   EventParticipationChartProps,
 } from "@/types/dashboard";
-import { DAYS_OF_WEEK } from "@/constants";
-import { LOADING_DELAYS } from "@/mockups";
-
-// Tüm veri kaynakları mockups'tan alınacak
 import {
+  DAYS_OF_WEEK,
+  LOADING_DELAYS,
   DAILY_EVENT_DATA,
   filterEventDataByCategories,
   EVENT_CATEGORY_DISTRIBUTION,

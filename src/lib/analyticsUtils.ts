@@ -3,8 +3,9 @@
  * Specialized utilities for data visualization and analytics
  */
 
-import { ChartData, CategoryData, Event } from "@/types/dashboard";
-import { COLORS } from "@/constants";
+import { ChartData, CategoryData } from "@/types";
+import { Event } from "@/types";
+import { COLORS } from "@/mockups";
 import {
   groupEventsByCategory,
   groupEventsByStatus,

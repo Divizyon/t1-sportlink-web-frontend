@@ -28,7 +28,7 @@ import { Plus } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { EVENT_SCHEMA, EVENT_STATUS_COLORS } from "@/mockups";
-import { User, Event as DashboardEvent, EventStatus } from "@/types/dashboard";
+import { User, Event, EventStatus } from "@/types";
 import { EVENT_CATEGORY_OPTIONS } from "@/mockups";
 
 // Kategori renkleri - daha sonra mockups'a taşınabilir

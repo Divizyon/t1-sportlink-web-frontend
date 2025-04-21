@@ -3,7 +3,7 @@
  * Helpers for UI formatting and styling in dashboard components
  */
 
-import { COLORS } from "@/constants";
+import { COLORS, EVENT_STATUS_COLORS } from "@/mockups";
 
 /**
  * Generate badge styles based on growth value
@@ -58,12 +58,12 @@ export function getPercentageBarStyle(
   highThreshold: number = 75,
   mediumThreshold: number = 40
 ): Record<string, string> {
-  let color = COLORS.status.rejected; // Default to red for low
+  let color = EVENT_STATUS_COLORS.rejected; // Default to red for low
 
   if (percentage >= highThreshold) {
-    color = COLORS.status.approved; // Green for high
+    color = EVENT_STATUS_COLORS.approved; // Green for high
   } else if (percentage >= mediumThreshold) {
-    color = COLORS.status.pending; // Yellow/orange for medium
+    color = EVENT_STATUS_COLORS.pending; // Yellow/orange for medium
   }
 
   return {

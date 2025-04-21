@@ -18,9 +18,15 @@
  * import { groupEventsByStatus, eventsToChartData } from "@/lib/dashboardUtils";
  */
 
-import { ChartData, CategoryData, Event, EventStatus } from "@/types/dashboard";
-import { COLORS, DAYS_OF_WEEK, MONTHS } from "@/constants";
-import { EVENT_STATUS_LABELS } from "@/mockups";
+import { ChartData, CategoryData } from "@/types";
+import { Event, EventStatus } from "@/types";
+import {
+  EVENT_STATUS_LABELS,
+  DAYS_OF_WEEK,
+  MONTHS,
+  COLORS,
+  EVENT_STATUS_COLORS,
+} from "@/mockups";
 import {
   formatDashboardDate,
   calculatePercentage,
@@ -104,16 +110,22 @@ export function eventsToChartData(
   };
 
   const groupedByDate = events.reduce((acc, event) => {
+    if (!event.date) {
+      return acc; // Skip events with no date
+    }
+
     // Get date key based on timeframe
     let dateKey: string;
 
     if (timeframe === "daily") {
       // For daily, use day of week
-      const day = event.date.getDay();
+      const eventDate = new Date(event.date);
+      const day = eventDate.getDay();
       dateKey = DAYS_OF_WEEK[day === 0 ? 6 : day - 1]; // Adjust for Monday start
     } else {
       // For monthly, use month
-      dateKey = MONTHS[event.date.getMonth()];
+      const eventDate = new Date(event.date);
+      dateKey = MONTHS[eventDate.getMonth()];
     }
 
     if (!acc[dateKey]) {
@@ -177,6 +189,7 @@ export function filterEventsByDateRange(
   endDate: Date
 ): Event[] {
   return events.filter((event) => {
+    if (!event.date) return false;
     const eventDate = new Date(event.date);
     return eventDate >= startDate && eventDate <= endDate;
   });
@@ -211,5 +224,17 @@ export function filterEventsByStatus(
  * @example const color = getStatusColor("completed"); // Returns the color for completed status
  */
 export function getStatusColor(status: EventStatus): string {
-  return COLORS.status[status] || COLORS.status.pending;
+  // Create a type-safe mapping of EventStatus to color
+  const statusColors: Record<EventStatus, string> = {
+    approved: EVENT_STATUS_COLORS.approved,
+    pending: EVENT_STATUS_COLORS.pending,
+    rejected: EVENT_STATUS_COLORS.rejected,
+    completed: EVENT_STATUS_COLORS.completed,
+    // For other statuses, use appropriate fallbacks from our color palette
+    cancelled: EVENT_STATUS_COLORS.pending, // Fallback for cancelled
+    ongoing: EVENT_STATUS_COLORS.approved, // Fallback for ongoing
+    upcoming: EVENT_STATUS_COLORS.pending, // Fallback for upcoming
+  };
+
+  return statusColors[status] || EVENT_STATUS_COLORS.pending;
 }

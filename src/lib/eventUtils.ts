@@ -3,13 +3,14 @@
  * Specialized utilities for working with event data
  */
 
-import { Event, EventStatus } from "@/types/dashboard";
+import { Event, EventStatus } from "@/types";
 import {
   EVENT_STATUS_LABELS,
   EVENT_STATUS,
+  EVENT_STATUS_COLORS,
   COLORS,
-  DATE_FORMATS,
-} from "@/constants";
+} from "@/mockups";
+import { DATE_FORMATS } from "@/constants";
 import { format, isSameDay, isBefore, isAfter, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -66,7 +67,18 @@ export function getEventStatusLabel(status: EventStatus): string {
  * Gets the CSS color for an event status
  */
 export function getEventStatusColor(status: EventStatus): string {
-  return COLORS.status[status] || COLORS.status.pending;
+  // Map all possible EventStatus values to their colors, with fallbacks for those not in COLORS.status
+  const statusColorMap: Record<EventStatus, string> = {
+    approved: EVENT_STATUS_COLORS.approved,
+    pending: EVENT_STATUS_COLORS.pending,
+    rejected: EVENT_STATUS_COLORS.rejected,
+    completed: EVENT_STATUS_COLORS.completed,
+    cancelled: EVENT_STATUS_COLORS.pending, // Fallback for cancelled
+    ongoing: EVENT_STATUS_COLORS.approved, // Fallback for ongoing
+    upcoming: EVENT_STATUS_COLORS.pending, // Fallback for upcoming
+  };
+
+  return statusColorMap[status] || EVENT_STATUS_COLORS.pending;
 }
 
 /**
@@ -106,8 +118,8 @@ export function sortEventsByDate(
   ascending: boolean = false
 ): Event[] {
   return [...events].sort((a, b) => {
-    const dateA = new Date(a.date).getTime();
-    const dateB = new Date(b.date).getTime();
+    const dateA = a.date ? new Date(a.date).getTime() : 0;
+    const dateB = b.date ? new Date(b.date).getTime() : 0;
     return ascending ? dateA - dateB : dateB - dateA;
   });
 }
@@ -117,15 +129,20 @@ export function sortEventsByDate(
  * Default order: pending, approved, completed, rejected
  */
 export function sortEventsByStatus(events: Event[]): Event[] {
-  const statusPriority: Record<EventStatus, number> = {
+  const statusPriority: Record<string, number> = {
     pending: 1,
     approved: 2,
     completed: 3,
     rejected: 4,
+    cancelled: 5,
+    ongoing: 2, // Same priority as approved
+    upcoming: 1, // Same priority as pending
   };
 
   return [...events].sort((a, b) => {
-    return statusPriority[a.status] - statusPriority[b.status];
+    return (
+      (statusPriority[a.status] || 999) - (statusPriority[b.status] || 999)
+    );
   });
 }
 
@@ -134,7 +151,9 @@ export function sortEventsByStatus(events: Event[]): Event[] {
  */
 export function groupEventsByDay(events: Event[]): Record<string, Event[]> {
   return events.reduce((acc, event) => {
-    const dateKey = formatEventDate(event.date, DATE_FORMATS.ISO);
+    const dateKey = event.date
+      ? formatEventDate(event.date, DATE_FORMATS.ISO)
+      : formatEventDate(new Date(), DATE_FORMATS.ISO);
 
     if (!acc[dateKey]) {
       acc[dateKey] = [];

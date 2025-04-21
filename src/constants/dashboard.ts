@@ -28,11 +28,16 @@ export const DASHBOARD_ADMIN_ROLES: UserRole[] = [
 ];
 
 // Event Categories for Filtering
-export const EVENT_CATEGORIES: Record<EventCategory, EventCategory> = {
+export const EVENT_CATEGORIES = {
   all: "all",
-  match: "match",
-  training: "training",
   tournament: "tournament",
+  training: "training",
+  meeting: "meeting",
+  sport: "sport",
+  social: "social",
+  workshop: "workshop",
+  competition: "competition",
+  match: "match",
   other: "other",
 };
 
@@ -133,7 +138,7 @@ export const DASHBOARD_STATUS_LABELS = {
 };
 
 // Modal Types for Dashboard
-export const DASHBOARD_MODAL_TYPES: Record<ModalType, ModalType> = {
+export const DASHBOARD_MODAL_TYPES = {
   newReport: "newReport",
   viewReport: "viewReport",
   editReport: "editReport",
@@ -153,17 +158,22 @@ export const DASHBOARD_MODAL_TYPES: Record<ModalType, ModalType> = {
   settings: "settings",
 };
 
-// Event Category Labels
-export const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
+// Event Category Labels for UI
+export const EVENT_CATEGORY_LABELS = {
   all: "Tüm Etkinlikler",
-  match: "Maçlar",
-  training: "Antrenmanlar",
   tournament: "Turnuvalar",
+  training: "Antrenmanlar",
+  meeting: "Toplantılar",
+  sport: "Spor Etkinlikleri",
+  social: "Sosyal Etkinlikler",
+  workshop: "Atölyeler",
+  competition: "Yarışmalar",
+  match: "Maçlar",
   other: "Diğer",
 };
 
-// Dashboard Modal Labels
-export const DASHBOARD_MODAL_LABELS: Record<ModalType, string> = {
+// Modal Labels for Dashboard
+export const DASHBOARD_MODAL_LABELS = {
   newReport: "Yeni Rapor Oluştur",
   viewReport: "Raporu Görüntüle",
   editReport: "Raporu Düzenle",

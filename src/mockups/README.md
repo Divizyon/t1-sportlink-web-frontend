@@ -217,83 +217,54 @@ Bu yapı, tutarlı veri yapılarını korurken her bileşenin hangi verilere iht
 
 Bu ayrım sayesinde, API entegrasyonu geldiğinde yalnızca mockups klasörünün güncellenmesi yeterli olacaktır.
 
-## Migrate Edilmesi Gereken Constants
+## Dashboard Bileşenleri ve Mockup Verileri
 
-Aşağıdaki öğeler hala `constants/dashboard.ts` içinde bulunuyor ve `mockups/` klasörüne taşınmalıdır:
-
-1. **Dashboard Tab İlgili**:
-
-   - `DASHBOARD_TABS` ve `DASHBOARD_TAB_LABELS` → `/mockups/components/dashboard/dashboardSettings.ts`
-   - `DASHBOARD_MODAL_TYPES` ve `DASHBOARD_MODAL_LABELS` → `/mockups/components/dashboard/dashboardSettings.ts`
-   - `DASHBOARD_UI_TEXT` → `/mockups/components/dashboard/dashboardSettings.ts`
-
-2. **Event İlgili**:
-
-   - `EVENT_CATEGORIES` ve `EVENT_CATEGORY_LABELS` → `/mockups/schemas/eventSchema.ts`
-
-3. **Diğer UI İlgili**:
-   - `DASHBOARD_STATUS_LABELS` → `/mockups/components/dashboard/dashboardSettings.ts`
-
-**NOT**: `DASHBOARD_SETTINGS` gibi gerçek konfigürasyon değerleri constants içinde kalmalıdır.
-
-## Bileşen Referansları
-
-Bu bölüm, her mockup verisinin hangi bileşenlerde kullanıldığına dair doğrudan referanslar sağlar. Bu, veri kullanımını izlemek ve migrasyon planlaması için faydalıdır.
+Bu bölümde, Dashboard'da aktif olarak kullanılan bileşenler ve bunların kullandığı mockup verilerini listelemekteyiz. Sadece şu anda kullanılan bileşenler ve veriler listelenmiştir.
 
 ### Dashboard Mockupları
 
-| Mockup Verisi             | Bileşen Dosyası                                           | Kullanım                            |
-| ------------------------- | --------------------------------------------------------- | ----------------------------------- |
-| TODAY_EVENTS              | src/components/dashboard/home/TodaysEvents.tsx            | Dashboard'daki ana etkinlik listesi |
-| DASHBOARD_UPCOMING_EVENTS | src/components/dashboard/home/TodaysEvents.tsx            | İkincil etkinlik listesi            |
-| EVENT_PARTICIPANTS        | src/components/dashboard/home/TodaysEvents.tsx            | Genişletilebilir katılımcı listesi  |
-| RECENT_PARTICIPANTS       | src/components/dashboard/home/RecentParticipants.tsx      | Son katılımcı listesi               |
-| MONTHLY_EVENT_DATA        | src/components/dashboard/analytics/MonthlyEventsChart.tsx | Aylık etkinlik analiz grafiği       |
-| CATEGORY_DISTRIBUTION     | src/hooks/useAnalytics.ts                                 | Kategori dağılımı analizi           |
-| EVENT_STATUS_DISTRIBUTION | src/hooks/useAnalytics.ts                                 | Etkinlik durumu dağılımı            |
+| Mockup Verisi               | Bileşen Dosyası                                                | Kullanım                                   |
+| --------------------------- | -------------------------------------------------------------- | ------------------------------------------ |
+| TODAY_EVENTS                | src/components/dashboard/home/TodaysEvents.tsx                 | Dashboard'daki ana etkinlik listesi        |
+| DASHBOARD_UPCOMING_EVENTS   | src/components/dashboard/home/TodaysEvents.tsx                 | İkincil etkinlik listesi                   |
+| EVENT_PARTICIPANTS          | src/components/dashboard/home/TodaysEvents.tsx                 | Genişletilebilir katılımcı listesi         |
+| RECENT_PARTICIPANTS         | src/components/dashboard/home/RecentParticipants.tsx           | Son katılımcı listesi                      |
+| PARTICIPANT_DETAILS         | src/components/dashboard/home/RecentParticipants.tsx           | Katılımcı detay görünümü                   |
+| MONTHLY_EVENT_DATA          | src/components/dashboard/analytics/MonthlyEventsChart.tsx      | Aylık etkinlik analiz grafiği              |
+| DAILY_EVENT_DATA            | src/components/dashboard/analytics/EventParticipationChart.tsx | Günlük etkinlik katılım grafiği            |
+| EVENT_CATEGORY_DISTRIBUTION | src/components/dashboard/analytics/EventParticipationChart.tsx | Etkinlik kategori dağılımı pie chart       |
+| EVENT_STATUS_COUNTS         | src/components/dashboard/analytics/EventParticipationChart.tsx | Etkinlik durumu sayım ve yüzdeleri         |
+| DASHBOARD_EVENT_CATEGORIES  | src/components/dashboard/analytics/EventParticipationChart.tsx | Filtreleme için etkinlik kategorileri      |
+| EVENT_CATEGORY_NAMES        | src/components/dashboard/analytics/EventParticipationChart.tsx | Kategori isimlerinin insan dostu gösterimi |
+| DAYS_OF_WEEK                | src/components/dashboard/analytics/EventParticipationChart.tsx | Hafta günleri etiketleri                   |
+| LOADING_DELAYS              | Çeşitli dashboard bileşenleri                                  | Yükleme animasyonları için gecikmeler      |
+| EVENT_STATUS_COLORS         | Çeşitli dashboard bileşenleri                                  | Etkinlik durumu renkleri                   |
+| DASHBOARD_TABS              | src/contexts/DashboardContext.tsx, src/app/dashboard/page.tsx  | Dashboard sekme değerleri                  |
+| DASHBOARD_TAB_LABELS        | src/app/dashboard/page.tsx                                     | Dashboard sekme etiketleri                 |
+| MODAL_TYPES                 | src/app/dashboard/page.tsx                                     | Modal tipleri                              |
+| UI_TEXT                     | src/app/dashboard/page.tsx, çeşitli dashboard bileşenleri      | Arayüz metinleri                           |
+| RECENT_DASHBOARD_REPORTS    | src/app/dashboard/reports/page.tsx                             | Son raporlar listesi                       |
 
-### Etkinlik Mockupları
+### İlgili Etkinlik Modülleri
 
-| Mockup Verisi             | Bileşen Dosyası                                                                                                              | Kullanım                           |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| SAMPLE_EVENT_DETAILS      | src/components/modals/EventDetailModal.tsx                                                                                   | Detaylı etkinlik bilgisi gösterimi |
-| UPCOMING_EVENTS           | _Tanımlanmış fakat kullanılmıyor_                                                                                            | Yaklaşan etkinlikler listesi       |
-| DASHBOARD_UPCOMING_EVENTS | src/components/dashboard/home/TodaysEvents.tsx                                                                               | İkincil etkinlik listesi           |
-| PAST_EVENTS               | _Tanımlanmış fakat kullanılmıyor_                                                                                            | Geçmiş etkinlikler listesi         |
-| EVENT_CATEGORIES          | src/components/dashboard/analytics/EventParticipationChart.tsx                                                               | Etkinlik kategorisi listesi        |
-| EVENT_CATEGORY_OPTIONS    | src/components/CategoryFilterDropdown.tsx, src/components/modals/NewEventModal.tsx, src/components/modals/EditEventModal.tsx | Etkinlik kategori seçenekleri      |
-| EVENT_STATUS_OPTIONS      | _Tanımlanmış fakat kullanılmıyor_                                                                                            | Etkinlik durum seçenekleri         |
-| DEFAULT_EVENT_FORM        | src/components/modals/NewEventModal.tsx                                                                                      | Boş etkinlik formu şablonu         |
+| Mockup Verisi          | Bileşen Dosyası                            | Kullanım                           |
+| ---------------------- | ------------------------------------------ | ---------------------------------- |
+| SAMPLE_EVENT_DETAILS   | src/components/modals/EventDetailModal.tsx | Detaylı etkinlik bilgisi gösterimi |
+| REJECTION_REASONS      | src/components/modals/EventDetailModal.tsx | Etkinlik red sebepleri             |
+| CATEGORY_LABELS        | src/components/modals/EventDetailModal.tsx | Etkinlik kategori etiketleri       |
+| EVENT_CATEGORY_OPTIONS | src/components/modals/NewEventModal.tsx    | Etkinlik kategori seçenekleri      |
+| EVENT_STATUS_OPTIONS   | src/components/modals/EditEventModal.tsx   | Etkinlik durum seçenekleri         |
+| DEFAULT_EVENT_FORM     | src/components/modals/NewEventModal.tsx    | Boş etkinlik formu şablonu         |
 
-### Kullanıcı Mockupları
+### İlgili Rapor Modülleri
 
-| Mockup Verisi        | Bileşen Dosyası                                      | Kullanım                           |
-| -------------------- | ---------------------------------------------------- | ---------------------------------- |
-| RECENT_PARTICIPANTS  | src/components/dashboard/home/RecentParticipants.tsx | Son katılımcı listesi              |
-| RECENT_USERS         | _Tanımlanmış fakat kullanılmıyor_                    | Son kullanıcılar listesi           |
-| ACTIVE_USERS         | _Tanımlanmış fakat kullanılmıyor_                    | Aktif kullanıcılar listesi         |
-| ADMIN_USERS          | _Tanımlanmış fakat kullanılmıyor_                    | Yönetici kullanıcılar listesi      |
-| PARTICIPANT_DETAILS  | src/components/dashboard/home/RecentParticipants.tsx | Katılımcı detay görünümü           |
-| SAMPLE_USER_ACTIVITY | _Tanımlanmış fakat kullanılmıyor_                    | Kullanıcı aktivite zaman çizelgesi |
-| MOCK_MESSAGES        | _Tanımlanmış fakat kullanılmıyor_                    | Kullanıcı mesajlaşma işlevselliği  |
-| MOCK_CONVERSATIONS   | _Tanımlanmış fakat kullanılmıyor_                    | Konuşma yönetimi                   |
-
-### Rapor Mockupları
-
-| Mockup Verisi              | Bileşen Dosyası                             | Kullanım                                 |
-| -------------------------- | ------------------------------------------- | ---------------------------------------- |
-| SAMPLE_REPORT_DETAILS      | src/components/modals/ReportDetailModal.tsx | Detaylı rapor görünümü                   |
-| RECENT_REPORTS             | _Tanımlanmış fakat kullanılmıyor_           | Son raporlar listesi                     |
-| HIGH_PRIORITY_REPORTS      | _Tanımlanmış fakat kullanılmıyor_           | Filtrelenmiş yüksek öncelikli raporlar   |
-| PENDING_REPORTS            | _Tanımlanmış fakat kullanılmıyor_           | Filtrelenmiş bekleyen raporlar           |
-| REPORT_ENTITY_TYPE_OPTIONS | _Tanımlanmış fakat kullanılmıyor_           | Rapor varlık tipi filtreleme seçenekleri |
-| REPORT_STATUS_OPTIONS      | _Tanımlanmış fakat kullanılmıyor_           | Rapor durum filtreleme seçenekleri       |
-| REPORT_PRIORITY_OPTIONS    | _Tanımlanmış fakat kullanılmıyor_           | Rapor öncelik filtreleme seçenekleri     |
-
-### Haber/İçerik Mockupları
-
-| Mockup Verisi     | Bileşen Dosyası                   | Kullanım                |
-| ----------------- | --------------------------------- | ----------------------- |
-| SAMPLE_NEWS_ITEMS | _Tanımlanmış fakat kullanılmıyor_ | Haber içerik yönetimi   |
-| NEWS_TYPES        | _Tanımlanmış fakat kullanılmıyor_ | Haber tipi seçenekleri  |
-| EMPTY_NEWS_FORM   | _Tanımlanmış fakat kullanılmıyor_ | Boş haber formu şablonu |
+| Mockup Verisi          | Bileşen Dosyası                             | Kullanım                          |
+| ---------------------- | ------------------------------------------- | --------------------------------- |
+| REPORT_STATUS_LABELS   | src/components/modals/ReportDetailModal.tsx | Rapor durumu etiketleri           |
+| REPORT_PRIORITY_LABELS | src/components/modals/ReportDetailModal.tsx | Rapor öncelik seviyesi etiketleri |
+| REPORT_PRIORITY_COLORS | src/components/modals/ReportDetailModal.tsx | Rapor öncelik seviyesi renkleri   |
+| REPORT_STATUS_COLORS   | src/components/modals/ReportDetailModal.tsx | Rapor durumu renkleri             |
+| ENTITY_TYPE_LABELS     | src/components/modals/ReportDetailModal.tsx | Rapor edilen öğe tür etiketleri   |
+| SAMPLE_REPORT_DETAILS  | src/components/modals/ReportDetailModal.tsx | Detaylı rapor görünümü            |
+| REPORT_FILTERS         | src/components/dashboard/reports            | Rapor filtreleme kriterleri       |
+| REPORT_FILTER_LABELS   | src/components/dashboard/reports            | Rapor filtre etiketleri           |

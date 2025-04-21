@@ -1,29 +1,40 @@
+/**
+ * Event Types
+ * This file contains types related to events, aligned with the schema in mockups
+ */
+
+// Event interface (matching EventSchema)
 export interface Event {
   id: string;
   title: string;
   description: string;
   startDate: string; // ISO date string
   endDate: string; // ISO date string
-  time?: string; // Format: "HH:MM"
-  location: {
-    name: string;
-    address: string;
-    city: string;
-    coordinates?: {
-      latitude: number;
-      longitude: number;
-    };
-  };
+  date?: Date; // For backward compatibility with existing components
+  time: string; // Format: "HH:MM"
+  location:
+    | {
+        name: string;
+        address: string;
+        city: string;
+        coordinates?: {
+          latitude: number;
+          longitude: number;
+        };
+      }
+    | string; // Allow string for backward compatibility
   category: EventCategory;
   participants: number;
   maxParticipants: number;
   status: EventStatus;
-  organizer: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-  };
+  organizer:
+    | {
+        id: string;
+        name: string;
+        email: string;
+        avatar?: string;
+      }
+    | string; // Allow string for backward compatibility
   image?: string;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
@@ -40,10 +51,12 @@ export interface Event {
   visibility: "public" | "private" | "unlisted";
   registrationRequired: boolean;
   registrationDeadline?: string; // ISO date string
+  currentParticipants?: number; // For backward compatibility
 }
 
-// Event category types
+// Event category types (matching EventSchema.EventCategory)
 export type EventCategory =
+  | "all"
   | "tournament"
   | "training"
   | "meeting"
@@ -51,9 +64,10 @@ export type EventCategory =
   | "social"
   | "workshop"
   | "competition"
+  | "match"
   | "other";
 
-// Event status types
+// Event status types (matching EventSchema.EventStatus)
 export type EventStatus =
   | "pending"
   | "approved"
@@ -61,4 +75,4 @@ export type EventStatus =
   | "completed"
   | "cancelled"
   | "ongoing"
-  | "upcoming"; // Including "upcoming" from the original type
+  | "upcoming";

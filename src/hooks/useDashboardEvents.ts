@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { Event, EventStatus } from "@/types";
-import { EVENT_CATEGORIES } from "@/constants/dashboard";
-import { TODAY_EVENTS } from "@/mockups/components/dashboard/todaysEvents";
-import { EVENT_SCHEMA } from "@/mockups/schemas/eventSchema";
+import { Event, EventStatus, EventCategory } from "@/types";
+import { EVENT_CATEGORIES, EVENT_SCHEMA, TODAY_EVENTS } from "@/mockups";
 import {
   groupEventsByDay,
   sortEventsByDate,
@@ -42,15 +40,24 @@ export function useDashboardEvents({
           id: event.id,
           title: event.title,
           description: event.description,
-          date: new Date(event.startDate), // Convert string to Date object
+          startDate: event.startDate,
+          endDate: event.endDate,
+          date: new Date(event.startDate), // Convert string to Date object for backward compatibility
           time: event.time,
           location: event.location.name,
-          category: event.category,
+          category: event.category as EventCategory,
           maxParticipants: event.maxParticipants,
+          participants: event.participants,
           currentParticipants: event.participants,
           status: event.status as EventStatus,
           organizer: event.organizer.name,
-          participants: event.participants,
+          image: event.image,
+          createdAt: event.createdAt,
+          updatedAt: event.updatedAt,
+          tags: event.tags,
+          visibility: event.visibility as "public" | "private" | "unlisted",
+          registrationRequired: event.registrationRequired,
+          registrationDeadline: event.registrationDeadline,
         }));
 
         setEvents(mappedEvents);

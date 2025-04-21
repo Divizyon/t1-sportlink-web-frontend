@@ -5,8 +5,9 @@
 
 // Import the shared Event and User types
 import { Event, EventCategory, EventStatus } from "./event";
+import { ReportEntityType, ReportPriority, ReportStatus } from "./report";
 
-// User type (consistent with mockups/schemas/userSchema.ts)
+// User type (exactly matching userSchema.ts)
 export interface User {
   id: string;
   name: string;
@@ -16,11 +17,11 @@ export interface User {
   status: UserStatus;
   joinDate: string; // ISO date string
   lastActive: string; // ISO date string
-  profile?: {
+  profile: {
     bio?: string;
     location?: string;
     phoneNumber?: string;
-    dateOfBirth?: string;
+    dateOfBirth?: string; // ISO date string
     gender?: "male" | "female" | "other" | "prefer-not-to-say";
     interests?: string[];
     socialMedia?: {
@@ -30,10 +31,57 @@ export interface User {
       linkedIn?: string;
     };
   };
+  preferences?: {
+    notifications: {
+      email: boolean;
+      push: boolean;
+      sms: boolean;
+    };
+    privacy: {
+      showEmail: boolean;
+      showPhone: boolean;
+      showLocation: boolean;
+      showJoinDate: boolean;
+    };
+    theme?: "light" | "dark" | "system";
+    language?: string;
+  };
+  stats?: {
+    eventsAttended: number;
+    eventsOrganized: number;
+    ratingsReceived: number;
+    averageRating: number;
+    reportsSubmitted: number;
+    reportsReceived: number;
+  };
+  membership?: {
+    type: "free" | "premium" | "pro";
+    startDate: string; // ISO date string
+    endDate?: string; // ISO date string
+    autoRenew: boolean;
+  };
+  verifications?: {
+    email: boolean;
+    phone: boolean;
+    identityDocument: boolean;
+  };
+  contactPermissions?: {
+    marketing: boolean;
+    updates: boolean;
+    surveys: boolean;
+  };
 }
 
-// User role types
-export type UserRole = "admin" | "moderator" | "organizer" | "regular";
+// User role types (exactly matching userSchema.ts)
+export type UserRole =
+  | "admin"
+  | "director"
+  | "staff"
+  | "head_coach"
+  | "coach"
+  | "moderator"
+  | "organizer"
+  | "regular";
 
 // User status types
 export type UserStatus =
@@ -73,33 +121,6 @@ export interface CategoryCount {
   change: string;
 }
 
-// Report Types
-export interface Report {
-  id: number;
-  subject: string;
-  description: string;
-  reportedBy: string;
-  reportedDate: string;
-  entityType: "user" | "event";
-  entityId: number;
-  priority: ReportPriority;
-  status: ReportStatus;
-  reason?: string;
-  details?: string;
-  adminNote?: string;
-  adminName?: string;
-  adminActionDate?: string;
-  isBanned?: boolean;
-}
-
-export type ReportPriority = "high" | "medium" | "low";
-export type ReportStatus =
-  | "pending"
-  | "reviewing"
-  | "resolved"
-  | "rejected"
-  | "dismissed";
-
 // Component Props Types
 export interface EventParticipationChartProps {
   categories?: string[];
@@ -120,7 +141,7 @@ export interface CategoryFilterDropdownProps {
   onChange: (categories: string[]) => void;
 }
 
-// Dashboard Tab Types
+// Dashboard Tab Types - exactly matching dashboardSettings.ts
 export type TabType =
   | "overview"
   | "reports"
@@ -131,10 +152,10 @@ export type TabType =
   | "analytics"
   | "settings";
 
-// Legacy Dashboard Tab Types (for backward compatibility)
-export type DashboardTabValue = "overview" | "analytics" | "reports";
+// DashboardTabValue matches TabType for full compatibility
+export type DashboardTabValue = TabType;
 
-// Modal Types
+// Modal Types - match all used modals in the MODAL_TYPES from dashboardSettings.ts
 export type ModalType =
   | "newReport"
   | "viewReport"
@@ -152,24 +173,29 @@ export type ModalType =
   | "deleteUser"
   | "newNotification"
   | "viewNotification"
-  | "settings";
-
-// Legacy Modal Types (for backward compatibility)
-export type LegacyModalType =
+  | "settings"
+  // Legacy modal types for backward compatibility
   | "event"
-  | "newEvent"
-  | "newNews"
-  | "newAnnouncement"
   | "user"
-  | "users"
   | "dailyEvents"
-  | "activeUsers"
-  | "totalParticipants"
+  | "orgEvents"
   | "reportedUsers"
   | "reportedEvents"
-  | "orgEvents";
+  | "users"
+  | "activeUsers"
+  | "totalParticipants"
+  | "EVENT"
+  | "USER"
+  | "DAILY_EVENTS"
+  | "ORG_EVENTS"
+  | "REPORTED_USERS"
+  | "REPORTED_EVENTS"
+  | "NEW_EVENT"
+  | "ANNOUNCEMENT"
+  | "NEWS"
+  | null; // Allow null for compatibility with existing code
 
-// Report Filter Types
+// Report Filter Types - exactly matching dashboardSettings.ts
 export type ReportFilterType =
   | "all"
   | "pending"

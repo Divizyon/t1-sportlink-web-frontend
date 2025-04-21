@@ -17,7 +17,7 @@ import {
   calculateEventGrowth,
   prepareStackedBarChartData,
 } from "@/lib/analyticsUtils";
-import { COLORS } from "@/constants/dashboard";
+import { COLORS } from "@/mockups";
 
 // Platform growth statistics - would come from backend in real app
 const PLATFORM_GROWTH = {
@@ -83,7 +83,8 @@ export function useAnalytics(
     if (!filters.startDate && !filters.endDate) return events;
 
     return events.filter((event) => {
-      const eventDate = new Date(event.date);
+      // Use event.date if available, otherwise fall back to startDate
+      const eventDate = event.date ? event.date : new Date(event.startDate);
 
       if (filters.startDate && eventDate < filters.startDate) return false;
       if (filters.endDate && eventDate > filters.endDate) return false;
