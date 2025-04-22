@@ -1,9 +1,14 @@
+"use client"
+
 import { NewsDetail } from "@/components/news/NewsDetail"
-import { useNews } from "@/hooks/useNews"
+import { useNewsContext } from "@/providers/NewsProvider"
 import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
+import { useEffect, useState } from "react"
+import { NewsItem } from "@/types/news"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface NewsPageProps {
   params: {
@@ -12,10 +17,18 @@ interface NewsPageProps {
 }
 
 export default function NewsPage({ params }: NewsPageProps) {
-  const { news } = useNews()
-  const newsItem = news.find(item => item.id === params.id)
+  const { news } = useNewsContext()
+  const [newsItem, setNewsItem] = useState<NewsItem | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  if (!newsItem) {
+  useEffect(() => {
+    // localStorage'dan yükleme gerçekleşince haberi bul
+    const item = news.find(item => item.id === params.id)
+    setNewsItem(item || null)
+    setLoading(false)
+  }, [news, params.id])
+
+  if (!loading && !newsItem) {
     notFound()
   }
 
@@ -32,7 +45,17 @@ export default function NewsPage({ params }: NewsPageProps) {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8 lg:col-start-3">
-            <NewsDetail news={newsItem} />
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-[300px] w-full rounded-xl" />
+                <Skeleton className="h-[40px] w-2/3" />
+                <Skeleton className="h-[20px] w-1/3" />
+                <Skeleton className="h-[100px] w-full" />
+                <Skeleton className="h-[100px] w-full" />
+              </div>
+            ) : newsItem ? (
+              <NewsDetail news={newsItem} />
+            ) : null}
           </div>
         </div>
       </div>

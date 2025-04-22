@@ -180,9 +180,16 @@ export default function SecurityPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {getStatusIcon(log.status)}
-                        <Badge variant={log.status === "success" ? "default" : 
-                                      log.status === "warning" ? "secondary" : 
-                                      "destructive"}>
+                        <Badge 
+                          variant="outline"
+                          className={
+                            log.status === "success" 
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : log.status === "warning" 
+                              ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                              : "bg-red-100 text-red-800 border-red-200"
+                          }
+                         >
                           {log.status === "success" ? "Başarılı" : 
                            log.status === "warning" ? "Uyarı" : 
                            "Hata"}

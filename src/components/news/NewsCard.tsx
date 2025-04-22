@@ -1,9 +1,12 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ImageIcon, AlertCircle } from "lucide-react"
+import { ImageIcon, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, FileText, Link as LinkIcon } from "lucide-react"
 import type { NewsItem } from "@/types/news"
 import Image from "next/image"
+import { useState } from "react"
+import { format } from "date-fns"
+import { tr } from "date-fns/locale"
 
 interface NewsCardProps {
   news: NewsItem
@@ -13,10 +16,59 @@ interface NewsCardProps {
 }
 
 export function NewsCard({ news, onApprove, onReject, showActions = true }: NewsCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Tarih formatlama
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "d MMMM yyyy, HH:mm", { locale: tr });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  // Duruma göre badge rengi belirle
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "outline" as const;
+      case "rejected":
+        return "destructive" as const;
+      default:
+        return "secondary" as const;
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "Onaylandı";
+      case "rejected":
+        return "Reddedildi";
+      default:
+        return "Onay Bekliyor";
+    }
+  };
+
   return (
     <Card className="flex flex-col h-full">
-      <CardHeader>
-        <CardTitle className="line-clamp-2">{news.title}</CardTitle>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle 
+            className="line-clamp-2 cursor-pointer hover:text-primary transition-colors" 
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {news.title}
+          </CardTitle>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 w-8 p-0"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </Button>
+        </div>
         <CardDescription className="flex items-center gap-2">
           {news.hasImage ? (
             <Badge variant="outline" className="flex items-center gap-1">
@@ -34,6 +86,7 @@ export function NewsCard({ news, onApprove, onReject, showActions = true }: News
           </Badge>
         </CardDescription>
       </CardHeader>
+      
       <CardContent className="flex-grow">
         <div className="relative h-40 mb-4 bg-muted rounded-lg overflow-hidden">
           {news.hasImage && news.image ? (
@@ -74,8 +127,86 @@ export function NewsCard({ news, onApprove, onReject, showActions = true }: News
             </div>
           )}
         </div>
+        
         <p className="text-sm line-clamp-3">{news.content}</p>
+        
+        {isExpanded && (
+          <div className="mt-4 pt-4 border-t text-sm space-y-3 animate-in fade-in-50 duration-300">
+            <div className="flex items-start gap-2">
+              <Badge variant="outline" className="px-2 py-0 h-5">
+                {news.category}
+              </Badge>
+              <Badge 
+                variant={getStatusBadgeVariant(news.status)} 
+                className={`px-2 py-0 h-5 ${news.status === "approved" ? "bg-green-50 text-green-700 border-green-200" : ""}`}
+              >
+                {getStatusText(news.status)}
+              </Badge>
+            </div>
+            
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar size={14} />
+              <span>Yayın Tarihi: {formatDate(news.publishDate)}</span>
+            </div>
+            
+            {news.tags && news.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                <div className="flex items-center gap-1 text-muted-foreground w-full mb-1">
+                  <Tag size={14} />
+                  <span className="text-xs">Etiketler:</span>
+                </div>
+                {news.tags.map((tag, index) => (
+                  <Badge key={index} variant="outline" className="bg-muted/50 text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            
+            {news.sourceUrl && (
+              <div className="flex items-center gap-2 text-muted-foreground overflow-hidden">
+                <LinkIcon size={14} />
+                <a 
+                  href={news.sourceUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs truncate hover:text-primary transition-colors"
+                >
+                  {news.sourceUrl}
+                </a>
+              </div>
+            )}
+            
+            {news.details && (
+              <div className="flex flex-col gap-2 pt-2 border-t mt-2">
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <FileText size={14} />
+                  <span className="text-xs font-medium">Ek Detaylar:</span>
+                </div>
+                
+                {news.details.author && (
+                  <div className="text-xs text-muted-foreground ml-5">
+                    <span className="font-medium">Yazar:</span> {news.details.author}
+                  </div>
+                )}
+                
+                {news.details.source && (
+                  <div className="text-xs text-muted-foreground ml-5">
+                    <span className="font-medium">Kaynak:</span> {news.details.source}
+                  </div>
+                )}
+                
+                {news.details.description && (
+                  <div className="text-xs text-muted-foreground ml-5">
+                    <span className="font-medium">Açıklama:</span> {news.details.description}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
+      
       {showActions && (
         <CardFooter className="flex justify-end gap-2 pt-4">
           {onReject && (
