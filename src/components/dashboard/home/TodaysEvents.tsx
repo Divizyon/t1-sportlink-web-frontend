@@ -22,6 +22,8 @@ import { filterEvents } from "@/lib/eventUtils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/userUtils";
 import { enrichUserData } from "@/lib/userDataService";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export function TodaysEvents({
   onEventSelect,
@@ -33,6 +35,7 @@ export function TodaysEvents({
   const [expandedEvent, setExpandedEvent] = useState<string | number | null>(
     null
   );
+  const router = useRouter();
 
   useEffect(() => {
     // Gerçek uygulamada burada API'den veri çekilecek
@@ -116,14 +119,6 @@ export function TodaysEvents({
                   <span className="text-xs ml-1">
                     ({calculateEventFillRate(event)}%)
                   </span>
-                  {EVENT_PARTICIPANTS[event.id] && (
-                    <button
-                      onClick={(e) => toggleEventExpand(event.id, e)}
-                      className="ml-1 text-xs text-primary hover:underline"
-                    >
-                      {expandedEvent === event.id ? "Gizle" : "Göster"}
-                    </button>
-                  )}
                 </div>
                 <div className="flex items-center col-span-2 truncate">
                   <MapPin className="mr-1 h-3 w-3 flex-shrink-0" />
@@ -132,6 +127,16 @@ export function TodaysEvents({
                   </span>
                 </div>
               </div>
+              {EVENT_PARTICIPANTS[event.id] && (
+                <div className="flex justify-end mt-1">
+                  <button
+                    onClick={(e) => toggleEventExpand(event.id, e)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {expandedEvent === event.id ? "Gizle" : "Göster"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -171,6 +176,16 @@ export function TodaysEvents({
           )}
         </div>
       ))}
+      <div className="mt-4">
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={() => router.push('/dashboard/events')}
+        >
+          <Calendar className="mr-2 h-4 w-4" />
+          Tüm Etkinlikleri Gör
+        </Button>
+      </div>
     </div>
   );
 }

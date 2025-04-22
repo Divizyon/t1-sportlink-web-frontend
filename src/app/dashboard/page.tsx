@@ -333,16 +333,6 @@ export default function DashboardPage() {
                   categories={selectedCategories}
                 />
               </CardContent>
-              <CardFooter>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => openModal(MODAL_TYPES.ORG_EVENTS)}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {UI_TEXT.BUTTON_TEXT.ORG_EVENTS}
-                </Button>
-              </CardFooter>
             </Card>
           </div>
 
@@ -368,10 +358,12 @@ export default function DashboardPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => openModal(MODAL_TYPES.USERS)}
+                    asChild
                   >
-                    <Users className="mr-2 h-4 w-4" />
-                    {UI_TEXT.BUTTON_TEXT.MANAGE_ALL_USERS}
+                    <Link href="/dashboard/users">
+                      <Users className="mr-2 h-4 w-4" />
+                      {UI_TEXT.BUTTON_TEXT.MANAGE_ALL_USERS}
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>
@@ -432,16 +424,6 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => openModal(MODAL_TYPES.ACTIVE_USERS)}
-                  >
-                    <Users className="mr-2 h-4 w-4" />
-                    {UI_TEXT.BUTTON_TEXT.USER_STATS}
-                  </Button>
-                </CardFooter>
               </Card>
             </div>
           </div>

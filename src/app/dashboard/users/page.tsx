@@ -88,18 +88,18 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Kullanıcı Yönetimi</h2>
-        <div className="flex items-center space-x-2">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Kullanıcı Yönetimi</h2>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
           <Input
             placeholder="Kullanıcı ara..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-[300px]"
+            className="w-full md:w-[300px]"
           />
           <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Rol" />
             </SelectTrigger>
             <SelectContent>
@@ -111,12 +111,56 @@ export default function UsersPage() {
           </Select>
         </div>
       </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Kullanıcı Listesi</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="grid gap-4 md:hidden">
+            {filteredUsers.map((user) => (
+              <Card key={user.id} className="p-4">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">{user.name}</div>
+                    <Badge variant={user.status === "active" ? "default" : "secondary"}>
+                      {user.status === "active" ? "Aktif" : "Pasif"}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground">{user.email}</div>
+                  <div className="flex items-center justify-between">
+                    <Select
+                      value={user.role}
+                      onValueChange={(value: User["role"]) => handleRoleChange(user.id, value)}
+                    >
+                      <SelectTrigger className={`w-[180px] ${ROLE_COLORS[user.role].bg} ${ROLE_COLORS[user.role].text}`}>
+                        <SelectValue placeholder="Rol seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bireysel_kullanici" className="text-blue-800 hover:bg-blue-100">
+                          Bireysel Kullanıcı
+                        </SelectItem>
+                        <SelectItem value="antrenor" className="text-green-800 hover:bg-green-100">
+                          Antrenör
+                        </SelectItem>
+                        <SelectItem value="kulup_uyesi" className="text-purple-800 hover:bg-purple-100">
+                          Kulüp Üyesi
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => handleSendAlert(user.id)}
+                    >
+                      <Bell className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+          <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>

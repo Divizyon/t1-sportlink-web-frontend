@@ -213,8 +213,8 @@ export const UI_TEXT = {
     NEW_EVENT: "Yeni Etkinlik",
     PUBLISH_ANNOUNCEMENT: "Duyuru Yayınla",
     PUBLISH_NEWS: "Haber Yayınla",
-    MANAGE_ALL_USERS: "Tüm Kullanıcıları Yönet",
-    ORG_EVENTS: "Organizasyon Etkinlikleri",
+    MANAGE_ALL_USERS: "Tüm Kullanıcıları Gör",
+    ORG_EVENTS: "Tüm Etkinlikleri Gör",
     USER_STATS: "Kullanıcı İstatistikleri",
   },
 
