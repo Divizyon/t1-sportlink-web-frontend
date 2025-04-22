@@ -11,29 +11,43 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts";
+import { useAuthStore } from "@/store/authStore";
 import Image from "next/image";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { login, isLoading, error } = useAuth();
+  const { login, error, clearError, isAuthenticated } = useAuthStore();
+
+  // isAuthenticated değiştiğinde dashboard'a yönlendir
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('User is authenticated, redirecting to dashboard...');
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    clearError();
 
-    const success = await login(email, password);
-
-    if (success) {
-      // Toast is also shown from the context
-      router.push("/dashboard");
-    } else {
-      // Error message is handled by the context
+    try {
+      console.log('Attempting login...');
+      await login(email, password);
+      console.log('Login successful, showing toast...');
+      toast.success("Başarıyla giriş yapıldı");
+    } catch (error) {
+      console.error("Login error in component:", error);
+      // Hata mesajı zaten store'da set edildi
+    } finally {
+      setIsLoading(false);
     }
   };
 
