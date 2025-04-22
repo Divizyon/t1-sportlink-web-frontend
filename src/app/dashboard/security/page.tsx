@@ -125,8 +125,8 @@ export default function SecurityPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-6 flex flex-col items-center w-full">
+      <div className="flex justify-between items-center mb-6 w-full max-w-6xl">
         <h1 className="text-2xl font-bold">Güvenlik Logları</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleToggleLogs}>
@@ -145,7 +145,7 @@ export default function SecurityPage() {
         </div>
       </div>
 
-      <Card className="p-4">
+      <Card className="p-4 w-full max-w-6xl">
         <div className="mb-4 flex gap-4">
           <Input 
             placeholder="Admin, IP veya İşlem ara..." 

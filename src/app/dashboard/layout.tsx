@@ -20,7 +20,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-50/50">
       {/* Container */}
-      <div className="mx-auto max-w-[1800px] px-2 sm:px-4 lg:px-6">
+      <div className="mx-auto px-2 sm:px-4 lg:px-6">
         <div className="flex min-h-screen flex-col gap-4 py-4">
           {/* Main Content */}
           <div className="flex flex-1 gap-4">

@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { AlertTriangle } from "lucide-react"
 import { Filter } from "lucide-react"
 import { WarningModal } from "@/components/modals/WarningModal"
-import { UserDetailsSheet } from "@/components/sheets/UserDetailsSheet"
+import { UserDetailsDialog } from "@/components/dialogs/UserDetailsDialog"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -83,9 +83,9 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
   ])
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
   const [selectedUserForWarning, setSelectedUserForWarning] = useState<User | null>(null);
-  // State for User Details Sheet
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [selectedUserForSheet, setSelectedUserForSheet] = useState<User | null>(null);
+  // State for User Details Dialog (Changed from Sheet)
+  const [isDialogOpen, setIsDialogOpen] = useState(false); // Renamed from isSheetOpen
+  const [selectedUserForDialog, setSelectedUserForDialog] = useState<User | null>(null); // Renamed from selectedUserForSheet
   const [loading, setLoading] = useState(true);
 
   const filteredUsers = users.filter(user => {
@@ -169,10 +169,10 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
     );
   };
 
-  // Function to open the user details sheet
-  const handleOpenUserDetailsSheet = (user: User) => {
-    setSelectedUserForSheet(user);
-    setIsSheetOpen(true);
+  // Function to open the user details dialog (Changed from Sheet)
+  const handleOpenUserDetailsDialog = (user: User) => {
+    setSelectedUserForDialog(user);
+    setIsDialogOpen(true);
   };
 
   // Handler for deleting a user
@@ -183,8 +183,8 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
     // Confirmation dialog
     if (window.confirm(`${userToDelete.name} kullanıcısını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) {
       setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
-      setIsSheetOpen(false); // Close the sheet after deletion
-      setSelectedUserForSheet(null); // Clear selected user
+      setIsDialogOpen(false); // Close the dialog after deletion (Changed from Sheet)
+      setSelectedUserForDialog(null); // Clear selected user (Changed from Sheet)
       toast.success(`${userToDelete.name} kullanıcısı başarıyla silindi.`);
       console.log(`Kullanıcı silindi: ID ${userId}`);
       // TODO: Implement actual API call to delete user from backend
@@ -300,15 +300,13 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
               <TableBody>
                 {filteredUsers.map((user) => {
                   return (
-                    <TableRow key={user.id} onClick={() => handleOpenUserDetailsSheet(user)} className="cursor-pointer hover:bg-muted/50">
+                    <TableRow key={user.id} onClick={() => handleOpenUserDetailsDialog(user)} className="cursor-pointer hover:bg-muted/50">
                       <TableCell className="font-mono text-xs text-muted-foreground">{`#${user.id}`}</TableCell>
                       <TableCell className="font-medium">
-                        {/* Make name clickable */}
-                        <button 
-                          className={`text-left hover:underline ${ROLE_COLORS[user.role]?.text || 'text-gray-900'}`}
-                        >
-                          {user.name}
-                        </button>
+                        {/* Added span with styling for name */}
+                        <span className={`hover:underline ${ROLE_COLORS[user.role]?.text || 'text-gray-900'}`}>
+                           {user.name}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <span className={`inline-block px-2 py-1 rounded-md ${ROLE_COLORS[user.role]?.bg || 'bg-transparent'} ${ROLE_COLORS[user.role]?.text || 'text-gray-900'}`}>
@@ -388,7 +386,7 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
         onSendWarning={handleSendWarning} // Corrected prop
         userName={selectedUserForWarning?.name || ''}
       />
-      {/* Bilgi Mesajı */}
+      {/* Bilgi Mesajı - Geri Eklendi */}
       <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <div className="flex items-center gap-2 text-blue-700">
           <svg
@@ -396,7 +394,7 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
             className="h-5 w-5"
             viewBox="0 0 20 20"
             fill="currentColor"
-            aria-hidden="true" // Add aria-hidden for decorative icons
+            aria-hidden="true"
           >
             <path
               fillRule="evenodd"
@@ -405,15 +403,15 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
             />
           </svg>
           <p className="text-sm font-medium">
-            Kullanıcı detayına ulaşmak için lütfen kullanıcı adına tıklayınız.
+            Kullanıcı detayına ulaşmak için lütfen tablo satırına tıklayınız.
           </p>
         </div>
       </div>
-      {/* Render User Details Sheet */}
-      <UserDetailsSheet 
-        isOpen={isSheetOpen}
-        onOpenChange={setIsSheetOpen}
-        user={selectedUserForSheet}
+      {/* Render User Details Dialog (Changed from Sheet) */}
+      <UserDetailsDialog 
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        user={selectedUserForDialog}
         onDeleteUser={handleDeleteUser} // Pass the delete handler
       />
     </div>
