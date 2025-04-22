@@ -277,11 +277,7 @@ export default function DashboardPage() {
           onClick={() => openModal(MODAL_TYPES.ANNOUNCEMENT)}
         >
           <BellRing className="mr-2 h-4 w-4" />
-          {UI_TEXT.BUTTON_TEXT.PUBLISH_ANNOUNCEMENT}
-        </Button>
-        <Button variant="outline" onClick={() => openModal(MODAL_TYPES.NEWS)}>
-          <Newspaper className="mr-2 h-4 w-4" />
-          {UI_TEXT.BUTTON_TEXT.PUBLISH_NEWS}
+          İçerik Yayınla
         </Button>
       </div>
 

@@ -114,7 +114,7 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="max-w-[95vw] w-full sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Etkinlik Düzenle</DialogTitle>
           <DialogDescription>
@@ -124,7 +124,7 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
+              <Label htmlFor="title" className="text-right w-[100px]">
                 Etkinlik Adı
               </Label>
               <Input
@@ -138,7 +138,7 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="category" className="text-right">
+              <Label htmlFor="category" className="text-right w-[100px]">
                 Kategori
               </Label>
               <Select
@@ -161,7 +161,7 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="date" className="text-right">
+              <Label htmlFor="date" className="text-right w-[100px]">
                 Tarih
               </Label>
               <Popover>
@@ -189,7 +189,7 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="location" className="text-right">
+              <Label htmlFor="location" className="text-right w-[100px]">
                 Konum
               </Label>
               <Input
@@ -204,7 +204,7 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="maxParticipants" className="text-right">
+              <Label htmlFor="maxParticipants" className="w-[100px]">
                 Maksimum Katılımcı
               </Label>
               <Input
@@ -220,7 +220,7 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
             </div>
             
             <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="description" className="text-right">
+              <Label htmlFor="description" className="text-right w-[100px]">
                 Açıklama
               </Label>
               <Textarea
@@ -236,11 +236,11 @@ export function EditEventModal({ open, onOpenChange, onSuccess, event, onSave }:
             </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
               İptal
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
               {loading ? "Kaydediliyor..." : "Kaydet"}
             </Button>
           </DialogFooter>
