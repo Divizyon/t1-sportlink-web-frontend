@@ -11,7 +11,7 @@ import { NewEventModal } from "@/components/modals/NewEventModal"
 import { EditEventModal } from "@/components/modals/EditEventModal"
 import { DeleteEventModal } from "@/components/modals/DeleteEventModal"
 import { CategoryFilterDropdown } from "@/components/CategoryFilterDropdown"
-import { Plus, ChevronRight, Edit } from "lucide-react"
+import { Plus, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/components/ui/use-toast"
 import Link from "next/link"
@@ -438,7 +438,7 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="p-4">
+    <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Etkinlik Yönetimi</h1>
         <Button onClick={() => setIsNewEventModalOpen(true)}>
@@ -586,14 +586,13 @@ export default function EventsPage() {
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="outline"
-                          size="icon"
-                          title="Düzenle"
+                          size="sm"
                           onClick={() => {
                             setSelectedEvent(event)
                             setIsEditModalOpen(true)
                           }}
                         >
-                          <Edit className="h-4 w-4" />
+                          Düzenle
                         </Button>
                         <DeleteEventModal 
                           eventName={event.title}
