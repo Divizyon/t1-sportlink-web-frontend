@@ -11,49 +11,47 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Eye, EyeOff } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useAuthStore } from "@/store/authStore";
+import { useAuth } from "@/contexts";
 import Image from "next/image";
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [name, setName] = useState("");
+  const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { login, error, clearError, isAuthenticated } = useAuthStore();
+  const { signup, isLoading, error } = useAuth();
 
-  // isAuthenticated değiştiğinde dashboard'a yönlendir
-  useEffect(() => {
-    if (isAuthenticated) {
-      console.log('User is authenticated, redirecting to dashboard...');
-      router.push('/dashboard');
-    }
-  }, [isAuthenticated, router]);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    clearError();
 
-    try {
-      console.log('Attempting login...');
-      await login(email, password);
-      console.log('Login successful, showing toast...');
-      toast.success("Başarıyla giriş yapıldı");
-    } catch (error) {
-      console.error("Login error in component:", error);
-      // Hata mesajı zaten store'da set edildi
-    } finally {
-      setIsLoading(false);
+    if (!name || !surname || !email || !password) {
+      toast.error("Lütfen tüm alanları doldurun");
+      return;
+    }
+
+    const fullName = `${name} ${surname}`;
+    
+    const success = await signup({
+      name: fullName,
+      email,
+      password,
+      role: "admin",
+    });
+
+    if (success) {
+      toast.success("Kayıt başarılı! Giriş yapabilirsiniz.");
+      router.push("/auth/login");
     }
   };
 
   return (
-    <Card className="w-[350px] shadow-lg">
+    <Card className="w-[400px] shadow-lg">
       <div className="flex justify-center pt-6">
         <div className="flex flex-col items-center">
           <Image
@@ -66,14 +64,34 @@ export default function LoginPage() {
         </div>
       </div>
       <CardHeader>
-        <CardTitle className="text-center">Giriş Yap</CardTitle>
+        <CardTitle className="text-center">Yeni Admin Kaydı</CardTitle>
         <CardDescription className="text-center">
-          Admin paneline erişmek için giriş yapın
+          Yönetici paneline erişmek için hesap oluşturun
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleRegister}>
           <div className="grid w-full items-center gap-4">
+            <div className="flex flex-col space-y-1.5">
+              <Input
+                id="name"
+                placeholder="Adınız"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Input
+                id="surname"
+                placeholder="Soyadınız"
+                type="text"
+                value={surname}
+                onChange={(e) => setSurname(e.target.value)}
+                required
+              />
+            </div>
             <div className="flex flex-col space-y-1.5">
               <Input
                 id="email"
@@ -111,24 +129,21 @@ export default function LoginPage() {
           {error && <p className="text-sm text-destructive mt-2">{error}</p>}
           <div className="mt-6">
             <Button className="w-full" type="submit" disabled={isLoading}>
-              {isLoading ? "Giriş yapılıyor..." : "Giriş Yap"}
+              {isLoading ? "Kaydediliyor..." : "Kaydol"}
             </Button>
           </div>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col items-center gap-2">
-        <Button variant="link" className="p-0">
-          Şifremi Unuttum
-        </Button>
-        <div className="flex items-center gap-1 pt-2">
-          <span className="text-sm text-muted-foreground">Hesabınız yok mu?</span>
-          <Link href="/auth/register">
-            <Button variant="link" className="p-0">
-              Kaydol
-            </Button>
-          </Link>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          Zaten hesabınız var mı?
+        </p>
+        <Link href="/auth/login">
+          <Button variant="link" className="p-0">
+            Giriş Yap
+          </Button>
+        </Link>
       </CardFooter>
     </Card>
   );
-}
+} 
