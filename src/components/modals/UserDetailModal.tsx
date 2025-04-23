@@ -195,124 +195,90 @@ export function UserDetailModal({
       modal={true}
     >
       <DialogContent
-        className={`sm:max-w-[700px] ${isNested ? "z-[100]" : "z-50"}`}
-        // Fix the handler to allow closing by clicking outside
+        className={`max-w-[95vw] w-full md:max-w-[700px] max-h-[90vh] overflow-y-auto p-4 md:p-6 ${isNested ? "z-[100]" : "z-50"}`}
         onPointerDownOutside={(e) => {
-          // Always allow closing by clicking outside, regardless of nesting
-          handleOpenChange(false);
+          // Prevent closing if nested and clicking outside
+          if (isNested) {
+            e.preventDefault();
+          }
         }}
       >
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl">Kullanıcı Detayları</DialogTitle>
-            {getStatusBadge(userData.status)}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Kullanıcı detaylarını görüntüleyin ve gerekirse düzenleyin.
-          </p>
+        <DialogHeader className="mb-4 md:mb-6">
+          <DialogTitle className="text-lg md:text-xl font-semibold flex items-center gap-2">
+            <Avatar className="h-8 w-8 md:h-10 md:w-10">
+              <AvatarImage src={userData.avatar} alt={userData.name} />
+              <AvatarFallback>{userData.name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <span>{userData.name}</span>
+          </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="profil">Profil</TabsTrigger>
-            <TabsTrigger value="etkinlikler">Etkinlikler</TabsTrigger>
-            <TabsTrigger value="islemler">İşlemler</TabsTrigger>
+        <Tabs defaultValue="profil" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3 mb-4 md:mb-6">
+            <TabsTrigger value="profil" className="text-sm md:text-base">Profil</TabsTrigger>
+            <TabsTrigger value="etkinlikler" className="text-sm md:text-base">Etkinlikler</TabsTrigger>
+            <TabsTrigger value="islemler" className="text-sm md:text-base">İşlemler</TabsTrigger>
           </TabsList>
 
-          {/* Profil Tab */}
-          <TabsContent value="profil" className="space-y-4 pt-4">
-            <div className="flex items-center justify-center">
-              <div className="text-center">
-                <Avatar className="h-24 w-24 mx-auto">
-                  <AvatarImage src={userData.avatar} alt={userData.name} />
-                  <AvatarFallback>
-                    {userData.name ? userData.name.charAt(0) : "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <h2 className="mt-4 text-xl font-semibold">{userData.name}</h2>
-                <p className="text-muted-foreground flex items-center justify-center mt-1">
-                  <Mail className="mr-2 h-4 w-4" /> {userData.email}
-                </p>
-                <p className="text-sm text-muted-foreground uppercase mt-1">
-                  {userData.role || "USER"}
+          <TabsContent value="profil" className="space-y-4 md:space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <div className="space-y-2 md:space-y-3">
+                <p className="text-sm md:text-base font-medium text-muted-foreground">E-posta</p>
+                <p className="text-sm md:text-base flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  {userData.email}
                 </p>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-8">
-              <div>
-                <p className="text-sm text-muted-foreground">Telefon</p>
-                <p className="font-medium">{userData.phone}</p>
+              <div className="space-y-2 md:space-y-3">
+                <p className="text-sm md:text-base font-medium text-muted-foreground">Durum</p>
+                {getStatusBadge(userData.status || "active")}
               </div>
 
-              <div>
-                <p className="text-sm text-muted-foreground">Cinsiyet</p>
-                <p className="font-medium">{userData.gender}</p>
+              <div className="space-y-2 md:space-y-3">
+                <p className="text-sm md:text-base font-medium text-muted-foreground">Kayıt Tarihi</p>
+                <p className="text-sm md:text-base">{userData.registeredDate}</p>
               </div>
 
-              <div>
-                <p className="text-sm text-muted-foreground">Yaş</p>
-                <p className="font-medium">{userData.age}</p>
+              <div className="space-y-2 md:space-y-3">
+                <p className="text-sm md:text-base font-medium text-muted-foreground">Son Aktivite</p>
+                <p className="text-sm md:text-base">{userData.lastActive}</p>
               </div>
 
-              <div>
-                <p className="text-sm text-muted-foreground">Katılım Tarihi</p>
-                <p className="font-medium">{userData.registeredDate}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground">Son Aktivite</p>
-                <p className="font-medium">{userData.lastActive}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground">Adres</p>
-                <p className="font-medium">{userData.address}</p>
-              </div>
-            </div>
-
-            {userData.bio && (
-              <div className="mt-6">
-                <h4 className="text-sm font-medium">Hakkında</h4>
-                <p className="text-muted-foreground mt-1">{userData.bio}</p>
-              </div>
-            )}
-
-            {userData.favoriteCategories &&
-              userData.favoriteCategories.length > 0 && (
-                <div className="mt-6">
-                  <h4 className="text-sm font-medium">Favori Kategoriler</h4>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {userData.favoriteCategories.map((category) => (
-                      <Badge
-                        key={category}
-                        variant="outline"
-                        className="bg-blue-50 text-blue-700"
-                      >
-                        {category}
-                      </Badge>
-                    ))}
-                  </div>
+              {userData.phone && (
+                <div className="space-y-2 md:space-y-3">
+                  <p className="text-sm md:text-base font-medium text-muted-foreground">Telefon</p>
+                  <p className="text-sm md:text-base">{userData.phone}</p>
                 </div>
               )}
 
-            <div className="mt-6">
-              <h4 className="text-sm font-medium">Etkinlik Katılımı</h4>
-              <div className="mt-2">
-                <div className="flex justify-between text-sm">
-                  <span>Tamamlanan Etkinlikler</span>
-                  <span>
-                    {userData.completedEvents} / {userData.eventCount}
-                  </span>
+              {userData.address && (
+                <div className="space-y-2 md:space-y-3 col-span-1 md:col-span-2">
+                  <p className="text-sm md:text-base font-medium text-muted-foreground">Adres</p>
+                  <p className="text-sm md:text-base">{userData.address}</p>
                 </div>
-                <Progress
-                  value={
-                    (userData.completedEvents! / userData.eventCount!) * 100
-                  }
-                  className="h-2 mt-1"
-                />
-              </div>
+              )}
             </div>
+
+            {userData.bio && (
+              <div className="space-y-2 md:space-y-3">
+                <p className="text-sm md:text-base font-medium text-muted-foreground">Hakkında</p>
+                <p className="text-sm md:text-base">{userData.bio}</p>
+              </div>
+            )}
+
+            {userData.favoriteCategories && userData.favoriteCategories.length > 0 && (
+              <div className="space-y-2 md:space-y-3">
+                <p className="text-sm md:text-base font-medium text-muted-foreground">İlgilendiği Kategoriler</p>
+                <div className="flex flex-wrap gap-2">
+                  {userData.favoriteCategories.map((category) => (
+                    <Badge key={category} variant="secondary" className="text-xs md:text-sm">
+                      {category}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* Etkinlikler Tab */}

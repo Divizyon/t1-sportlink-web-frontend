@@ -318,129 +318,60 @@ export function EventDetailModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[700px]">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-xl">
-                {isEditing ? "Etkinliği Düzenle" : "Etkinlik Detayları"}
-              </DialogTitle>
-              {getStatusBadge(formData.status)}
-            </div>
-            <DialogDescription>
+        <DialogContent className="max-w-[95vw] w-full md:max-w-[800px] max-h-[90vh] overflow-y-auto p-4 md:p-6">
+          <DialogHeader className="mb-4 md:mb-6">
+            <DialogTitle className="text-lg md:text-xl font-semibold">
+              {isEditing ? "Etkinliği Düzenle" : "Etkinlik Detayları"}
+            </DialogTitle>
+            <DialogDescription className="text-sm md:text-base">
               {isEditing
-                ? "Etkinlik bilgilerini düzenleyebilirsiniz."
-                : "Etkinlik detaylarını görüntüleyin ve gerekirse düzenleyin."}
+                ? "Etkinlik bilgilerini güncelleyin"
+                : "Etkinlik detaylarını görüntüleyin ve yönetin"}
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="details">Detaylar</TabsTrigger>
-              <TabsTrigger value="participants">Katılımcılar</TabsTrigger>
-              <TabsTrigger value="reports" className="relative">
-                Raporlar
-                {formData.reports &&
-                  formData.reports.filter((r) => r.status === "pending")
-                    .length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
-                      {
-                        formData.reports.filter((r) => r.status === "pending")
-                          .length
-                      }
-                    </span>
-                  )}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-4 md:mb-6">
+              <TabsTrigger value="details" className="text-sm md:text-base">
+                Detaylar
               </TabsTrigger>
-              <TabsTrigger value="actions">İşlemler</TabsTrigger>
+              <TabsTrigger value="participants" className="text-sm md:text-base relative">
+                Katılımcılar
+                <Badge className="ml-1 bg-blue-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
+                  {formData.participants?.length || 0}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="reports" className="text-sm md:text-base relative">
+                Raporlar
+                {formData.reports?.filter(r => r.status === "pending").length > 0 && (
+                  <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
+                    {formData.reports.filter(r => r.status === "pending").length}
+                  </Badge>
+                )}
+              </TabsTrigger>
             </TabsList>
 
-            {/* Detaylar Tab */}
-            <TabsContent value="details" className="space-y-4 pt-4">
-              {isEditing ? (
-                <form className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Etkinlik Başlığı</Label>
+            <TabsContent value="details" className="space-y-4 md:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="space-y-2 md:space-y-3">
+                  <Label className="text-sm md:text-base">Başlık</Label>
+                  {isEditing ? (
                     <Input
-                      id="title"
                       name="title"
                       value={formData.title}
                       onChange={handleChange}
-                      required
+                      className="w-full"
                     />
-                  </div>
+                  ) : (
+                    <p className="text-sm md:text-base">{formData.title}</p>
+                  )}
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Açıklama</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      className="min-h-[100px]"
-                      value={formData.description}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="date">Tarih</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !formData.date && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {formData.date ? (
-                              format(formData.date, "PPP", { locale: tr })
-                            ) : (
-                              <span>Tarih seçin</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <DatePickerWithPresets onSelect={handleDateChange} />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="time">Saat</Label>
-                      <Input
-                        id="time"
-                        name="time"
-                        type="time"
-                        value={formData.time}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Konum</Label>
-                    <Input
-                      id="location"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Kategori</Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={handleCategoryChange}
-                    >
-                      <SelectTrigger className="w-full">
+                <div className="space-y-2 md:space-y-3">
+                  <Label className="text-sm md:text-base">Kategori</Label>
+                  {isEditing ? (
+                    <Select value={formData.category} onValueChange={handleCategoryChange}>
+                      <SelectTrigger>
                         <SelectValue placeholder="Kategori seçin" />
                       </SelectTrigger>
                       <SelectContent>
@@ -451,107 +382,72 @@ export function EventDetailModal({
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="maxParticipants">
-                      Maksimum Katılımcı Sayısı
-                    </Label>
-                    <Input
-                      id="maxParticipants"
-                      name="maxParticipants"
-                      type="number"
-                      min={1}
-                      value={formData.maxParticipants}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </form>
-              ) : (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">{formData.title}</h3>
-
-                  <p className="text-muted-foreground">
-                    {formData.description}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {format(formData.date, "PPP", { locale: tr })}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>{formData.time}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{formData.location}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {formData.participants.length} /{" "}
-                        {formData.maxParticipants} Katılımcı
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {formData.category && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-blue-50 text-blue-700"
-                      >
-                        <Filter className="mr-1 h-3 w-3" />
-                        {formData.category}
-                      </Badge>
-                    )}
-
-                    {formData.tags &&
-                      formData.tags.map((tag) => (
-                        <Badge
-                          key={tag}
-                          variant="outline"
-                          className="bg-gray-50"
-                        >
-                          #{tag}
-                        </Badge>
-                      ))}
-                  </div>
-
-                  <div className="pt-2">
-                    <h4 className="text-sm font-medium mb-2">Organizatör</h4>
-                    <p>{formData.organizer}</p>
-                  </div>
-
-                  <div className="pt-2">
-                    <h4 className="text-sm font-medium mb-2">
-                      Oluşturulma Tarihi
-                    </h4>
-                    <p>{format(formData.createdAt, "PPP", { locale: tr })}</p>
-                  </div>
-
-                  {formData.status === "rejected" &&
-                    formData.rejectionReason && (
-                      <div className="pt-2 border p-3 rounded bg-red-50">
-                        <h4 className="text-sm font-medium mb-2 flex items-center text-red-700">
-                          <XCircle className="mr-1 h-4 w-4" />
-                          Reddetme Nedeni
-                        </h4>
-                        <p className="text-sm text-red-700">
-                          {formData.rejectionReason}
-                        </p>
-                      </div>
-                    )}
+                  ) : (
+                    <p className="text-sm md:text-base">{formData.category}</p>
+                  )}
                 </div>
-              )}
+
+                <div className="space-y-2 md:space-y-3">
+                  <Label className="text-sm md:text-base">Tarih</Label>
+                  {isEditing ? (
+                    <DatePickerWithPresets date={formData.date} setDate={handleDateChange} />
+                  ) : (
+                    <p className="text-sm md:text-base flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {format(formData.date, "PPP", { locale: tr })}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2 md:space-y-3">
+                  <Label className="text-sm md:text-base">Saat</Label>
+                  {isEditing ? (
+                    <Input
+                      type="time"
+                      name="time"
+                      value={formData.time}
+                      onChange={handleChange}
+                      className="w-full"
+                    />
+                  ) : (
+                    <p className="text-sm md:text-base flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      {formData.time}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2 md:space-y-3 col-span-1 md:col-span-2">
+                  <Label className="text-sm md:text-base">Konum</Label>
+                  {isEditing ? (
+                    <Input
+                      name="location"
+                      value={formData.location}
+                      onChange={handleChange}
+                      className="w-full"
+                    />
+                  ) : (
+                    <p className="text-sm md:text-base flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      {formData.location}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2 md:space-y-3 col-span-1 md:col-span-2">
+                  <Label className="text-sm md:text-base">Açıklama</Label>
+                  {isEditing ? (
+                    <Textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      className="min-h-[100px] md:min-h-[150px]"
+                    />
+                  ) : (
+                    <p className="text-sm md:text-base whitespace-pre-wrap">{formData.description}</p>
+                  )}
+                </div>
+              </div>
             </TabsContent>
 
             {/* Katılımcılar Tab */}

@@ -112,49 +112,57 @@ export function EventParticipationChart({
         </TabsList>
 
         <TabsContent value="daily">
-          <div className="grid grid-cols-4 gap-2 text-center my-4">
+          <div className="grid grid-cols-2 gap-3 text-center my-4">
             <div>
               <Badge
                 variant="outline"
-                className="bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800"
+                className="w-full bg-green-100 hover:bg-green-100 text-green-800 px-3 py-1.5"
               >
-                Onaylı: {statusCounts.approved}{" "}
-                <span className="text-xs ml-1">
-                  ({calculatePercentage(statusCounts.approved, totalEvents)}%)
-                </span>
+                <div className="flex items-center justify-center gap-2">
+                  <span>Onaylı: {statusCounts.approved}</span>
+                  <span className="text-xs opacity-75">
+                    ({calculatePercentage(statusCounts.approved, totalEvents)}%)
+                  </span>
+                </div>
               </Badge>
             </div>
             <div>
               <Badge
                 variant="outline"
-                className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800"
+                className="w-full bg-yellow-100 hover:bg-yellow-100 text-yellow-800 px-3 py-1.5"
               >
-                Bekleyen: {statusCounts.pending}{" "}
-                <span className="text-xs ml-1">
-                  ({calculatePercentage(statusCounts.pending, totalEvents)}%)
-                </span>
+                <div className="flex items-center justify-center gap-2">
+                  <span>Bekleyen: {statusCounts.pending}</span>
+                  <span className="text-xs opacity-75">
+                    ({calculatePercentage(statusCounts.pending, totalEvents)}%)
+                  </span>
+                </div>
               </Badge>
             </div>
             <div>
               <Badge
                 variant="outline"
-                className="bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800"
+                className="w-full bg-red-100 hover:bg-red-100 text-red-800 px-3 py-1.5"
               >
-                Reddedilen: {statusCounts.rejected}{" "}
-                <span className="text-xs ml-1">
-                  ({calculatePercentage(statusCounts.rejected, totalEvents)}%)
-                </span>
+                <div className="flex items-center justify-center gap-2">
+                  <span>Reddedilen: {statusCounts.rejected}</span>
+                  <span className="text-xs opacity-75">
+                    ({calculatePercentage(statusCounts.rejected, totalEvents)}%)
+                  </span>
+                </div>
               </Badge>
             </div>
             <div>
               <Badge
                 variant="outline"
-                className="bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800"
+                className="w-full bg-blue-100 hover:bg-blue-100 text-blue-800 px-3 py-1.5"
               >
-                Tamamlanan: {statusCounts.completed}{" "}
-                <span className="text-xs ml-1">
-                  ({calculatePercentage(statusCounts.completed, totalEvents)}%)
-                </span>
+                <div className="flex items-center justify-center gap-2">
+                  <span>Tamamlanan: {statusCounts.completed}</span>
+                  <span className="text-xs opacity-75">
+                    ({calculatePercentage(statusCounts.completed, totalEvents)}%)
+                  </span>
+                </div>
               </Badge>
             </div>
           </div>
@@ -204,53 +212,53 @@ export function EventParticipationChart({
         </TabsContent>
 
         <TabsContent value="category">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 h-[300px]">
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                  nameKey="name"
-                  label={({ name, percent }) =>
-                    `${name}: ${(percent * 100).toFixed(0)}%`
-                  }
-                >
-                  {categoryData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.color}
-                      stroke={entry.color}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value, name) => [`${value} Etkinlik`, name]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="flex flex-col items-center space-y-6">
+            <div className="w-full max-w-[300px] aspect-square mx-auto">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius="90%"
+                    fill="#8884d8"
+                    dataKey="value"
+                    nameKey="name"
+                    label={false}
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color}
+                        stroke={entry.color}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value, name) => [`${value} Etkinlik`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
 
-            <div className="flex flex-wrap gap-2 justify-center sm:flex-col sm:min-w-[150px]">
+            <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 px-2">
               {categoryData.map((entry, index) => (
                 <Badge
                   key={`legend-${index}`}
                   variant="outline"
-                  className="flex items-center gap-1"
+                  className="flex items-center justify-between h-7 px-2 text-xs"
                   style={{
-                    backgroundColor: applyColorOpacity(entry.color, 0.2),
+                    backgroundColor: applyColorOpacity(entry.color, 0.1),
                     color: entry.color,
                     borderColor: entry.color,
+                    aspectRatio: '3/1',
+                    width: '100%'
                   }}
                 >
-                  {entry.name}:{" "}
-                  <span className="ml-1 font-semibold">
-                    {formatPercentage(
-                      calculatePercentage(entry.value, totalCategoryEvents)
-                    )}
+                  <span className="truncate max-w-[45%]">{entry.name}:</span>
+                  <span className="font-medium shrink-0">
+                    {entry.value} ({formatPercentage(calculatePercentage(entry.value, totalCategoryEvents))})
                   </span>
                 </Badge>
               ))}

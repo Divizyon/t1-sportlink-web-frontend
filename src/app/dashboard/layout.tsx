@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { UserNav } from "@/components/nav/UserNav";
 import { useDashboardContext } from "@/contexts/DashboardContext";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -36,7 +38,7 @@ export default function DashboardLayout({
             {/* Overlay */}
             {sidebarOpen && (
               <div
-                className="fixed inset-0 z-40 bg-gray-600 bg-opacity-50 transition-opacity md:hidden"
+                className="fixed inset-0 z-40 bg-gray-600/50 backdrop-blur-sm transition-opacity md:hidden"
                 onClick={toggleSidebar}
               />
             )}
@@ -49,9 +51,19 @@ export default function DashboardLayout({
             {/* Main */}
             <div className="flex-1 flex flex-col">
               <header className="flex h-14 items-center justify-between border-b px-6 rounded-t-lg bg-white shadow-sm mb-2">
-                <h2 className="text-lg font-semibold">
-                  <span className="text-[#00A86B] italic">SportLink</span> Yönetim Paneli
-                </h2>
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden"
+                    onClick={toggleSidebar}
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                  <h2 className="text-lg font-semibold">
+                    <span className="text-[#00A86B] italic">SportLink</span> Yönetim Paneli
+                  </h2>
+                </div>
                 <div className="flex items-center space-x-4">
                   <div className="pl-2 border-l">
                     <UserNav />

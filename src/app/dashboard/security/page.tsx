@@ -146,77 +146,128 @@ export default function SecurityPage() {
       </div>
 
       <Card className="p-4">
-        <div className="mb-4 flex gap-4">
+        <div className="mb-4 flex flex-col sm:flex-row gap-4">
           <Input 
             placeholder="Admin, IP veya İşlem ara..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-sm"
+            className="w-full sm:max-w-sm"
           />
           <Input
             type="date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="max-w-[200px]"
+            className="w-full sm:max-w-[200px]"
             placeholder="Tarih seç"
           />
         </div>
 
         {showLogs && (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[150px]">Tip</TableHead>
-                  <TableHead className="w-[100px]">Admin</TableHead>
-                  <TableHead className="w-[150px]">IP Adresi</TableHead>
-                  <TableHead className="w-[120px]">Tarih</TableHead>
-                  <TableHead className="w-[100px]">Saat</TableHead>
-                  <TableHead className="w-[300px]">İşlem</TableHead>
-                  <TableHead className="w-[120px]">Durum</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLogs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="font-medium">
-                      {log.type === "login" ? "Giriş" : 
-                       log.type === "logout" ? "Çıkış" : 
-                       log.type === "failed_attempt" ? "Başarısız Giriş" : 
-                       log.type === "password_change" ? "Şifre Değişikliği" :
-                       log.type === "user_update" ? "Kullanıcı Güncelleme" :
-                       log.type === "role_change" ? "Rol Değişikliği" :
-                       "İzin Değişikliği"}
-                    </TableCell>
-                    <TableCell>{log.admin}</TableCell>
-                    <TableCell>{log.ip}</TableCell>
-                    <TableCell>{log.date}</TableCell>
-                    <TableCell>{log.time}</TableCell>
-                    <TableCell>
-                      <button 
-                        onClick={() => setSelectedAction(log.action)}
-                        className="text-left hover:underline cursor-pointer text-blue-600"
-                      >
-                        {truncateText(log.action)}
-                      </button>
-                    </TableCell>
-                    <TableCell>
+          <>
+            <div className="grid gap-4 md:hidden">
+              {filteredLogs.map((log) => (
+                <Card key={log.id} className="p-4">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">
+                        {log.type === "login" ? "Giriş" : 
+                         log.type === "logout" ? "Çıkış" : 
+                         log.type === "failed_attempt" ? "Başarısız Giriş" : 
+                         log.type === "password_change" ? "Şifre Değişikliği" :
+                         log.type === "user_update" ? "Kullanıcı Güncelleme" :
+                         log.type === "role_change" ? "Rol Değişikliği" :
+                         "İzin Değişikliği"}
+                      </div>
                       <div className="flex items-center gap-2">
                         {getStatusIcon(log.status)}
-                        <Badge variant={log.status === "success" ? "default" : 
-                                      log.status === "warning" ? "secondary" : 
-                                      "destructive"}>
+                        <Badge 
+                          variant="outline"
+                          className={
+                            log.status === "success" 
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : log.status === "warning" 
+                              ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                              : "bg-red-100 text-red-800 border-red-200"
+                          }
+                         >
                           {log.status === "success" ? "Başarılı" : 
                            log.status === "warning" ? "Uyarı" : 
                            "Hata"}
                         </Badge>
                       </div>
-                    </TableCell>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <div>Admin: {log.admin}</div>
+                      <div>IP: {log.ip}</div>
+                      <div>Tarih: {log.date} {log.time}</div>
+                    </div>
+                    <div>
+                      <button 
+                        onClick={() => setSelectedAction(log.action)}
+                        className="text-left hover:underline cursor-pointer text-blue-600"
+                      >
+                        {truncateText(log.action, 100)}
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tip</TableHead>
+                    <TableHead>Admin</TableHead>
+                    <TableHead>IP Adresi</TableHead>
+                    <TableHead>Tarih</TableHead>
+                    <TableHead>Saat</TableHead>
+                    <TableHead>İşlem</TableHead>
+                    <TableHead>Durum</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredLogs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="font-medium">
+                        {log.type === "login" ? "Giriş" : 
+                         log.type === "logout" ? "Çıkış" : 
+                         log.type === "failed_attempt" ? "Başarısız Giriş" : 
+                         log.type === "password_change" ? "Şifre Değişikliği" :
+                         log.type === "user_update" ? "Kullanıcı Güncelleme" :
+                         log.type === "role_change" ? "Rol Değişikliği" :
+                         "İzin Değişikliği"}
+                      </TableCell>
+                      <TableCell>{log.admin}</TableCell>
+                      <TableCell>{log.ip}</TableCell>
+                      <TableCell>{log.date}</TableCell>
+                      <TableCell>{log.time}</TableCell>
+                      <TableCell>
+                        <button 
+                          onClick={() => setSelectedAction(log.action)}
+                          className="text-left hover:underline cursor-pointer text-blue-600"
+                        >
+                          {truncateText(log.action)}
+                        </button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(log.status)}
+                          <Badge variant={log.status === "success" ? "default" : 
+                                        log.status === "warning" ? "secondary" : 
+                                        "destructive"}>
+                            {log.status === "success" ? "Başarılı" : 
+                             log.status === "warning" ? "Uyarı" : 
+                             "Hata"}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </Card>
 

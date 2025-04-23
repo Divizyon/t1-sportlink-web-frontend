@@ -144,51 +144,32 @@ export default function ReportsPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex-1 space-y-4 p-4 md:p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Raporlar</h2>
         </div>
 
-        <Tabs
-          defaultValue="all"
-          className="space-y-4"
-          onValueChange={(value) =>
-            setFilter(value as "all" | "users" | "events")
-          }
-        >
-          <div className="flex justify-between">
-            <TabsList>
+        <Tabs defaultValue="all" className="space-y-4" onValueChange={(value) => setFilter(value as "all" | "users" | "events")}>
+          <div className="flex flex-col md:flex-row justify-between gap-4">
+            <TabsList className="w-full md:w-auto">
               <TabsTrigger value="all">Tüm Raporlar</TabsTrigger>
               <TabsTrigger value="users" className="relative">
                 Kullanıcı Raporları
                 <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
-                  {
-                    DASHBOARD_REPORTS.filter(
-                      (r) => r.entityType === "user" && r.status === "pending"
-                    ).length
-                  }
+                  {DASHBOARD_REPORTS.filter((r) => r.entityType === "user" && r.status === "pending").length}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="events" className="relative">
                 Etkinlik Raporları
                 <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
-                  {
-                    DASHBOARD_REPORTS.filter(
-                      (r) => r.entityType === "event" && r.status === "pending"
-                    ).length
-                  }
+                  {DASHBOARD_REPORTS.filter((r) => r.entityType === "event" && r.status === "pending").length}
                 </Badge>
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex space-x-2">
-              <Select
-                value={priorityFilter}
-                onValueChange={(value) =>
-                  setPriorityFilter(value as ReportPriority | "all")
-                }
-              >
-                <SelectTrigger className="w-[150px]">
+            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+              <Select value={priorityFilter} onValueChange={(value) => setPriorityFilter(value as ReportPriority | "all")}>
+                <SelectTrigger className="w-full md:w-[150px]">
                   <SelectValue placeholder="Öncelik Filtrele" />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,13 +180,8 @@ export default function ReportsPage() {
                 </SelectContent>
               </Select>
 
-              <Select
-                value={statusFilter}
-                onValueChange={(value) =>
-                  setStatusFilter(value as ReportStatus | "all")
-                }
-              >
-                <SelectTrigger className="w-[150px]">
+              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ReportStatus | "all")}>
+                <SelectTrigger className="w-full md:w-[150px]">
                   <SelectValue placeholder="Durum Filtrele" />
                 </SelectTrigger>
                 <SelectContent>
@@ -219,61 +195,95 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          <Card>
+          <Card className="w-full overflow-x-auto">
             <CardHeader>
               <CardTitle>Gelen Raporlar ({filteredReports.length})</CardTitle>
-              <CardDescription>
-                İncelemeniz gereken rapor ve bildirimler
-              </CardDescription>
+              <CardDescription>İncelemeniz gereken rapor ve bildirimler</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Konu</TableHead>
-                    <TableHead>Raporlayan</TableHead>
-                    <TableHead>Tarih</TableHead>
-                    <TableHead>Tür</TableHead>
-                    <TableHead>Öncelik</TableHead>
-                    <TableHead>Durum</TableHead>
-                    <TableHead>İşlemler</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredReports.map((report) => (
-                    <TableRow 
-                      key={report.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleReportClick(report)}
-                    >
-                      <TableCell className="font-medium">
-                        {report.subject}
-                      </TableCell>
-                      <TableCell>{report.reportedBy}</TableCell>
-                      <TableCell>
-                        {new Date(report.reportedDate).toLocaleDateString("tr-TR")}
-                      </TableCell>
-                      <TableCell>
-                        {ENTITY_TYPE_LABELS[report.entityType]}
-                      </TableCell>
-                      <TableCell>{getPriorityBadge(report.priority)}</TableCell>
-                      <TableCell>{getStatusBadge(report.status)}</TableCell>
-                      <TableCell>
+              {/* Mobil görünüm için kart yapısı */}
+              <div className="md:hidden space-y-4">
+                {filteredReports.map((report) => (
+                  <Card key={report.id} className="w-full">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium">{report.subject}</h3>
+                          <p className="text-sm text-muted-foreground">{report.reportedBy}</p>
+                        </div>
+                        {getStatusBadge(report.status)}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">{ENTITY_TYPE_LABELS[report.entityType]}</Badge>
+                        {getPriorityBadge(report.priority)}
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(report.reportedDate).toLocaleDateString("tr-TR")}
+                        </p>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReportClick(report);
-                          }}
+                          onClick={() => handleReportClick(report)}
                         >
                           Detaylar
                         </Button>
-                      </TableCell>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Masaüstü görünüm için tablo yapısı */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Konu</TableHead>
+                      <TableHead>Raporlayan</TableHead>
+                      <TableHead>Tarih</TableHead>
+                      <TableHead>Tür</TableHead>
+                      <TableHead>Öncelik</TableHead>
+                      <TableHead>Durum</TableHead>
+                      <TableHead>İşlemler</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredReports.map((report) => (
+                      <TableRow 
+                        key={report.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleReportClick(report)}
+                      >
+                        <TableCell className="font-medium">
+                          {report.subject}
+                        </TableCell>
+                        <TableCell>{report.reportedBy}</TableCell>
+                        <TableCell>
+                          {new Date(report.reportedDate).toLocaleDateString("tr-TR")}
+                        </TableCell>
+                        <TableCell>
+                          {ENTITY_TYPE_LABELS[report.entityType]}
+                        </TableCell>
+                        <TableCell>{getPriorityBadge(report.priority)}</TableCell>
+                        <TableCell>{getStatusBadge(report.status)}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReportClick(report);
+                            }}
+                          >
+                            Detaylar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </Tabs>
@@ -315,3 +325,4 @@ export default function ReportsPage() {
     </div>
   );
 }
+
