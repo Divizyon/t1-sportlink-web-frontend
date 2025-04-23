@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,58 +57,43 @@ import {
 } from "@/components/ui/hover-card";
 import { useRouter } from "next/navigation";
 import { UserDetailModal } from "@/components/modals/UserDetailModal";
-import {
-  DETAILED_EVENT,
-  DetailedEvent,
-  EventParticipant,
-  DEFAULT_USER_EVENTS,
-} from "@/mocks";
-import { enrichUserData } from "@/lib/userDataService";
+import axios from "axios";
 
-interface Participant {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  age?: number;
-  gender?: string;
-  registeredDate?: string;
-  eventCount?: number;
-  status?: "active" | "suspended" | "blocked";
-}
-
-interface Report {
-  id: string;
-  reporterId: string;
-  reporterName: string;
-  reason: string;
-  date: string;
-  status: "pending" | "reviewed" | "dismissed";
-}
-
-interface Event {
-  id: string;
+interface EventType {
+  id: number;
   title: string;
   description: string;
-  date: Date;
+  date: Date | string;
   time: string;
   location: string;
-  organizer: string;
-  participants: Participant[];
-  status: "pending" | "approved" | "rejected" | "completed";
-  maxParticipants: number;
-  createdAt: Date;
+  sport_id: number;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  reports: ReportType[];
+  participants: ParticipantType[];
+  created_at: string;
+  updated_at: string;
+  rejection_reason?: string;
   category?: string;
-  tags?: string[];
-  rejectionReason?: string;
-  reports?: Report[];
+  max_participants: number;
+}
+
+interface ReportType {
+  id: number;
+  reason: string;
+  status: 'pending' | 'reviewed' | 'dismissed';
+  created_at: string;
+}
+
+interface ParticipantType {
+  user_id: number;
+  status: string;
 }
 
 interface EventDetailModalProps {
+  event: EventType | null;
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  event?: Event | null;
-  onSuccess?: () => void;
+  onClose: () => void;
+  onUpdate: (updatedEvent: EventType) => void;
 }
 
 // Event kategori listesi
@@ -133,107 +118,290 @@ const rejectionReasons = [
   "Diğer",
 ];
 
-export function EventDetailModal({
-  open,
-  onOpenChange,
-  event,
-  onSuccess,
-}: EventDetailModalProps) {
+export function EventDetailModal({ event, open, onClose, onUpdate }: EventDetailModalProps) {
   const router = useRouter();
-  const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState("details");
+  const [formData, setFormData] = useState<EventType | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [rejectionComment, setRejectionComment] = useState("");
   const [selectedParticipant, setSelectedParticipant] =
-    useState<Participant | null>(null);
+    useState<ParticipantType | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
 
-  // Use the mock data from the dedicated mocks file instead of inline data
-  const mockEvent: Event = event || DETAILED_EVENT;
+  useEffect(() => {
+    if (event) {
+      setFormData({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        date: event.date instanceof Date ? event.date : new Date(event.date),
+        time: event.time,
+        location: event.location,
+        sport_id: event.sport_id,
+        status: event.status,
+        reports: event.reports || [],
+        participants: event.participants || [],
+        created_at: event.created_at || new Date().toISOString(),
+        updated_at: event.updated_at || new Date().toISOString(),
+        rejection_reason: event.rejection_reason,
+        category: event.category,
+        max_participants: event.max_participants
+      });
+    } else {
+      setFormData(null);
+    }
+  }, [event]);
 
-  const [formData, setFormData] = useState<Event>(mockEvent);
+  if (!event || !formData) {
+    return null;
+  }
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (formData) {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleDateChange = (date: Date | undefined) => {
-    if (date) {
-      setFormData((prev) => ({ ...prev, date }));
+    if (date && formData) {
+      setFormData({
+        ...formData,
+        date: date,
+        id: formData.id,
+        title: formData.title,
+        description: formData.description,
+        time: formData.time,
+        location: formData.location,
+        sport_id: formData.sport_id,
+        status: formData.status,
+        reports: formData.reports,
+        participants: formData.participants,
+        created_at: formData.created_at,
+        updated_at: formData.updated_at,
+        max_participants: formData.max_participants
+      });
     }
   };
 
-  const handleSave = () => {
-    setLoading(true);
-
-    // Simüle edilmiş API çağrısı
-    setTimeout(() => {
-      setLoading(false);
-      setIsEditing(false);
-      toast.success("Etkinlik bilgileri güncellendi");
-      if (onSuccess) onSuccess();
-    }, 1000);
-  };
-
-  const handleDelete = () => {
-    if (confirm("Bu etkinliği silmek istediğinizden emin misiniz?")) {
-      setLoading(true);
-
-      // Simüle edilmiş API çağrısı
-      setTimeout(() => {
-        setLoading(false);
-        toast.success("Etkinlik silindi");
-        onOpenChange(false);
-        if (onSuccess) onSuccess();
-      }, 1000);
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (formData) {
+      setFormData(prev => ({
+        ...prev,
+        time: e.target.value
+      }));
     }
   };
 
-  const handleApproveEvent = () => {
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (formData) {
+      setFormData(prev => ({
+        ...prev,
+        location: e.target.value
+      }));
+    }
+  };
+
+  const handleSave = async () => {
+    try {
     setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("Oturum açmanız gerekiyor");
+      }
 
-    // Simüle edilmiş API çağrısı
-    setTimeout(() => {
-      setFormData((prev) => ({ ...prev, status: "approved" }));
+      if (!formData) {
+        throw new Error("Form verisi bulunamadı");
+      }
+
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/events/${event.id}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      onUpdate(response.data.data);
+      toast.success("Etkinlik başarıyla güncellendi");
+      onClose();
+    } catch (error) {
+      console.error("Etkinlik güncellenirken hata:", error);
+      toast.error("Etkinlik güncellenirken bir hata oluştu");
+    } finally {
       setLoading(false);
-      toast.success("Etkinlik onaylandı");
-      if (onSuccess) onSuccess();
-    }, 1000);
+    }
   };
 
-  const openRejectDialog = () => {
-    setShowRejectDialog(true);
-  };
-
-  const handleRejectEvent = () => {
-    if (!rejectionReason) {
-      toast.error("Lütfen bir red sebebi seçin");
+  const handleDelete = async () => {
+    if (!formData.id) {
+      toast.error('Etkinlik ID bulunamadı');
       return;
     }
 
-    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Oturum açmanız gerekiyor');
+      }
 
-    // Simüle edilmiş API çağrısı
-    setTimeout(() => {
-      setFormData((prev) => ({
-        ...prev,
-        status: "rejected",
-        rejectionReason:
-          rejectionReason + (rejectionComment ? ` - ${rejectionComment}` : ""),
-      }));
-      setLoading(false);
-      setShowRejectDialog(false);
-      toast.success("Etkinlik reddedildi ve neden bildirildi");
-      if (onSuccess) onSuccess();
-    }, 1000);
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/events/${formData.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      toast.success('Etkinlik başarıyla silindi');
+      onClose();
+    } catch (error) {
+      console.error('Etkinlik silinirken hata oluştu:', error);
+      toast.error('Etkinlik silinirken bir hata oluştu');
+    }
   };
 
-  const getStatusBadge = (status: Event["status"]) => {
+  const handleApprove = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("Oturum açmanız gerekiyor");
+      }
+
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/events/${event.id}/approve`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      setFormData(prev => prev ? { ...prev, status: 'approved' } : null);
+      onUpdate(response.data.data);
+      toast.success("Etkinlik onaylandı");
+    } catch (error) {
+      console.error("Etkinlik onaylanırken hata:", error);
+      toast.error("Etkinlik onaylanırken bir hata oluştu");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    try {
+    setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("Oturum açmanız gerekiyor");
+      }
+
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/events/${event.id}/reject`,
+        {
+          reason: rejectionReason,
+          comment: rejectionComment
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      setFormData(prev => prev ? { ...prev, status: 'rejected', rejection_reason: rejectionReason } : null);
+      onUpdate(response.data.data);
+      toast.success("Etkinlik reddedildi");
+      setShowRejectDialog(false);
+    } catch (error) {
+      console.error("Etkinlik reddedilirken hata:", error);
+      toast.error("Etkinlik reddedilirken bir hata oluştu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReportAction = async (reportId: number, action: 'review' | 'dismiss') => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("Oturum açmanız gerekiyor");
+      }
+
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/events/${event.id}/reports/${reportId}/${action}`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      setFormData(prev => prev ? {
+        ...prev,
+        reports: prev.reports.map(report => 
+          report.id === reportId 
+            ? { ...report, status: action === 'review' ? 'reviewed' : 'dismissed' }
+            : report
+        )
+      } : null);
+      onUpdate(response.data.data);
+      toast.success(`Rapor ${action === 'review' ? 'incelendi' : 'reddedildi'}`);
+    } catch (error) {
+      console.error("Rapor işlenirken hata:", error);
+      toast.error("Rapor işlenirken bir hata oluştu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleParticipantAction = async (userId: number, action: 'approve' | 'reject') => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("Oturum açmanız gerekiyor");
+      }
+
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/events/${event.id}/participants/${userId}/${action}`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      setFormData(prev => prev ? {
+        ...prev,
+        participants: prev.participants.map(participant => 
+          participant.user_id === userId 
+            ? { ...participant, status: action === 'approve' ? 'approved' : 'rejected' }
+            : participant
+        )
+      } : null);
+      onUpdate(response.data.data);
+      toast.success(`Katılımcı ${action === 'approve' ? 'onaylandı' : 'reddedildi'}`);
+    } catch (error) {
+      console.error("Katılımcı işlenirken hata:", error);
+      toast.error("Katılımcı işlenirken bir hata oluştu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: EventType["status"]) => {
     switch (status) {
       case "pending":
         return (
@@ -276,56 +444,68 @@ export function EventDetailModal({
     }
   };
 
-  const handleViewParticipantProfile = (participant: Participant) => {
+  const handleViewParticipantProfile = (participant: ParticipantType) => {
     setSelectedParticipant(participant);
     setShowUserModal(true);
   };
 
   const handleNavigateToUserProfile = (userId: string) => {
-    // Gerçek uygulamada kullanıcı profiline yönlendirilecek
-    toast.info(`${userId} ID'li kullanıcı profiline yönlendiriliyorsunuz`);
     router.push(`/dashboard/users/${userId}`);
   };
 
   const handleCategoryChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, category: value }));
-  };
-
-  const handleDismissReport = (reportId: string) => {
-    if (formData.reports) {
-      setFormData((prev) => ({
-        ...prev,
-        reports: prev.reports?.map((report) =>
-          report.id === reportId ? { ...report, status: "dismissed" } : report
-        ),
-      }));
-      toast.success("Rapor reddedildi");
+    if (formData) {
+      setFormData({
+        ...formData,
+        category: value,
+        id: formData.id,
+        title: formData.title,
+        description: formData.description,
+        date: formData.date,
+        time: formData.time,
+        location: formData.location,
+        sport_id: formData.sport_id,
+        status: formData.status,
+        reports: formData.reports,
+        participants: formData.participants,
+        created_at: formData.created_at,
+        updated_at: formData.updated_at,
+        max_participants: formData.max_participants
+      });
     }
   };
 
-  const handleReviewReport = (reportId: string) => {
-    if (formData.reports) {
-      setFormData((prev) => ({
-        ...prev,
-        reports: prev.reports?.map((report) =>
-          report.id === reportId ? { ...report, status: "reviewed" } : report
-        ),
-      }));
-      toast.success("Rapor incelendi olarak işaretlendi");
+  const handleMaxParticipantsChange = (value: string) => {
+    if (formData) {
+      setFormData({
+        ...formData,
+        max_participants: parseInt(value) || 0,
+        id: formData.id,
+        title: formData.title,
+        description: formData.description,
+        date: formData.date,
+        time: formData.time,
+        location: formData.location,
+        sport_id: formData.sport_id,
+        status: formData.status,
+        reports: formData.reports,
+        participants: formData.participants,
+        created_at: formData.created_at,
+        updated_at: formData.updated_at
+      });
     }
   };
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-[95vw] w-full md:max-w-[800px] max-h-[90vh] overflow-y-auto p-4 md:p-6">
           <DialogHeader className="mb-4 md:mb-6">
             <DialogTitle className="text-lg md:text-xl font-semibold">
-              {isEditing ? "Etkinliği Düzenle" : "Etkinlik Detayları"}
+            {loading ? "Güncelleniyor..." : "Etkinlik Detayları"}
             </DialogTitle>
             <DialogDescription className="text-sm md:text-base">
-              {isEditing
-                ? "Etkinlik bilgilerini güncelleyin"
+            {loading
+              ? "Etkinlik bilgileri güncelleniyor"
                 : "Etkinlik detaylarını görüntüleyin ve yönetin"}
             </DialogDescription>
           </DialogHeader>
@@ -343,7 +523,7 @@ export function EventDetailModal({
               </TabsTrigger>
               <TabsTrigger value="reports" className="text-sm md:text-base relative">
                 Raporlar
-                {formData.reports?.filter(r => r.status === "pending").length > 0 && (
+              {formData.reports && formData.reports.length > 0 && (
                   <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
                     {formData.reports.filter(r => r.status === "pending").length}
                   </Badge>
@@ -355,21 +535,16 @@ export function EventDetailModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="space-y-2 md:space-y-3">
                   <Label className="text-sm md:text-base">Başlık</Label>
-                  {isEditing ? (
                     <Input
                       name="title"
                       value={formData.title}
                       onChange={handleChange}
                       className="w-full"
                     />
-                  ) : (
-                    <p className="text-sm md:text-base">{formData.title}</p>
-                  )}
                 </div>
 
                 <div className="space-y-2 md:space-y-3">
                   <Label className="text-sm md:text-base">Kategori</Label>
-                  {isEditing ? (
                     <Select value={formData.category} onValueChange={handleCategoryChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Kategori seçin" />
@@ -382,288 +557,140 @@ export function EventDetailModal({
                         ))}
                       </SelectContent>
                     </Select>
-                  ) : (
-                    <p className="text-sm md:text-base">{formData.category}</p>
-                  )}
                 </div>
 
                 <div className="space-y-2 md:space-y-3">
                   <Label className="text-sm md:text-base">Tarih</Label>
-                  {isEditing ? (
-                    <DatePickerWithPresets date={formData.date} setDate={handleDateChange} />
-                  ) : (
-                    <p className="text-sm md:text-base flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      {format(formData.date, "PPP", { locale: tr })}
-                    </p>
-                  )}
+                <DatePickerWithPresets
+                  selected={formData.date instanceof Date ? formData.date : new Date(formData.date)}
+                  onSelect={handleDateChange}
+                />
                 </div>
 
                 <div className="space-y-2 md:space-y-3">
                   <Label className="text-sm md:text-base">Saat</Label>
-                  {isEditing ? (
                     <Input
                       type="time"
                       name="time"
                       value={formData.time}
-                      onChange={handleChange}
+                  onChange={handleTimeChange}
                       className="w-full"
                     />
-                  ) : (
-                    <p className="text-sm md:text-base flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      {formData.time}
-                    </p>
-                  )}
                 </div>
 
                 <div className="space-y-2 md:space-y-3 col-span-1 md:col-span-2">
                   <Label className="text-sm md:text-base">Konum</Label>
-                  {isEditing ? (
                     <Input
                       name="location"
                       value={formData.location}
-                      onChange={handleChange}
+                  onChange={handleLocationChange}
                       className="w-full"
                     />
-                  ) : (
-                    <p className="text-sm md:text-base flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      {formData.location}
-                    </p>
-                  )}
                 </div>
 
                 <div className="space-y-2 md:space-y-3 col-span-1 md:col-span-2">
                   <Label className="text-sm md:text-base">Açıklama</Label>
-                  {isEditing ? (
                     <Textarea
                       name="description"
                       value={formData.description}
                       onChange={handleChange}
                       className="min-h-[100px] md:min-h-[150px]"
                     />
-                  ) : (
-                    <p className="text-sm md:text-base whitespace-pre-wrap">{formData.description}</p>
-                  )}
-                </div>
+              </div>
               </div>
             </TabsContent>
 
-            {/* Katılımcılar Tab */}
             <TabsContent value="participants" className="space-y-4 pt-4">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Katılımcılar</h3>
                   <span className="text-sm text-muted-foreground">
-                    {formData.participants.length} / {formData.maxParticipants}
+                  {formData.participants?.length || 0} / {formData.max_participants}
                   </span>
                 </div>
 
                 <div className="space-y-3">
-                  {formData.participants.map((participant) => (
+                {formData.participants?.map((participant) => (
                     <div
-                      key={participant.id}
+                    key={participant.user_id}
                       className="flex items-center justify-between p-3 rounded-lg border hover:bg-slate-50 cursor-pointer transition-colors"
                       onClick={() => handleViewParticipantProfile(participant)}
                     >
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarImage src={participant.avatar} />
                           <AvatarFallback>
-                            {participant.name.charAt(0)}
+                          {participant.user_id.toString().charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">{participant.name}</p>
+                        <p className="font-medium">Katılımcı #{participant.user_id}</p>
                           <p className="text-sm text-muted-foreground">
-                            {participant.email}
+                          {participant.status}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <HoverCard>
-                          <HoverCardTrigger>
-                            <Button variant="ghost" size="sm">
-                              <Info className="h-4 w-4" />
-                            </Button>
-                          </HoverCardTrigger>
-                          <HoverCardContent className="w-80">
-                            <div className="space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-sm font-medium">
-                                  Yaş:
-                                </span>
-                                <span className="text-sm">
-                                  {participant.age}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm font-medium">
-                                  Cinsiyet:
-                                </span>
-                                <span className="text-sm">
-                                  {participant.gender}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm font-medium">
-                                  Kayıt Tarihi:
-                                </span>
-                                <span className="text-sm">
-                                  {participant.registeredDate}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm font-medium">
-                                  Etkinlik Sayısı:
-                                </span>
-                                <span className="text-sm">
-                                  {participant.eventCount}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm font-medium">
-                                  Durum:
-                                </span>
-                                <Badge
-                                  variant={
-                                    participant.status === "active"
-                                      ? "default"
-                                      : "destructive"
-                                  }
-                                  className="text-xs"
-                                >
-                                  {participant.status === "active"
-                                    ? "Aktif"
-                                    : participant.status === "suspended"
-                                    ? "Askıda"
-                                    : "Engellenmiş"}
-                                </Badge>
-                              </div>
-                            </div>
-                          </HoverCardContent>
-                        </HoverCard>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleNavigateToUserProfile(participant.id);
+                          handleNavigateToUserProfile(participant.user_id.toString());
                           }}
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
-                        {isEditing && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setFormData((prev) => ({
-                                ...prev,
-                                participants: prev.participants.filter(
-                                  (p) => p.id !== participant.id
-                                ),
-                              }));
-                            }}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
+                    </div>
                     </div>
                   ))}
                 </div>
               </div>
             </TabsContent>
 
-            {/* Raporlar Tab */}
             <TabsContent value="reports" className="space-y-4 pt-4">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Raporlar</h3>
-                  {formData.reports && (
+                {Array.isArray(formData.reports) && formData.reports.length > 0 && (
                     <Badge
                       variant="outline"
                       className="bg-orange-50 text-orange-700 border-orange-200"
                     >
-                      {
-                        formData.reports.filter((r) => r.status === "pending")
-                          .length
-                      }{" "}
+                    {formData.reports.filter((r) => r.status === "pending").length}{" "}
                       Bekleyen
                     </Badge>
                   )}
                 </div>
 
-                {formData.reports && formData.reports.length > 0 ? (
+              {Array.isArray(formData.reports) && formData.reports.length > 0 ? (
                   <div className="space-y-3">
                     {formData.reports.map((report) => (
-                      <div
-                        key={report.id}
-                        className="border rounded-lg overflow-hidden"
-                      >
-                        <div
-                          className={cn(
-                            "p-3",
-                            report.status === "pending"
-                              ? "bg-yellow-50"
-                              : report.status === "reviewed"
-                              ? "bg-blue-50"
-                              : "bg-gray-50"
-                          )}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">
-                                {report.reporterName}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {report.date}
-                              </p>
-                            </div>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "text-xs",
-                                report.status === "pending"
-                                  ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                                  : report.status === "reviewed"
-                                  ? "bg-blue-100 text-blue-800 border-blue-300"
-                                  : "bg-gray-100 text-gray-800 border-gray-300"
-                              )}
-                            >
-                              {report.status === "pending"
-                                ? "Beklemede"
-                                : report.status === "reviewed"
-                                ? "İncelendi"
-                                : "Reddedildi"}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="p-3">
-                          <p className="text-sm">{report.reason}</p>
-                        </div>
-                        {report.status === "pending" && (
-                          <div className="p-3 border-t flex justify-end gap-2">
+                    <div key={report.id} className="p-4 bg-muted rounded-lg">
+                      <p className="text-sm">{report.reason}</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {new Date(report.created_at).toLocaleString('tr-TR')}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Durum: {report.status === 'pending' ? 'Beklemede' : 'Çözüldü'}
+                      </p>
+                      <div className="flex gap-2 mt-2">
                             <Button
+                          size="sm"
                               variant="outline"
-                              size="sm"
-                              onClick={() => handleDismissReport(report.id)}
+                          onClick={() => handleReportAction(report.id, 'review')}
+                          disabled={report.status === 'dismissed'}
                             >
-                              <XCircle className="mr-1 h-4 w-4" />
-                              Reddet
+                          İncele
                             </Button>
                             <Button
                               size="sm"
-                              onClick={() => handleReviewReport(report.id)}
+                          variant="outline"
+                          onClick={() => handleReportAction(report.id, 'dismiss')}
+                          disabled={report.status === 'reviewed'}
                             >
-                              <CheckCircle className="mr-1 h-4 w-4" />
-                              İncelendi
+                          Reddet
                             </Button>
-                          </div>
-                        )}
+                      </div>
                       </div>
                     ))}
                   </div>
@@ -675,151 +702,19 @@ export function EventDetailModal({
                 )}
               </div>
             </TabsContent>
-
-            {/* İşlemler Tab */}
-            <TabsContent value="actions" className="space-y-4 pt-4">
-              <div className="space-y-4">
-                <div className="border p-4 rounded-lg space-y-4">
-                  <h3 className="text-lg font-semibold">Etkinlik Durumu</h3>
-                  <div className="flex items-center gap-3">
-                    <p className="text-muted-foreground">Mevcut Durum:</p>
-                    {getStatusBadge(formData.status)}
-                  </div>
-
-                  {formData.status === "pending" && (
-                    <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                      <Button
-                        className="flex-1"
-                        onClick={handleApproveEvent}
-                        disabled={loading}
-                      >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Etkinliği Onayla
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={openRejectDialog}
-                        disabled={loading}
-                      >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Etkinliği Reddet
-                      </Button>
-                    </div>
-                  )}
-
-                  {showRejectDialog && (
-                    <div className="border p-3 rounded-lg mt-3 space-y-3 bg-gray-50">
-                      <h4 className="font-medium">Reddetme Nedeni</h4>
-                      <div className="space-y-2">
-                        <Select
-                          value={rejectionReason}
-                          onValueChange={setRejectionReason}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Reddetme nedeni seçin" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {rejectionReasons.map((reason) => (
-                              <SelectItem key={reason} value={reason}>
-                                {reason}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        <Textarea
-                          placeholder="Ek açıklama (isteğe bağlı)"
-                          value={rejectionComment}
-                          onChange={(e) => setRejectionComment(e.target.value)}
-                          className="h-20"
-                        />
-
-                        <div className="flex justify-end gap-2 pt-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowRejectDialog(false)}
-                            disabled={loading}
-                          >
-                            İptal
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleRejectEvent}
-                            disabled={loading}
-                          >
-                            Etkinliği Reddet
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="border p-4 rounded-lg space-y-4">
-                  <h3 className="text-lg font-semibold">Etkinlik Yönetimi</h3>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      variant={isEditing ? "default" : "outline"}
-                      className="flex-1"
-                      onClick={() => setIsEditing(!isEditing)}
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      {isEditing
-                        ? "Düzenleme Modundasınız"
-                        : "Etkinliği Düzenle"}
-                    </Button>
-
-                    <Button
-                      variant="destructive"
-                      className="flex-1"
-                      disabled={loading}
-                      onClick={handleDelete}
-                    >
-                      <Trash className="mr-2 h-4 w-4" />
-                      Etkinliği Sil
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
           </Tabs>
 
-          <DialogFooter className="gap-2">
-            {isEditing ? (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsEditing(false)}
-                  disabled={loading}
-                >
+        <DialogFooter className="mt-6">
+          <Button variant="outline" onClick={onClose} disabled={loading}>
                   İptal
                 </Button>
-                <Button type="button" onClick={handleSave} disabled={loading}>
-                  <Save className="mr-2 h-4 w-4" /> Kaydet
-                </Button>
-              </>
-            ) : (
-              <Button type="button" onClick={() => onOpenChange(false)}>
-                Kapat
+          <Button onClick={handleSave} disabled={loading}>
+            {loading ? "Güncelleniyor..." : "Kaydet"}
               </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <UserDetailModal
-        open={showUserModal}
-        onOpenChange={(open) => {
-          setShowUserModal(open);
-          if (!open) setSelectedParticipant(null);
-        }}
-        user={selectedParticipant as any}
-        isNested={true}
-      />
-    </>
   );
 }
+
+export default EventDetailModal;

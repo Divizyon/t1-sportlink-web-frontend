@@ -1,185 +1,249 @@
-import { useState, useEffect, useMemo } from "react";
-import {
-  Report,
-  ReportStatus,
-  ReportPriority,
-  ReportFilterType,
-} from "@/types";
-import { REPORTS } from "@/mocks/reports";
-import { REPORT_FILTERS } from "@/constants/dashboard";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
+import Cookies from 'js-cookie';
+
+interface Report {
+  id: string;
+  konu: string;
+  raporlayan: string;
+  tarih: string;
+  tur: "Kullanıcı" | "Etkinlik";
+  oncelik: "Yüksek" | "Orta" | "Düşük";
+  durum: "Beklemede" | "Çözüldü" | "Reddedildi";
+  reporter_id: string;
+  event_id?: string;
+  report_reason: string;
+  report_date: string;
+  status: "PENDING" | "RESOLVED" | "DISMISSED";
+  admin_notes?: string;
+}
 
 interface ReportFilters {
-  entityType?: ReportFilterType;
-  status?: ReportStatus | "all";
-  priority?: ReportPriority | "all";
+  status?: "PENDING" | "RESOLVED" | "DISMISSED" | "all";
+  type?: "Kullanıcı" | "Etkinlik" | "all";
+  priority?: "Yüksek" | "Orta" | "Düşük" | "all";
+  searchQuery?: string;
   dateRange?: {
-    start: Date;
-    end: Date;
+    start: string;
+    end: string;
   };
 }
 
 export function useReports(initialFilters: ReportFilters = {}) {
+  const { toast } = useToast();
+  const router = useRouter();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
   const [filters, setFilters] = useState<ReportFilters>(initialFilters);
 
-  // Load reports data
-  useEffect(() => {
+  const getToken = () => {
+    // Cookie'den token'ı al
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('accessToken='))
+      ?.split('=')[1];
+    
+    return token;
+  };
+
     const fetchReports = async () => {
+    try {
       setLoading(true);
-      try {
-        // In production, replace with actual API call
-        // const response = await fetch('/api/reports');
-        // const data = await response.json();
-        // setReports(data);
-
-        // Using mock data for now
-        setReports(REPORTS);
-        setLoading(false);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error("Failed to fetch reports")
-        );
-        setLoading(false);
-      }
-    };
-
-    fetchReports();
-  }, []);
-
-  // Apply filters to reports
-  const filteredReports = useMemo(() => {
-    return reports.filter((report) => {
-      // Filter by entity type
-      if (filters.entityType && filters.entityType !== REPORT_FILTERS.all) {
-        const entityTypeMatch =
-          // Convert from "users" -> "user" or "events" -> "event"
-          report.entityType === filters.entityType.slice(0, -1);
-        if (!entityTypeMatch) return false;
+      const token = getToken();
+      
+      if (!token) {
+        toast({
+          title: "Hata",
+          description: "Bu sayfaya erişmek için giriş yapmanız gerekiyor.",
+          variant: "destructive",
+        });
+        router.push('/login');
+        return;
       }
 
-      // Filter by status
-      if (filters.status && filters.status !== "all") {
-        if (report.status !== filters.status) return false;
-      }
+      console.log('Fetching reports with URL:', `${process.env.NEXT_PUBLIC_API_URL}/reports`);
+      console.log('Filters:', filters);
+      console.log('Token:', token);
+      
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/reports`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          params: filters
+        }
+      );
 
-      // Filter by priority
-      if (filters.priority && filters.priority !== "all") {
-        if (report.priority !== filters.priority) return false;
-      }
+      console.log('Reports response:', response.data);
 
-      // Filter by date range
-      if (filters.dateRange) {
-        const reportDate = new Date(report.reportedDate);
-        if (
-          reportDate < filters.dateRange.start ||
-          reportDate > filters.dateRange.end
-        ) {
-          return false;
+      if (response.data.status === 'success') {
+        setReports(response.data.data.reports);
+      } else {
+        throw new Error(response.data.message || "Raporlar alınamadı");
+      }
+    } catch (error) {
+      console.error('Raporlar alınırken hata oluştu:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          toast({
+            title: "Hata",
+            description: "Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.",
+            variant: "destructive",
+          });
+          router.push('/login');
+        } else if (error.response?.status === 403) {
+          toast({
+            title: "Hata",
+            description: "Bu sayfaya erişim yetkiniz yok.",
+            variant: "destructive",
+          });
+          router.push('/dashboard');
+        } else {
+          toast({
+            title: "Hata",
+            description: error.response?.data?.message || "Raporlar alınırken bir hata oluştu",
+            variant: "destructive",
+          });
         }
       }
-
-      return true;
-    });
-  }, [reports, filters]);
-
-  // Get summary statistics
-  const statistics = useMemo(() => {
-    const total = reports.length;
-    const pending = reports.filter((r) => r.status === "pending").length;
-    const reviewing = reports.filter((r) => r.status === "reviewing").length;
-    const resolved = reports.filter((r) => r.status === "resolved").length;
-    const rejected = reports.filter((r) => r.status === "rejected").length;
-
-    const highPriority = reports.filter((r) => r.priority === "high").length;
-    const mediumPriority = reports.filter(
-      (r) => r.priority === "medium"
-    ).length;
-    const lowPriority = reports.filter((r) => r.priority === "low").length;
-
-    const userReports = reports.filter((r) => r.entityType === "user").length;
-    const eventReports = reports.filter((r) => r.entityType === "event").length;
-
-    return {
-      total,
-      byStatus: {
-        pending,
-        reviewing,
-        resolved,
-        rejected,
-      },
-      byPriority: {
-        high: highPriority,
-        medium: mediumPriority,
-        low: lowPriority,
-      },
-      byEntityType: {
-        user: userReports,
-        event: eventReports,
-      },
-      resolutionRate: total > 0 ? (resolved / total) * 100 : 0,
-    };
-  }, [reports]);
-
-  // Update a report's status
-  const updateReportStatus = (reportId: number, newStatus: ReportStatus) => {
-    setReports((currentReports) =>
-      currentReports.map((report) =>
-        report.id === reportId ? { ...report, status: newStatus } : report
-      )
-    );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Set entity type filter
-  const setEntityTypeFilter = (entityType: ReportFilterType) => {
-    setFilters((prev) => ({
-      ...prev,
-      entityType,
-    }));
+  const updateReportStatus = async (reportId: string, newStatus: "RESOLVED" | "DISMISSED") => {
+    try {
+      const token = getToken();
+      
+      if (!token) {
+        toast({
+          title: "Hata",
+          description: "Bu işlemi yapmak için giriş yapmanız gerekiyor.",
+          variant: "destructive",
+        });
+        router.push('/login');
+        return;
+      }
+
+      const response = await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/reports/${reportId}/status`,
+        { status: newStatus },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (response.data.status === 'success') {
+        setReports(prev => 
+          prev.map(report => 
+            report.id === reportId ? response.data.data.report : report
+          )
+        );
+        toast({
+          title: "Başarılı",
+          description: newStatus === "RESOLVED" ? "Rapor çözüldü olarak işaretlendi" : "Rapor reddedildi",
+        });
+      } else {
+        throw new Error(response.data.message || "Rapor durumu güncellenemedi");
+      }
+    } catch (error) {
+      console.error('Rapor durumu güncellenirken hata oluştu:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          toast({
+            title: "Hata",
+            description: "Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.",
+            variant: "destructive",
+          });
+          router.push('/login');
+        } else {
+          toast({
+            title: "Hata",
+            description: error.response?.data?.message || "Rapor durumu güncellenirken bir hata oluştu",
+            variant: "destructive",
+          });
+        }
+      }
+    }
   };
 
-  // Set status filter
-  const setStatusFilter = (status: ReportStatus | "all") => {
-    setFilters((prev) => ({
-      ...prev,
-      status,
-    }));
+  const updateReportNotes = async (reportId: string, notes: string) => {
+    try {
+      const token = getToken();
+      
+      if (!token) {
+        toast({
+          title: "Hata",
+          description: "Bu işlemi yapmak için giriş yapmanız gerekiyor.",
+          variant: "destructive",
+        });
+        router.push('/login');
+        return;
+      }
+
+      const response = await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/reports/${reportId}/notes`,
+        { admin_notes: notes },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (response.data.status === 'success') {
+        setReports(prev => 
+          prev.map(report => 
+            report.id === reportId ? response.data.data.report : report
+          )
+        );
+        toast({
+          title: "Başarılı",
+          description: "Admin notu başarıyla güncellendi",
+        });
+      } else {
+        throw new Error(response.data.message || "Admin notu güncellenemedi");
+      }
+    } catch (error) {
+      console.error('Admin notu güncellenirken hata oluştu:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          toast({
+            title: "Hata",
+            description: "Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.",
+            variant: "destructive",
+          });
+          router.push('/login');
+        } else {
+          toast({
+            title: "Hata",
+            description: error.response?.data?.message || "Admin notu güncellenirken bir hata oluştu",
+            variant: "destructive",
+          });
+        }
+      }
+    }
   };
 
-  // Set priority filter
-  const setPriorityFilter = (priority: ReportPriority | "all") => {
-    setFilters((prev) => ({
-      ...prev,
-      priority,
-    }));
+  const applyFilters = (newFilters: Partial<ReportFilters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
-  // Set date range filter
-  const setDateRangeFilter = (start: Date, end: Date) => {
-    setFilters((prev) => ({
-      ...prev,
-      dateRange: { start, end },
-    }));
-  };
-
-  // Reset all filters
-  const resetFilters = () => {
-    setFilters({});
-  };
+  useEffect(() => {
+    fetchReports();
+  }, [filters]);
 
   return {
     reports,
-    filteredReports,
-    statistics,
     loading,
-    error,
     filters,
+    applyFilters,
     updateReportStatus,
-    setEntityTypeFilter,
-    setStatusFilter,
-    setPriorityFilter,
-    setDateRangeFilter,
-    resetFilters,
+    updateReportNotes
   };
 }

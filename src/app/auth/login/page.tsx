@@ -114,12 +114,15 @@ export default function LoginPage() {
             </Button>
           </div>
         </form>
+        <div className="text-center">
+          <Button
+            variant="link"
+            onClick={() => router.push('/auth/forgot-password')}
+          >
+            Şifremi Unuttum
+          </Button>
+        </div>
       </CardContent>
-      <CardFooter className="flex justify-center">
-        <Button variant="link" className="w-full">
-          Şifremi Unuttum
-        </Button>
-      </CardFooter>
     </Card>
   );
 }

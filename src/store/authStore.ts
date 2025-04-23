@@ -8,6 +8,17 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
+  requestPasswordReset: (email: string) => Promise<void>;
+  resetPassword: (password: string) => Promise<void>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+}
+
+
+const loginFormDatatoBackend = (bir: string, iki: string) => {
+  return {
+     email: bir,
+    password: iki,
+  }
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -20,10 +31,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: null });
 
       console.log('Login attempt with:', email);
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-        email,
-        password,
-      });
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, loginFormDatatoBackend(email, password));
 
       console.log('Login response:', response.data);
       
@@ -85,5 +93,87 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   clearError: () => {
     set({ error: null });
+  },
+
+  requestPasswordReset: async (email: string) => {
+    try {
+      set({ error: null });
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
+        email,
+      });
+      
+      if (response.data.status === 'success') {
+        // Test ortamında reset link'i göster
+        if (process.env.NODE_ENV === 'development' && response.data.data?.resetLink) {
+          console.log('Test ortamı - Şifre sıfırlama bağlantısı:', response.data.data.resetLink);
+          // Test ortamında otomatik yönlendirme yap
+          window.location.href = response.data.data.resetLink;
+        }
+        return;
+      }
+      
+      throw new Error('Şifre sıfırlama isteği başarısız oldu');
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      let errorMessage = 'Şifre sıfırlama isteği gönderilirken bir hata oluştu.';
+      
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          errorMessage = 'Bu email adresi ile kayıtlı kullanıcı bulunamadı.';
+        }
+      }
+      
+      set({ error: errorMessage });
+      throw error;
+    }
+  },
+
+  resetPassword: async (password: string) => {
+    try {
+      set({ error: null });
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/update-password`, {
+        password,
+      });
+      
+      if (response.data.status === 'success') {
+        // Başarılı mesajı göster
+        return;
+      }
+      
+      throw new Error('Şifre güncelleme başarısız oldu');
+    } catch (error) {
+      console.error('Password reset error:', error);
+      set({ error: 'Şifre güncellenirken bir hata oluştu.' });
+      throw error;
+    }
+  },
+
+  updatePassword: async (currentPassword: string, newPassword: string) => {
+    try {
+      set({ error: null });
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/update-password`, {
+        currentPassword,
+        newPassword,
+      });
+      
+      if (response.data.status === 'success') {
+        // Başarılı mesajı göster
+        return;
+      }
+      
+      throw new Error('Şifre güncelleme başarısız oldu');
+    } catch (error) {
+      console.error('Password update error:', error);
+      let errorMessage = 'Şifre güncellenirken bir hata oluştu.';
+      
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          errorMessage = 'Mevcut şifre hatalı.';
+        }
+      }
+      
+      set({ error: errorMessage });
+      throw error;
+    }
   },
 })); 

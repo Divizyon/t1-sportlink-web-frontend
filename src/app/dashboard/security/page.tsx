@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Shield, AlertTriangle, Lock, Eye, EyeOff } from "lucide-react"
+import { Shield, AlertTriangle, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -14,92 +14,37 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-
-interface SecurityLog {
-  id: string
-  type: "login" | "logout" | "failed_attempt" | "password_change" | "user_update" | "role_change" | "permission_change"
-  admin: string
-  ip: string
-  date: string
-  time: string
-  status: "success" | "warning" | "error"
-  action: string
-}
+import { useSecurity } from "@/hooks/useSecurity"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export default function SecurityPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [dateFilter, setDateFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("")
   const [showLogs, setShowLogs] = useState(true)
   const [selectedAction, setSelectedAction] = useState<string | null>(null)
-  const [logs, setLogs] = useState<SecurityLog[]>([
-    {
-      id: "1",
-      type: "login",
-      admin: "admin1",
-      ip: "192.168.1.100",
-      date: "2024-03-15",
-      time: "10:30",
-      status: "success",
-      action: "Sisteme giriş yaptı"
-    },
-    {
-      id: "2",
-      type: "failed_attempt",
-      admin: "admin2",
-      ip: "192.168.1.101",
-      date: "2024-03-15",
-      time: "11:45",
-      status: "error",
-      action: "Başarısız giriş denemesi"
-    },
-    {
-      id: "3",
-      type: "role_change",
-      admin: "admin1",
-      ip: "192.168.1.102",
-      date: "2024-03-15",
-      time: "12:00",
-      status: "success",
-      action: "user123 kullanıcısının rolünü User'dan Admin'e değiştirdi"
-    },
-    {
-      id: "4",
-      type: "permission_change",
-      admin: "admin2",
-      ip: "192.168.1.102",
-      date: "2024-03-15",
-      time: "12:15",
-      status: "success",
-      action: "user456 kullanıcısına etkinlik düzenleme izni verdi"
-    },
-    {
-      id: "5",
-      type: "user_update",
-      admin: "admin3",
-      ip: "192.168.1.103",
-      date: "2024-03-15",
-      time: "14:20",
-      status: "warning",
-      action: "user789 kullanıcısını uygunsuz davranış sebebiyle raporladı"
-    },
-    {
-      id: "6",
-      type: "permission_change",
-      admin: "admin1",
-      ip: "192.168.1.100",
-      date: "2024-03-15",
-      time: "15:45",
-      status: "success",
-      action: "Spor salonu yöneticisi user567'nin tüm spor salonlarındaki rezervasyon yönetimi, etkinlik oluşturma ve düzenleme, kullanıcı raporlama ve engelleme izinlerini güncelledi"
-    }
-  ])
 
-  const filteredLogs = logs.filter(log => 
-    (log.admin.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    log.ip.includes(searchQuery) ||
-    log.action.toLowerCase().includes(searchQuery.toLowerCase())) &&
-    (dateFilter === "" || log.date === dateFilter)
-  )
+  const {
+    securityLogs: logs,
+    loading,
+    pagination,
+    handlePageChange,
+    handleFilter
+  } = useSecurity()
+
+  const handleSearch = () => {
+    handleFilter({
+      searchQuery: searchQuery,
+      dateFilter: dateFilter,
+      status: statusFilter === 'all' ? '' : statusFilter as any
+    })
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -146,26 +91,46 @@ export default function SecurityPage() {
       </div>
 
       <Card className="p-4">
-        <div className="mb-4 flex flex-col sm:flex-row gap-4">
+        <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input 
             placeholder="Admin, IP veya İşlem ara..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full sm:max-w-sm"
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <Input
             type="date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="w-full sm:max-w-[200px]"
-            placeholder="Tarih seç"
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Durum" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tüm Durumlar</SelectItem>
+              <SelectItem value="success">Başarılı</SelectItem>
+              <SelectItem value="warning">Uyarı</SelectItem>
+              <SelectItem value="error">Hata</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {showLogs && (
+        <div className="mb-4">
+          <Button onClick={handleSearch} className="w-full md:w-auto">
+            Filtreleri Uygula
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        ) : showLogs && (
           <>
             <div className="grid gap-4 md:hidden">
-              {filteredLogs.map((log) => (
+              {logs.map((log) => (
                 <Card key={log.id} className="p-4">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
@@ -227,7 +192,7 @@ export default function SecurityPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredLogs.map((log) => (
+                  {logs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="font-medium">
                         {log.type === "login" ? "Giriş" : 
@@ -253,9 +218,16 @@ export default function SecurityPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getStatusIcon(log.status)}
-                          <Badge variant={log.status === "success" ? "default" : 
-                                        log.status === "warning" ? "secondary" : 
-                                        "destructive"}>
+                          <Badge 
+                            variant="outline"
+                            className={
+                              log.status === "success" 
+                                ? "bg-green-100 text-green-800 border-green-200"
+                                : log.status === "warning" 
+                                ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                                : "bg-red-100 text-red-800 border-red-200"
+                            }
+                          >
                             {log.status === "success" ? "Başarılı" : 
                              log.status === "warning" ? "Uyarı" : 
                              "Hata"}
@@ -267,6 +239,29 @@ export default function SecurityPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Sayfalama */}
+            {pagination.totalPages > 1 && (
+              <div className="mt-4 flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page === 1}
+                >
+                  Önceki
+                </Button>
+                <span className="flex items-center">
+                  Sayfa {pagination.page} / {pagination.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={pagination.page === pagination.totalPages}
+                >
+                  Sonraki
+                </Button>
+              </div>
+            )}
           </>
         )}
       </Card>
@@ -277,7 +272,7 @@ export default function SecurityPage() {
             <DialogTitle>İşlem Detayı</DialogTitle>
           </DialogHeader>
           <div className="mt-4">
-            <p className="text-sm text-gray-600">{selectedAction}</p>
+            <p>{selectedAction}</p>
           </div>
         </DialogContent>
       </Dialog>

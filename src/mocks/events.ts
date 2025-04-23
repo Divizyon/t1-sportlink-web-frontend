@@ -53,6 +53,40 @@ export const TODAY_EVENTS: Event[] = [
   },
 ];
 
+// Event details for the dashboard
+export const EVENT_DETAILS: Event[] = [
+  {
+    id: 4,
+    title: "Tenis Turnuvası",
+    description: "Açık Tenis Turnuvası",
+    date: new Date(),
+    time: "09:00",
+    location: "Tenis Kortları",
+    category: "Tenis",
+    participants: 8,
+    maxParticipants: 16,
+    status: "pending",
+    organizer: "Tenis Kulübü",
+    image: "/images/events/tennis.jpg",
+    createdAt: "2023-07-15",
+  },
+  {
+    id: 5,
+    title: "Voleybol Maçı",
+    description: "Lig Maçı - A Takımı vs B Takımı",
+    date: new Date(),
+    time: "19:00",
+    location: "Kapalı Spor Salonu",
+    category: "Voleybol",
+    participants: 12,
+    maxParticipants: 12,
+    status: "completed",
+    organizer: "Voleybol Federasyonu",
+    image: "/images/events/volleyball.jpg",
+    createdAt: "2023-07-05",
+  },
+];
+
 // Sample event status distribution data
 export const EVENT_STATUS_COUNTS = {
   pending: 42,
