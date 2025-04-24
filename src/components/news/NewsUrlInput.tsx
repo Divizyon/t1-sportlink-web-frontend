@@ -49,10 +49,10 @@ const NewsUrlInput: React.FC = () => {
         image: hasImage ? `https://picsum.photos/seed/${id}/800/400` : undefined,
         publishDate: new Date().toISOString(),
         tags: ["spor", category.toLowerCase()],
-        status: "pending" as "pending" | "approved" | "rejected",
+        status: "pending",
         hasImage,
         contentLength: Math.floor(Math.random() * 500) + 100,
-        imageStatus: 'available' as 'available' | 'error' | 'loading',
+        imageStatus: 'available',
         sourceUrl: "",
         selected: false,
         showDetails: false

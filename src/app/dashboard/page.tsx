@@ -277,11 +277,7 @@ export default function DashboardPage() {
           onClick={() => openModal(MODAL_TYPES.ANNOUNCEMENT)}
         >
           <BellRing className="mr-2 h-4 w-4" />
-          {UI_TEXT.BUTTON_TEXT.PUBLISH_ANNOUNCEMENT}
-        </Button>
-        <Button variant="outline" onClick={() => openModal(MODAL_TYPES.NEWS)}>
-          <Newspaper className="mr-2 h-4 w-4" />
-          {UI_TEXT.BUTTON_TEXT.PUBLISH_NEWS}
+          İçerik Yayınla
         </Button>
       </div>
 
@@ -355,11 +351,7 @@ export default function DashboardPage() {
                   />
                 </CardContent>
                 <CardFooter>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    asChild
-                  >
+                  <Button variant="outline" className="w-full" asChild>
                     <Link href="/dashboard/users">
                       <Users className="mr-2 h-4 w-4" />
                       {UI_TEXT.BUTTON_TEXT.MANAGE_ALL_USERS}

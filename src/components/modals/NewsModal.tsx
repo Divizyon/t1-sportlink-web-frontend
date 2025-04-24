@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
-import { Upload, Image as ImageIcon, Bell } from "lucide-react"
+import { Upload, Image as ImageIcon, Bell, Users, Newspaper, X, Loader2 } from "lucide-react"
 
 interface NewsModalProps {
   open: boolean
@@ -41,7 +41,6 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("announcement")
-  
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -49,17 +48,6 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
     image: null as File | null,
     sendNotification: true,
   })
-
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      content: "",
-      type: "announcement",
-      image: null,
-      sendNotification: true,
-    })
-    setActiveTab("announcement")
-  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -78,6 +66,17 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
     if (e.target.files && e.target.files[0]) {
       setFormData(prev => ({ ...prev, image: e.target.files![0] }))
     }
+  }
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      content: "",
+      type: "announcement",
+      image: null,
+      sendNotification: true,
+    })
+    setActiveTab("announcement")
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -104,16 +103,14 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
 
     // Form gönderme
     setLoading(true)
-
-    // API çağrısı simülasyonu
     setTimeout(() => {
       setLoading(false)
-      
+
       toast({
         title: "Başarılı",
-        description: `${activeTab === "announcement" ? "Duyuru" : "Haber"} başarıyla yayınlandı.`,
+        description: `${formData.type === "announcement" ? "Duyuru" : formData.type === "organization" ? "Organizasyon Duyurusu" : "Haber"} başarıyla yayınlandı.`,
       })
-      
+
       resetForm()
       onOpenChange(false)
       
@@ -134,129 +131,136 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <DialogHeader>
             <DialogTitle className="text-xl sm:text-2xl">
-              {activeTab === "announcement" ? "Duyuru Yayınla" : "Haber Ekle"}
+              İçerik Yayınla
             </DialogTitle>
             <DialogDescription className="text-sm sm:text-base">
-              {activeTab === "announcement" 
-                ? "Katılımcılara önemli duyurular yapın." 
-                : "Platformda yayınlanacak haber oluşturun."}
+              Platformda yayınlanacak içerik oluşturun
             </DialogDescription>
           </DialogHeader>
           
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="announcement" className="text-sm sm:text-base">
-                <Bell className="mr-2 h-4 w-4" />
-                Duyuru
-              </TabsTrigger>
-              <TabsTrigger value="news" className="text-sm sm:text-base">
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Haber
-              </TabsTrigger>
-            </TabsList>
+          <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="type" className="text-sm sm:text-base">İçerik Türü</Label>
+              <Select
+                value={formData.type}
+                onValueChange={handleTypeChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="İçerik türü seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="announcement">
+                    <div className="flex items-center gap-2">
+                      <Bell className="h-4 w-4" />
+                      <span>Duyuru</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="organization">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>Organizasyon Duyurusu</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="news">
+                    <div className="flex items-center gap-2">
+                      <Newspaper className="h-4 w-4" />
+                      <span>Haber</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="title" className="text-sm sm:text-base">Başlık</Label>
+              <Input
+                id="title"
+                name="title"
+                placeholder="İçerik başlığı"
+                value={formData.title}
+                onChange={handleInputChange}
+                className="w-full"
+              />
+            </div>
             
-            <div className="space-y-4 sm:space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm sm:text-base">Başlık</Label>
+            <div className="space-y-2">
+              <Label htmlFor="content" className="text-sm sm:text-base">İçerik</Label>
+              <Textarea
+                id="content"
+                name="content"
+                placeholder="İçerik detayı"
+                rows={5}
+                value={formData.content}
+                onChange={handleInputChange}
+                className="w-full min-h-[120px] sm:min-h-[200px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="image" className="text-sm sm:text-base">Görsel</Label>
+              <div className="flex items-center gap-4">
                 <Input
-                  id="title"
-                  name="title"
-                  placeholder="Duyuru/Haber başlığı"
-                  value={formData.title}
-                  onChange={handleInputChange}
+                  id="image"
+                  name="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
                   className="w-full"
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="content" className="text-sm sm:text-base">İçerik</Label>
-                <Textarea
-                  id="content"
-                  name="content"
-                  placeholder="Duyuru/Haber içeriği"
-                  rows={5}
-                  value={formData.content}
-                  onChange={handleInputChange}
-                  className="w-full min-h-[120px] sm:min-h-[200px]"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="type" className="text-sm sm:text-base">Tür</Label>
-                <Select 
-                  value={formData.type} 
-                  onValueChange={handleTypeChange}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Tür seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {NEWS_TYPES.map(type => (
-                      <SelectItem key={type.id} value={type.id} className="text-sm sm:text-base">
-                        {type.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="image" className="text-sm sm:text-base">Görsel</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="flex-1 text-sm sm:text-base"
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => document.getElementById("image")?.click()}
-                  >
-                    <Upload className="h-4 w-4" />
-                  </Button>
-                </div>
                 {formData.image && (
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Seçilen dosya: {formData.image.name}
-                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData(prev => ({ ...prev, image: null }))}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
-              
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="sendNotification"
-                  checked={formData.sendNotification}
-                  onChange={handleNotificationChange}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <Label htmlFor="sendNotification" className="text-sm sm:text-base font-normal">
-                  Bildirim olarak gönder
-                </Label>
-              </div>
+              {formData.image && (
+                <div className="mt-2">
+                  <img
+                    src={URL.createObjectURL(formData.image)}
+                    alt="Önizleme"
+                    className="max-h-40 rounded-md object-cover"
+                  />
+                </div>
+              )}
             </div>
-          </Tabs>
-          
-          <DialogFooter className="flex justify-end gap-2 pt-6">
-            <Button 
-              type="button" 
-              variant="outline" 
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="sendNotification"
+                checked={formData.sendNotification}
+                onChange={handleNotificationChange}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="sendNotification" className="text-sm sm:text-base font-normal">
+                Bildirim olarak gönder
+              </Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="text-sm sm:text-base"
             >
               İptal
             </Button>
-            <Button 
-              type="submit" 
-              disabled={loading}
-              className="text-sm sm:text-base"
-            >
-              {loading ? "Gönderiliyor..." : "Yayınla"}
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Yayınlanıyor...
+                </>
+              ) : (
+                'Yayınla'
+              )}
             </Button>
           </DialogFooter>
         </form>

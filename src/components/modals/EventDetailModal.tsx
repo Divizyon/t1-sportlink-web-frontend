@@ -56,7 +56,10 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { useRouter } from "next/navigation";
-import { UserDetailModal } from "@/components/modals/UserDetailModal";
+import {
+  UserDetailModal,
+  sampleUser,
+} from "@/components/modals/UserDetailModal";
 import {
   DETAILED_EVENT,
   DetailedEvent,
@@ -75,6 +78,7 @@ interface Participant {
   registeredDate?: string;
   eventCount?: number;
   status?: "active" | "suspended" | "blocked";
+  isLoading?: boolean;
 }
 
 interface Report {
@@ -154,6 +158,55 @@ export function EventDetailModal({
   const mockEvent: Event = event || DETAILED_EVENT;
 
   const [formData, setFormData] = useState<Event>(mockEvent);
+
+  // Function to fetch detailed user data
+  const fetchParticipantDetails = async (participant: Participant) => {
+    try {
+      // Create a loading state user object
+      const loadingUser: Participant = {
+        ...participant,
+        isLoading: true,
+      };
+
+      // Set the loading state
+      setSelectedParticipant(loadingUser);
+
+      // Open the modal immediately to show loading state
+      setShowUserModal(true);
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // In a real app, fetch from API:
+      // const response = await fetch(`/api/users/${participant.id}`);
+      // const userData = await response.json();
+
+      // For now, use sample data merged with the participant data
+      const detailedUser: Participant = {
+        ...sampleUser,
+        id: participant.id,
+        name: participant.name,
+        email: participant.email,
+        avatar: participant.avatar,
+        status: participant.status || "active",
+        isLoading: false,
+      };
+
+      // Update with detailed data
+      setSelectedParticipant(detailedUser);
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+
+      // In case of error, remove loading state but keep modal open
+      if (selectedParticipant) {
+        const fallbackUser: Participant = {
+          ...selectedParticipant,
+          isLoading: false,
+        };
+        setSelectedParticipant(fallbackUser);
+      }
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -277,8 +330,8 @@ export function EventDetailModal({
   };
 
   const handleViewParticipantProfile = (participant: Participant) => {
-    setSelectedParticipant(participant);
-    setShowUserModal(true);
+    // Fetch and display participant details
+    fetchParticipantDetails(participant);
   };
 
   const handleNavigateToUserProfile = (userId: string) => {
@@ -315,6 +368,15 @@ export function EventDetailModal({
     }
   };
 
+  // Close modal functionality
+  const closeUserModal = () => {
+    setShowUserModal(false);
+    // Clear the selected participant after a short delay to avoid UI flickering
+    setTimeout(() => {
+      setSelectedParticipant(null);
+    }, 300);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -330,22 +392,36 @@ export function EventDetailModal({
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-3 mb-4 md:mb-6">
               <TabsTrigger value="details" className="text-sm md:text-base">
                 Detaylar
               </TabsTrigger>
-              <TabsTrigger value="participants" className="text-sm md:text-base relative">
+              <TabsTrigger
+                value="participants"
+                className="text-sm md:text-base relative"
+              >
                 Katılımcılar
                 <Badge className="ml-1 bg-blue-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
                   {formData.participants?.length || 0}
                 </Badge>
               </TabsTrigger>
-              <TabsTrigger value="reports" className="text-sm md:text-base relative">
+              <TabsTrigger
+                value="reports"
+                className="text-sm md:text-base relative"
+              >
                 Raporlar
-                {formData.reports?.filter(r => r.status === "pending").length > 0 && (
+                {formData.reports?.filter((r) => r.status === "pending")
+                  .length > 0 && (
                   <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
-                    {formData.reports.filter(r => r.status === "pending").length}
+                    {
+                      formData.reports.filter((r) => r.status === "pending")
+                        .length
+                    }
                   </Badge>
                 )}
               </TabsTrigger>
@@ -370,7 +446,10 @@ export function EventDetailModal({
                 <div className="space-y-2 md:space-y-3">
                   <Label className="text-sm md:text-base">Kategori</Label>
                   {isEditing ? (
-                    <Select value={formData.category} onValueChange={handleCategoryChange}>
+                    <Select
+                      value={formData.category}
+                      onValueChange={handleCategoryChange}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Kategori seçin" />
                       </SelectTrigger>
@@ -390,7 +469,10 @@ export function EventDetailModal({
                 <div className="space-y-2 md:space-y-3">
                   <Label className="text-sm md:text-base">Tarih</Label>
                   {isEditing ? (
-                    <DatePickerWithPresets date={formData.date} setDate={handleDateChange} />
+                    <DatePickerWithPresets
+                      date={formData.date}
+                      setDate={handleDateChange}
+                    />
                   ) : (
                     <p className="text-sm md:text-base flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
@@ -444,35 +526,37 @@ export function EventDetailModal({
                       className="min-h-[100px] md:min-h-[150px]"
                     />
                   ) : (
-                    <p className="text-sm md:text-base whitespace-pre-wrap">{formData.description}</p>
+                    <p className="text-sm md:text-base whitespace-pre-wrap">
+                      {formData.description}
+                    </p>
                   )}
                 </div>
               </div>
             </TabsContent>
 
             {/* Katılımcılar Tab */}
-            <TabsContent value="participants" className="space-y-4 pt-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Katılımcılar</h3>
-                  <span className="text-sm text-muted-foreground">
-                    {formData.participants.length} / {formData.maxParticipants}
-                  </span>
+            <TabsContent value="participants" className="relative">
+              {formData.participants?.length === 0 ? (
+                <div className="p-8 text-center">
+                  <p className="text-muted-foreground">
+                    Bu etkinliğe henüz katılımcı bulunmuyor.
+                  </p>
                 </div>
-
-                <div className="space-y-3">
-                  {formData.participants.map((participant) => (
+              ) : (
+                <div className="space-y-2">
+                  {formData.participants?.map((participant) => (
                     <div
                       key={participant.id}
-                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-slate-50 cursor-pointer transition-colors"
+                      className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
                       onClick={() => handleViewParticipantProfile(participant)}
                     >
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarImage src={participant.avatar} />
-                          <AvatarFallback>
-                            {participant.name.charAt(0)}
-                          </AvatarFallback>
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage
+                            src={participant.avatar}
+                            alt={participant.name}
+                          />
+                          <AvatarFallback>{participant.name[0]}</AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium">{participant.name}</p>
@@ -481,101 +565,32 @@ export function EventDetailModal({
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <HoverCard>
-                          <HoverCardTrigger>
-                            <Button variant="ghost" size="sm">
-                              <Info className="h-4 w-4" />
-                            </Button>
-                          </HoverCardTrigger>
-                          <HoverCardContent className="w-80">
-                            <div className="space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-sm font-medium">
-                                  Yaş:
-                                </span>
-                                <span className="text-sm">
-                                  {participant.age}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm font-medium">
-                                  Cinsiyet:
-                                </span>
-                                <span className="text-sm">
-                                  {participant.gender}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm font-medium">
-                                  Kayıt Tarihi:
-                                </span>
-                                <span className="text-sm">
-                                  {participant.registeredDate}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm font-medium">
-                                  Etkinlik Sayısı:
-                                </span>
-                                <span className="text-sm">
-                                  {participant.eventCount}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-sm font-medium">
-                                  Durum:
-                                </span>
-                                <Badge
-                                  variant={
-                                    participant.status === "active"
-                                      ? "default"
-                                      : "destructive"
-                                  }
-                                  className="text-xs"
-                                >
-                                  {participant.status === "active"
-                                    ? "Aktif"
-                                    : participant.status === "suspended"
-                                    ? "Askıda"
-                                    : "Engellenmiş"}
-                                </Badge>
-                              </div>
-                            </div>
-                          </HoverCardContent>
-                        </HoverCard>
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                      <div className="flex items-center space-x-2">
+                        <Badge
+                          variant="outline"
+                          className={
+                            participant.status === "active"
+                              ? "bg-green-50 text-green-700 border-green-200"
+                              : "bg-gray-50 text-gray-700 border-gray-200"
+                          }
+                        >
+                          {participant.status === "active" ? "Aktif" : "Pasif"}
+                        </Badge>
+                        <button
+                          className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          aria-label="Katılımcı profili"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleNavigateToUserProfile(participant.id);
+                            handleViewParticipantProfile(participant);
                           }}
                         >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                        {isEditing && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setFormData((prev) => ({
-                                ...prev,
-                                participants: prev.participants.filter(
-                                  (p) => p.id !== participant.id
-                                ),
-                              }));
-                            }}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        )}
+                          <Info className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              )}
             </TabsContent>
 
             {/* Raporlar Tab */}
@@ -813,10 +828,7 @@ export function EventDetailModal({
 
       <UserDetailModal
         open={showUserModal}
-        onOpenChange={(open) => {
-          setShowUserModal(open);
-          if (!open) setSelectedParticipant(null);
-        }}
+        onOpenChange={closeUserModal}
         user={selectedParticipant as any}
         isNested={true}
       />
