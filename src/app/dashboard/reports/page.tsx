@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,12 +35,12 @@ import {
   XCircle,
   Eye,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import { UserNav } from "@/components/nav/UserNav";
 import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
 import { Report, ReportPriority, ReportStatus } from "@/types/dashboard";
-import { DASHBOARD_REPORTS } from "@/mocks/dashboard-reports";
 import {
   DASHBOARD_TAB_LABELS,
   ENTITY_TYPE_LABELS,
@@ -53,6 +53,8 @@ import {
 import { ReportDetailModal } from "@/components/modals/ReportDetailModal";
 import { formatDate } from "@/lib/utils";
 import Cookies from "js-cookie";
+import React from "react";
+import { useSingleFetch } from "@/hooks";
 
 export default function ReportsPage() {
   const { toast } = useToast();
@@ -67,83 +69,166 @@ export default function ReportsPage() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  // Default reports for fallback
-  const defaultReports = DASHBOARD_REPORTS;
+  // Function to fetch reports - converted to useCallback for the useSingleFetch hook
+  const fetchReports = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+      // Add authentication headers to the request
+      const response = await fetch(`${apiUrl}/reports`, {
+        headers: {
+          Authorization: "Bearer " + Cookies.get("accessToken"),
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for session-based auth
+      });
 
-  // Fetch reports from API
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        setIsLoading(true);
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
-        // Add authentication headers to the request
-        const response = await fetch(`${apiUrl}/reports`, {
-          headers: {
-            Authorization: "Bearer " + Cookies.get("accessToken"),
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // Include cookies for session-based auth
-        });
-
-        // Immediately fall back to mock data if we get a 401
-        if (response.status === 401) {
-          console.warn(
-            "Authentication failed (401 Unauthorized), using mock data"
-          );
-          setAllReports(defaultReports);
-          setIsLoading(false);
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("API Response:", data);
-
-        if (data.status === "success" && Array.isArray(data.data?.reports)) {
-          // Map backend data to frontend format
-          const mappedReports: Report[] = data.data.reports.map(
-            (report: any) => ({
-              id: report.id || Math.floor(Math.random() * 1000),
-              entityId: report.entity_id || 0,
-              entityType: report.entity_type === "USER" ? "user" : "event",
-              subject: report.title || report.subject || "No subject",
-              description: report.description || "No description",
-              reportedBy: report.reporter_name || "Unknown User",
-              reportedDate: safeDateFormat(report.created_at),
-              priority: mapReportPriority(report.priority),
-              status: mapReportStatus(report.status),
-              reason:
-                report.reason || report.description || "No reason provided",
-              details:
-                report.details || report.description || "No details provided",
-              adminNote: report.admin_note || "",
-              adminName: report.admin_name || "",
-              adminActionDate: safeDateFormat(report.resolved_at),
-              isBanned: report.is_banned || false,
-            })
-          );
-
-          console.log("Mapped Reports:", mappedReports);
-          setAllReports(mappedReports);
-        } else {
-          console.warn("API returned invalid format, using default reports");
-          setAllReports(defaultReports);
-        }
-      } catch (err) {
-        console.error("Error fetching reports:", err);
-        setError(err instanceof Error ? err.message : "Unknown error");
-        setAllReports(defaultReports); // Fallback to default reports
-      } finally {
+      if (response.status === 401) {
+        setError(
+          "Oturum süresi doldu veya yetkiniz yok. Lütfen tekrar giriş yapın."
+        );
+        setAllReports([]);
         setIsLoading(false);
+        return;
       }
-    };
 
-    fetchReports();
-  }, []);
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      if (data.status === "success" && Array.isArray(data.data?.reports)) {
+        // Map backend data to frontend format
+        const mappedReports: Report[] = data.data.reports.map(
+          (report: any) => ({
+            id: report.id || Math.floor(Math.random() * 1000),
+            entityId: report.entity_id || 0,
+            entityType: report.entity_type === "USER" ? "user" : "event",
+            subject: report.title || report.subject || "No subject",
+            description: report.description || "No description",
+            reportedBy: report.reporter_name || "Unknown User",
+            reportedDate: safeDateFormat(report.created_at),
+            priority: mapReportPriority(report.priority),
+            status: mapReportStatus(report.status),
+            reason: report.reason || report.description || "No reason provided",
+            details:
+              report.details || report.description || "No details provided",
+            adminNote: report.admin_note || "",
+            adminName: report.admin_name || "",
+            adminActionDate: safeDateFormat(report.resolved_at),
+            isBanned: report.is_banned || false,
+          })
+        );
+
+        console.log("Mapped Reports:", mappedReports);
+        setAllReports(mappedReports);
+      } else {
+        setError("Bildirimler alınamadı: Sunucudan gelen veri formatı hatalı.");
+        setAllReports([]);
+      }
+    } catch (err) {
+      console.error("Error fetching reports:", err);
+
+      // Provide more specific error messages based on the error type
+      if (err instanceof Error) {
+        if (
+          err.message.includes("NetworkError") ||
+          err.message.includes("Failed to fetch")
+        ) {
+          setError(
+            "Ağ hatası: Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin."
+          );
+          toast({
+            title: "Bağlantı hatası",
+            description:
+              "Sunucuya bağlanılamadı, lütfen internet bağlantınızı kontrol edin.",
+            variant: "destructive",
+          });
+        } else if (err.message.includes("Timeout")) {
+          setError(
+            "Zaman aşımı: Sunucu yanıt vermek için çok uzun süre bekledi. Lütfen daha sonra tekrar deneyin."
+          );
+          toast({
+            title: "Zaman aşımı",
+            description: "Sunucu yanıt vermek için çok uzun süre bekledi.",
+            variant: "destructive",
+          });
+        } else if (err.message.includes("API error: 500")) {
+          setError(
+            "Sunucu hatası: İşlem sırasında bir sorun oluştu. Teknik ekip bu konuda bilgilendirildi."
+          );
+          toast({
+            title: "Sunucu hatası",
+            description: "Raporlar alınırken sunucu hatası oluştu.",
+            variant: "destructive",
+          });
+        } else if (err.message.includes("API error: 403")) {
+          setError(
+            "Erişim reddedildi: Bu verilere erişim için yetkiniz bulunmuyor."
+          );
+          toast({
+            title: "Erişim reddedildi",
+            description: "Bu içeriğe erişim yetkiniz bulunmuyor.",
+            variant: "destructive",
+          });
+        } else if (err.message.includes("API error: 404")) {
+          setError("Kaynak bulunamadı: İstenen veriler sunucuda bulunamadı.");
+          toast({
+            title: "Kaynak bulunamadı",
+            description: "Raporlar sunucuda bulunamadı.",
+            variant: "destructive",
+          });
+        } else {
+          setError(`Bir hata oluştu: ${err.message}`);
+          toast({
+            title: "Hata",
+            description: err.message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        setError(
+          "Bilinmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+        );
+        toast({
+          title: "Bilinmeyen hata",
+          description: "Raporlar alınırken bilinmeyen bir hata oluştu.",
+          variant: "destructive",
+        });
+      }
+
+      // Always set reports to empty array when there's an error - do not fall back to any mock data
+      setAllReports([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  // Use our single fetch hook to prevent double fetching
+  useSingleFetch(fetchReports);
+
+  // Create ref outside the effect
+  const isInitialRenderRef = useRef(true);
+
+  // Effect for filter changes - the issue causing duplicate calls
+  useEffect(() => {
+    // Skip the initial fetch - our useSingleFetch already handles that
+    if (isInitialRenderRef.current) {
+      isInitialRenderRef.current = false;
+      return;
+    }
+
+    // Only run the debounced fetch for actual filter changes
+    const debounceTimer = setTimeout(() => {
+      fetchReports();
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [filter, priorityFilter, statusFilter, fetchReports]);
 
   // Mapping functions for backend data
   const mapReportPriority = (backendPriority?: string): ReportPriority => {
@@ -329,6 +414,92 @@ export default function ReportsPage() {
     }
   };
 
+  // Show loading and error states
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="text-center py-12 text-red-500">
+          <AlertTriangle className="mx-auto h-8 w-8 mb-2" />
+          <p className="font-medium">{error}</p>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => {
+              setIsLoading(true);
+              setError(null);
+              fetchReports();
+            }}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tekrar Dene
+          </Button>
+        </div>
+      );
+    }
+
+    if (filteredReports.length === 0) {
+      return (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>Bu kriterlere uygun bildirim bulunamadı</p>
+        </div>
+      );
+    }
+
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>ID</TableHead>
+            <TableHead>Konu</TableHead>
+            <TableHead>Tür</TableHead>
+            <TableHead>Öncelik</TableHead>
+            <TableHead>Durum</TableHead>
+            <TableHead>Bildirim Tarihi</TableHead>
+            <TableHead>İşlemler</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredReports.map((report) => (
+            <TableRow key={report.id}>
+              <TableCell>#{report.id}</TableCell>
+              <TableCell>{report.subject}</TableCell>
+              <TableCell>
+                {report.entityType === "user"
+                  ? ENTITY_TYPE_LABELS.user
+                  : ENTITY_TYPE_LABELS.event}
+              </TableCell>
+              <TableCell>{getPriorityBadge(report.priority)}</TableCell>
+              <TableCell>{getStatusBadge(report.status)}</TableCell>
+              <TableCell>
+                {report.reportedDate
+                  ? formatDate(report.reportedDate)
+                  : "Belirtilmemiş"}
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleReportClick(report)}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  İncele
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <div className="flex-1 space-y-4 p-4 md:p-6">
@@ -431,123 +602,7 @@ export default function ReportsPage() {
                   : "Etkinlik raporları"}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : error ? (
-                <div className="text-center py-8 text-red-500">
-                  <AlertTriangle className="mx-auto h-8 w-8 mb-2" />
-                  <p>{error}</p>
-                </div>
-              ) : filteredReports.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>Bu kriterlere uygun rapor bulunamadı</p>
-                </div>
-              ) : (
-                <div className="md:hidden space-y-4">
-                  {filteredReports.map((report) => (
-                    <Card key={report.id} className="w-full">
-                      <CardContent className="p-4 space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">{report.subject}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {report.reportedBy}
-                            </p>
-                          </div>
-                          {getStatusBadge(report.status)}
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="outline">
-                            {ENTITY_TYPE_LABELS[report.entityType]}
-                          </Badge>
-                          {getPriorityBadge(report.priority)}
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(report.reportedDate).toLocaleDateString(
-                              "tr-TR"
-                            )}
-                          </p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleReportClick(report)}
-                          >
-                            Detaylar
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              {/* Masaüstü görünüm için tablo yapısı */}
-              <div className="hidden md:block">
-                {!isLoading && !error && filteredReports.length > 0 && (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Konu</TableHead>
-                        <TableHead>Tür</TableHead>
-                        <TableHead>Raporlayan</TableHead>
-                        <TableHead>Tarih</TableHead>
-                        <TableHead>Öncelik</TableHead>
-                        <TableHead>Durum</TableHead>
-                        <TableHead className="text-right">İşlemler</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredReports.map((report) => (
-                        <TableRow
-                          key={report.id}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => handleReportClick(report)}
-                        >
-                          <TableCell className="font-mono text-xs text-muted-foreground">
-                            #{report.id}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {report.subject}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {ENTITY_TYPE_LABELS[report.entityType]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{report.reportedBy}</TableCell>
-                          <TableCell>
-                            {report.reportedDate
-                              ? formatDate(report.reportedDate)
-                              : "-"}
-                          </TableCell>
-                          <TableCell>
-                            {getPriorityBadge(report.priority)}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(report.status)}</TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReportClick(report);
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
-            </CardContent>
+            <CardContent>{renderContent()}</CardContent>
           </Card>
         </Tabs>
       </div>

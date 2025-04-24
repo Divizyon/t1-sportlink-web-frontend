@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,6 +29,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Cookies from "js-cookie";
+import React from "react";
+import { useSingleFetch } from "@/hooks";
 
 interface SecurityLog {
   id: string;
@@ -58,7 +60,7 @@ export default function SecurityPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch security logs from API
-  const fetchSecurityLogs = async () => {
+  const fetchSecurityLogs = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -86,9 +88,10 @@ export default function SecurityPage() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          console.warn("Authentication failed, showing mock data");
-          // Fall back to mock data on auth error
-          setLogs(getMockSecurityLogs());
+          setError(
+            "Oturum süresi doldu veya yetkiniz yok. Lütfen tekrar giriş yapın."
+          );
+          setLogs([]);
           setIsLoading(false);
           return;
         }
@@ -100,82 +103,65 @@ export default function SecurityPage() {
       if (data.success && Array.isArray(data.data?.logs)) {
         setLogs(data.data.logs);
       } else {
-        // If API is not working, fall back to mock data
-        console.warn("API returned invalid format, showing mock data");
-        setLogs(getMockSecurityLogs());
+        // If API response doesn't have the expected format
+        setError(
+          "Güvenlik logları alınamadı: Sunucudan gelen veri formatı hatalı."
+        );
+        setLogs([]);
       }
     } catch (err) {
       console.error("Error fetching security logs:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
-      // Fall back to mock data on error
-      setLogs(getMockSecurityLogs());
+
+      // Provide more specific error messages based on the error type
+      if (err instanceof Error) {
+        if (
+          err.message.includes("NetworkError") ||
+          err.message.includes("Failed to fetch")
+        ) {
+          setError(
+            "Ağ hatası: Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin."
+          );
+        } else if (err.message.includes("Timeout")) {
+          setError(
+            "Zaman aşımı: Sunucu yanıt vermek için çok uzun süre bekledi. Lütfen daha sonra tekrar deneyin."
+          );
+        } else if (err.message.includes("API error: 500")) {
+          setError(
+            "Sunucu hatası: İşlem sırasında bir sorun oluştu. Teknik ekip bu konuda bilgilendirildi."
+          );
+        } else if (err.message.includes("API error: 403")) {
+          setError(
+            "Erişim reddedildi: Bu verilere erişim için yetkiniz bulunmuyor."
+          );
+        } else if (err.message.includes("API error: 404")) {
+          setError("Kaynak bulunamadı: İstenen veriler sunucuda bulunamadı.");
+        } else {
+          setError(`Bir hata oluştu: ${err.message}`);
+        }
+      } else {
+        setError(
+          "Bilinmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+        );
+      }
+
+      // Always set logs to empty array when there's an error - do not fall back to any mock data
+      setLogs([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dateFilter, searchQuery]);
 
-  // Mock data for fallback
-  const getMockSecurityLogs = (): SecurityLog[] => {
-    return [
-      {
-        id: "1",
-        type: "login",
-        admin: "admin1",
-        ip: "192.168.1.100",
-        date: "2024-03-15",
-        time: "10:30",
-        status: "success",
-        action: "Sisteme giriş yaptı",
-      },
-      {
-        id: "2",
-        type: "failed_attempt",
-        admin: "admin2",
-        ip: "192.168.1.101",
-        date: "2024-03-15",
-        time: "11:45",
-        status: "error",
-        action: "Başarısız giriş denemesi",
-      },
-      {
-        id: "3",
-        type: "role_change",
-        admin: "admin1",
-        ip: "192.168.1.102",
-        date: "2024-03-15",
-        time: "12:00",
-        status: "success",
-        action: "user123 kullanıcısının rolünü User'dan Admin'e değiştirdi",
-      },
-      {
-        id: "4",
-        type: "user_update",
-        admin: "admin3",
-        ip: "192.168.1.103",
-        date: "2024-03-15",
-        time: "14:20",
-        status: "warning",
-        action: "user789 kullanıcısını uygunsuz davranış sebebiyle raporladı",
-      },
-    ];
-  };
+  // Use our single fetch hook to prevent double fetching
+  useSingleFetch(fetchSecurityLogs);
 
-  // Load logs when component mounts
+  // Add effect for filter changes (with debounce)
   useEffect(() => {
-    fetchSecurityLogs();
-  }, []); // Empty dependency array means this runs once on mount
-
-  // Reload logs when filters change
-  useEffect(() => {
-    // Add debounce to avoid too many requests
-    const handler = setTimeout(() => {
+    const debounceTimer = setTimeout(() => {
       fetchSecurityLogs();
     }, 500);
 
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [dateFilter, searchQuery]);
+    return () => clearTimeout(debounceTimer);
+  }, [dateFilter, searchQuery, fetchSecurityLogs]);
 
   // Format date for display
   const formatDate = (dateStr: string) => {
