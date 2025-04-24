@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,8 +74,6 @@ import {
   REPORT_FILTERS,
 } from "@/constants/dashboard";
 import { ReportPriority, ReportStatus, ModalType } from "@/types";
-import { REPORTS } from "@/mocks/reports";
-import { USERS } from "@/mocks/users";
 import Link from "next/link";
 
 // Raporlar için demo verileri
@@ -130,7 +128,8 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string>(DASHBOARD_TABS.overview);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [preferredReportFilter, setPreferredReportFilter] = useState<string>(
     REPORT_FILTERS.all
   );
@@ -142,9 +141,197 @@ export default function DashboardPage() {
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
 
-  const [allReports, setAllReports] = useState<Report[]>(REPORTS);
+  // Create states for API data
+  const [allReports, setAllReports] = useState<Report[]>([]);
+  const [demoUsers, setDemoUsers] = useState<User[]>([]);
 
-  const demoUsers = USERS;
+  // Default reports and users for fallback
+  const defaultReports: Report[] = [
+    {
+      id: 1,
+      subject: "Inappropriate Content",
+      description: "This user posted inappropriate content in their profile",
+      reportedBy: "Ahmet Yılmaz",
+      reportedDate: "2023-05-15",
+      entityType: "user",
+      entityId: 123,
+      priority: "high",
+      status: "pending",
+    },
+    {
+      id: 2,
+      subject: "Misleading Event Info",
+      description: "Event details don't match actual event",
+      reportedBy: "Mehmet Demir",
+      reportedDate: "2023-05-12",
+      entityType: "event",
+      entityId: 456,
+      priority: "medium",
+      status: "reviewing",
+    },
+  ];
+  const defaultUsers = [
+    {
+      id: 1,
+      name: "Ahmet Yılmaz",
+      email: "ahmet@example.com",
+      role: "antrenor",
+      status: "active",
+      joinDate: "2023-01-15",
+      avatar: "/avatars/01.png",
+      registeredDate: "2023-01-10",
+      lastActive: "2023-07-15",
+    },
+    // Add a few more default users if needed
+  ];
+
+  // Fetch reports from API
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch("http://localhost:3000/api/reports", {
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("token"),
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Include cookies for session-based auth
+        });
+
+        // Immediately fall back to mock data if we get a 401
+        if (response.status === 401) {
+          console.warn(
+            "Authentication failed (401 Unauthorized), using mock data"
+          );
+          setAllReports(defaultReports);
+          setIsLoading(false);
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.status === "success" && Array.isArray(data.data?.reports)) {
+          // Map backend data to frontend format
+          const mappedReports: Report[] = data.data.reports.map(
+            (report: any) => ({
+              id: report.id || Math.floor(Math.random() * 1000),
+              subject: report.title || report.subject || "No subject",
+              description: report.description || "No description",
+              reportedBy: report.reporter_name || "Unknown User",
+              reportedDate: new Date(report.created_at)
+                .toISOString()
+                .split("T")[0],
+              entityType: report.entity_type === "USER" ? "user" : "event",
+              entityId: report.entity_id || 0,
+              priority: mapReportPriority(report.priority),
+              status: mapReportStatus(report.status),
+            })
+          );
+
+          setAllReports(mappedReports);
+        } else {
+          console.warn("API returned invalid format, using default reports");
+          setAllReports(defaultReports);
+        }
+      } catch (err) {
+        console.error("Error fetching reports:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+        setAllReports(defaultReports); // Fallback to default reports
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Fetch users from API - used in the dashboard
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:3000/api/users/details",
+          {
+            headers: {
+              Authorization: "Bearer " + localStorage.getItem("token"),
+              "Content-Type": "application/json",
+            },
+            credentials: "include", // Include cookies for session-based auth
+          }
+        );
+
+        // Immediately fall back to mock data if we get a 401
+        if (response.status === 401) {
+          console.warn(
+            "Authentication failed (401 Unauthorized), using mock data"
+          );
+          setDemoUsers(defaultUsers);
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.status === "success" && Array.isArray(data.data?.users)) {
+          // Map backend user data to frontend format
+          const mappedUsers: User[] = data.data.users.map((user: any) => ({
+            id: user.id || Math.floor(Math.random() * 1000),
+            name:
+              `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+              "Unknown Name",
+            email: user.email || "no-email@example.com",
+            role: user.role || "user",
+            status: user.active ? "active" : "inactive",
+            joinDate: new Date(user.created_at).toISOString().split("T")[0],
+            avatar: user.avatar_url || "/avatars/default.png",
+            lastActive:
+              user.last_login_at || new Date().toISOString().split("T")[0],
+          }));
+
+          setDemoUsers(mappedUsers);
+        } else {
+          console.warn("API returned invalid format, using default users");
+          setDemoUsers(defaultUsers);
+        }
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        setDemoUsers(defaultUsers); // Fallback to default users
+      }
+    };
+
+    fetchReports();
+    fetchUsers();
+  }, []);
+
+  // Mapping functions for backend data
+  const mapReportPriority = (backendPriority?: string): Priority => {
+    if (!backendPriority) return "medium";
+
+    const priorityMap: Record<string, Priority> = {
+      HIGH: "high",
+      MEDIUM: "medium",
+      LOW: "low",
+    };
+
+    return priorityMap[backendPriority.toUpperCase()] || "medium";
+  };
+
+  const mapReportStatus = (backendStatus?: string): Status => {
+    if (!backendStatus) return "pending";
+
+    const statusMap: Record<string, Status> = {
+      PENDING: "pending",
+      REVIEWING: "reviewing",
+      IN_REVIEW: "reviewing",
+      RESOLVED: "resolved",
+      REJECTED: "rejected",
+    };
+
+    return statusMap[backendStatus.toUpperCase()] || "pending";
+  };
 
   const openModal = (type: ModalType, entityData: any = null) => {
     if (
@@ -186,7 +373,7 @@ export default function DashboardPage() {
   };
 
   // Filtreleme işlemi
-  const filteredReports = REPORTS.filter((report) => {
+  const filteredReports = allReports.filter((report) => {
     // Tür filtreleme
     if (
       reportFilter !== REPORT_FILTERS.all &&

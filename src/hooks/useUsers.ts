@@ -24,14 +24,63 @@ export function useUsers(initialFilters: UserFilters = {}) {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        // In production, replace with actual API call
-        // const response = await fetch('/api/users');
-        // const data = await response.json();
-        // setUsers(data);
+        // Try to fetch from backend first
+        try {
+          const response = await fetch(
+            "http://localhost:3000/api/users/details",
+            {
+              headers: {
+                Authorization: "Bearer " + localStorage.getItem("token"),
+                "Content-Type": "application/json",
+              },
+              credentials: "include", // Include cookies for session-based auth
+            }
+          );
 
-        // Using mock data for now
-        setUsers(USERS);
-        setLoading(false);
+          // Immediately fall back to mock data if we get a 401
+          if (response.status === 401) {
+            console.warn(
+              "Authentication failed (401 Unauthorized), using mock data"
+            );
+            setUsers(USERS);
+            setLoading(false);
+            return;
+          }
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.status === "success" && Array.isArray(data.data?.users)) {
+              // Map backend data format to frontend format
+              const mappedUsers = data.data.users.map((user: any) => ({
+                id: user.id,
+                name: `${user.first_name} ${user.last_name}`,
+                email: user.email,
+                status: user.status || "active",
+                avatar: user.avatar_url || "/avatars/default.png",
+                phone: user.phone || "",
+                role: user.role || "user",
+                joinDate: new Date(user.created_at).toISOString().split("T")[0],
+                lastActive: user.last_login_at || new Date().toISOString(),
+                eventCount: user.event_count || 0,
+                completedEvents: user.completed_events || 0,
+              }));
+
+              setUsers(mappedUsers);
+              setLoading(false);
+              return;
+            }
+          }
+          throw new Error("API returned invalid format");
+        } catch (apiError) {
+          console.warn(
+            "Failed to fetch users from API, using mock data:",
+            apiError
+          );
+
+          // Fallback to mock data if API fails
+          setUsers(USERS);
+          setLoading(false);
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error("Failed to fetch users")
