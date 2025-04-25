@@ -1,17 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { 
-  CalendarIcon, 
-  Clock, 
-  MapPin, 
-  Users,  
-  Plus
-} from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { CalendarIcon, Clock, MapPin, Users, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,25 +13,30 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { toast } from "sonner"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { format } from "date-fns"
-import { tr } from "date-fns/locale"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { tr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
+import { Event, User } from "@/types/dashboard/eventDashboard";
 
 interface NewEventModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess?: (newEvent: Event) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: (newEvent: Partial<Event>) => void;
 }
 
 const EVENT_CATEGORIES = [
@@ -49,11 +48,15 @@ const EVENT_CATEGORIES = [
   "Koşu",
   "Yoga",
   "Fitness",
-  "Diğer"
-]
+  "Diğer",
+];
 
-export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalProps) {
-  const [loading, setLoading] = useState(false)
+export function NewEventModal({
+  open,
+  onOpenChange,
+  onSuccess,
+}: NewEventModalProps) {
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -61,9 +64,9 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
     time: "",
     location: "",
     category: "",
-    maxParticipants: 20
-  })
-  
+    maxParticipants: 20,
+  });
+
   const resetForm = () => {
     setFormData({
       title: "",
@@ -72,63 +75,86 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
       time: "",
       location: "",
       category: "",
-      maxParticipants: 20
-    })
-  }
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-  
+      maxParticipants: 20,
+    });
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     // Form validasyonu
-    if (!formData.title || !formData.description || !formData.date || !formData.time || !formData.location || !formData.category) {
-      toast.error("Lütfen tüm gerekli alanları doldurun")
-      return
+    if (
+      !formData.title ||
+      !formData.description ||
+      !formData.date ||
+      !formData.time ||
+      !formData.location ||
+      !formData.category
+    ) {
+      toast.error("Lütfen tüm gerekli alanları doldurun");
+      return;
     }
-    
-    setLoading(true)
-    
+
+    setLoading(true);
+
     // Simüle edilmiş API çağrısı
     setTimeout(() => {
-      const newEvent = {
+      // Create a default user for the organizer
+      const defaultUser: User = {
+        id: "temp-user-id",
+        name: "Sistem",
+        surname: "Kullanıcısı",
+        role: "antrenor",
+        email: "sistem@sportlink.com",
+      };
+
+      const newEvent: Partial<Event> = {
         id: Math.random().toString(36).substr(2, 9),
         title: formData.title,
         description: formData.description,
-        date: formData.date,
+        date: formData.date || new Date(),
         time: formData.time,
         location: formData.location,
         maxParticipants: formData.maxParticipants,
         participants: 0,
         status: "pending",
         category: formData.category,
-        organizer: null // Ana sayfada atanacak
-      }
+        organizer: defaultUser, // Use our default user
+      };
 
-      setLoading(false)
-      toast.success("Etkinlik başarıyla oluşturuldu")
-      resetForm()
-      onOpenChange(false)
-      if (onSuccess) onSuccess(newEvent)
-    }, 1500)
-  }
-  
+      setLoading(false);
+      toast.success("Etkinlik başarıyla oluşturuldu");
+      resetForm();
+      onOpenChange(false);
+      if (onSuccess) onSuccess(newEvent);
+    }, 1500);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] w-full sm:max-w-[600px] md:max-w-[650px] lg:max-w-[900px] xl:max-w-[1100px] h-[90vh] sm:h-[85vh] md:h-[80vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader className="mb-4 md:mb-6">
-          <DialogTitle className="text-lg md:text-xl font-semibold">Yeni Etkinlik Oluştur</DialogTitle>
+          <DialogTitle className="text-lg md:text-xl font-semibold">
+            Yeni Etkinlik Oluştur
+          </DialogTitle>
           <DialogDescription className="text-sm md:text-base">
-            Oluşturacağınız etkinlik, onaylandıktan sonra kullanıcılar tarafından görüntülenebilecek.
+            Oluşturacağınız etkinlik, onaylandıktan sonra kullanıcılar
+            tarafından görüntülenebilecek.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
           <div className="space-y-2 md:space-y-4">
-            <Label htmlFor="title" className="text-sm md:text-base font-medium">Etkinlik Başlığı *</Label>
+            <Label htmlFor="title" className="text-sm md:text-base font-medium">
+              Etkinlik Başlığı *
+            </Label>
             <Input
               id="title"
               name="title"
@@ -139,9 +165,14 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
               className="w-full"
             />
           </div>
-          
+
           <div className="space-y-2 md:space-y-4">
-            <Label htmlFor="description" className="text-sm md:text-base font-medium">Etkinlik Açıklaması *</Label>
+            <Label
+              htmlFor="description"
+              className="text-sm md:text-base font-medium"
+            >
+              Etkinlik Açıklaması *
+            </Label>
             <Textarea
               id="description"
               name="description"
@@ -152,10 +183,15 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
               required
             />
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="date" className="text-sm md:text-base font-medium">Tarih *</Label>
+              <Label
+                htmlFor="date"
+                className="text-sm md:text-base font-medium"
+              >
+                Tarih *
+              </Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -177,7 +213,13 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
                   <Calendar
                     mode="single"
                     selected={formData.date || undefined}
-                    onSelect={(date) => setFormData(prev => ({ ...prev, date }))}
+                    onSelect={(date) => {
+                      // Handle both date and undefined (when unselected)
+                      setFormData((prev) => ({
+                        ...prev,
+                        date: date === undefined ? null : date,
+                      }));
+                    }}
                     initialFocus
                   />
                 </PopoverContent>
@@ -185,7 +227,12 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="time" className="text-sm md:text-base font-medium">Saat *</Label>
+              <Label
+                htmlFor="time"
+                className="text-sm md:text-base font-medium"
+              >
+                Saat *
+              </Label>
               <div className="flex items-center relative">
                 <Clock className="absolute left-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -202,10 +249,17 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category" className="text-sm md:text-base font-medium">Kategori *</Label>
+            <Label
+              htmlFor="category"
+              className="text-sm md:text-base font-medium"
+            >
+              Kategori *
+            </Label>
             <Select
               value={formData.category}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, category: value }))
+              }
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Kategori seçin" />
@@ -219,10 +273,15 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="location" className="text-sm md:text-base font-medium">Konum *</Label>
+              <Label
+                htmlFor="location"
+                className="text-sm md:text-base font-medium"
+              >
+                Konum *
+              </Label>
               <div className="flex items-center relative">
                 <MapPin className="absolute left-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -236,9 +295,14 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="maxParticipants" className="text-sm md:text-base font-medium">Maksimum Katılımcı *</Label>
+              <Label
+                htmlFor="maxParticipants"
+                className="text-sm md:text-base font-medium"
+              >
+                Maksimum Katılımcı *
+              </Label>
               <div className="flex items-center relative">
                 <Users className="absolute left-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -255,7 +319,7 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
               </div>
             </div>
           </div>
-          
+
           <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-6">
             <Button
               type="button"
@@ -266,8 +330,8 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
             >
               İptal
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={loading}
               className="w-full sm:w-auto text-sm md:text-base"
             >
@@ -277,5 +341,5 @@ export function NewEventModal({ open, onOpenChange, onSuccess }: NewEventModalPr
         </form>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}

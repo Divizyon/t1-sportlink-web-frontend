@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -39,7 +39,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { type CheckedState } from "@radix-ui/react-checkbox";
+import Cookies from "js-cookie";
+import { RefreshCw } from "lucide-react";
+import { useSingleFetch } from "@/hooks";
 // import { columns } from "./components/columns"; // Commented out missing import
+import React from "react";
 
 interface User {
   id: string;
@@ -74,39 +78,219 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: "1",
-      name: "Ahmet Yılmaz",
-      email: "ahmet@example.com",
-      role: "antrenor",
-      status: "active",
-    },
-    {
-      id: "2",
-      name: "Ayşe Demir",
-      email: "ayse@example.com",
-      role: "bireysel_kullanici",
-      status: "active",
-    },
-    {
-      id: "3",
-      name: "Mehmet Kaya",
-      email: "mehmet@example.com",
-      role: "kulup_uyesi",
-      status: "active",
-    },
-    {
-      id: "4",
-      name: "Fatma Öztürk",
-      email: "fatma@example.com",
-      role: "antrenor",
-      status: "inactive",
-    }, // Inactive example
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
   const [selectedUserForWarning, setSelectedUserForWarning] =
     useState<User | null>(null);
+  // Use a ref to track if we've already fetched data to prevent double fetching
+  const hasFetched = useRef(false);
+
+  // Map backend role to frontend role
+  const mapUserRole = (backendRole?: string): User["role"] => {
+    if (!backendRole) return "bireysel_kullanici";
+
+    // Convert to lowercase for case-insensitive comparison
+    const roleLower = backendRole.toLowerCase();
+
+    // Direct mappings for common role formats
+    if (
+      roleLower === "bireysel_kullanici" ||
+      roleLower === "üye" ||
+      roleLower === "user"
+    ) {
+      return "bireysel_kullanici";
+    }
+
+    if (
+      roleLower === "antrenor" ||
+      roleLower === "admin" ||
+      roleLower === "staff"
+    ) {
+      return "antrenor";
+    }
+
+    if (
+      roleLower === "kulup_uyesi" ||
+      roleLower === "kulüp üyesi" ||
+      roleLower === "member"
+    ) {
+      return "kulup_uyesi";
+    }
+
+    // For other unknown roles, default to bireysel_kullanici
+    console.log(`Unknown role detected: ${backendRole}, using default`);
+    return "bireysel_kullanici";
+  };
+
+  // Fetch users from API as a useCallback
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+
+      const response = await fetch(`${apiUrl}/users`, {
+        headers: {
+          Authorization: `Bearer ${Cookies.get("accessToken")}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for session-based auth
+      });
+
+      if (response.status === 401) {
+        setError(
+          "Oturum süresi doldu veya yetkiniz yok. Lütfen tekrar giriş yapın."
+        );
+        setUsers([]);
+        toast.error("Yetkilendirme hatası, lütfen tekrar giriş yapın.");
+        setLoading(false);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      if (data.status === "success") {
+        // Check both possible response formats
+        const userList = Array.isArray(data.data?.users)
+          ? data.data.users
+          : Array.isArray(data.data?.USER_DETAILS)
+          ? data.data.USER_DETAILS
+          : null;
+
+        if (userList) {
+          // Map backend user data to frontend format
+          const mappedUsers: User[] = userList.map((user: any) => ({
+            id: user.id?.toString() || String(Math.random()),
+            name:
+              user.name ||
+              `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+              "Unknown Name",
+            email: user.email || "no-email@example.com",
+            role: mapUserRole(user.role),
+            status: user.status === "aktif" ? "active" : "inactive",
+          }));
+
+          setUsers(mappedUsers);
+          toast.success("Kullanıcı listesi güncellendi");
+        } else {
+          setError("Sunucudan gelen veri formatı hatalı.");
+          setUsers([]);
+          toast.error("API veri formatı hatalı, kullanıcılar gösterilemiyor");
+        }
+      } else {
+        setError(
+          "Kullanıcı verileri alınamadı: " + (data.message || "Bilinmeyen hata")
+        );
+        setUsers([]);
+        toast.error("API hatası, kullanıcılar gösterilemiyor");
+      }
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      // Provide more specific error messages based on the error type
+      if (err instanceof Error) {
+        if (
+          err.message.includes("NetworkError") ||
+          err.message.includes("Failed to fetch")
+        ) {
+          setError(
+            "Ağ hatası: Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin."
+          );
+          toast.error("Sunucuya bağlanılamadı");
+        } else if (err.message.includes("Timeout")) {
+          setError(
+            "Zaman aşımı: Sunucu yanıt vermek için çok uzun süre bekledi. Lütfen daha sonra tekrar deneyin."
+          );
+          toast.error("Bağlantı zaman aşımına uğradı");
+        } else if (err.message.includes("API error: 500")) {
+          setError(
+            "Sunucu hatası: İşlem sırasında bir sorun oluştu. Teknik ekip bu konuda bilgilendirildi."
+          );
+          toast.error("Sunucu hatası");
+        } else if (err.message.includes("API error: 403")) {
+          setError(
+            "Erişim reddedildi: Bu verilere erişim için yetkiniz bulunmuyor."
+          );
+          toast.error("Erişim reddedildi");
+        } else if (err.message.includes("API error: 404")) {
+          setError("Kaynak bulunamadı: İstenen veriler sunucuda bulunamadı.");
+          toast.error("Kullanıcı verileri bulunamadı");
+        } else {
+          setError(`Bir hata oluştu: ${err.message}`);
+          toast.error(`Hata: ${err.message}`);
+        }
+      } else {
+        setError(
+          "Bilinmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+        );
+        toast.error("Bilinmeyen bir hata oluştu");
+      }
+
+      // Always set users to empty array when there's an error - do not fall back to any mock data
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Use our single fetch hook to prevent double fetching
+  useSingleFetch(fetchUsers, "users-page-initial-fetch");
+
+  // Track previous filter values to avoid unnecessary fetches
+  const prevFiltersRef = useRef({
+    searchQuery,
+    selectedRoles,
+    selectedStatuses,
+  });
+
+  // Handle filter changes after initial load
+  useEffect(() => {
+    // Skip first render (already handled by useSingleFetch)
+    if (
+      prevFiltersRef.current.searchQuery === "" &&
+      prevFiltersRef.current.selectedRoles.length === 0 &&
+      prevFiltersRef.current.selectedStatuses.length === 0
+    ) {
+      // Update reference to current values
+      prevFiltersRef.current = {
+        searchQuery,
+        selectedRoles,
+        selectedStatuses,
+      };
+      return;
+    }
+
+    // Check if filters actually changed
+    if (
+      prevFiltersRef.current.searchQuery !== searchQuery ||
+      prevFiltersRef.current.selectedRoles.length !== selectedRoles.length ||
+      prevFiltersRef.current.selectedStatuses.length !== selectedStatuses.length
+    ) {
+      // Update our reference
+      prevFiltersRef.current = {
+        searchQuery,
+        selectedRoles,
+        selectedStatuses,
+      };
+
+      // Debounce to prevent rapid API calls
+      const debounceTimer = setTimeout(() => {
+        console.log("Filters changed, fetching new user data...");
+        fetchUsers();
+      }, 500);
+
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [searchQuery, selectedRoles, selectedStatuses, fetchUsers]);
+
+  console.log("--- UsersPage Before Return --- users state:", users);
 
   // State for user modal
   const [userModalOpen, setUserModalOpen] = useState(false);
@@ -276,11 +460,127 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
     }
   };
 
-  console.log("--- UsersPage Before Return --- users state:", users); // Log before return
+  const refreshUsers = () => {
+    console.log("Manual refresh triggered...");
+    setLoading(true);
+    setError(null);
 
-  useEffect(() => {
-    // ... existing code ...
-  }, []);
+    const fetchUsers = async () => {
+      try {
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+
+        const response = await fetch(`${apiUrl}/users`, {
+          headers: {
+            Authorization: `Bearer ${Cookies.get("accessToken")}`,
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Include cookies for session-based auth
+        });
+
+        if (response.status === 401) {
+          setError(
+            "Oturum süresi doldu veya yetkiniz yok. Lütfen tekrar giriş yapın."
+          );
+          setUsers([]);
+          toast.error("Yetkilendirme hatası, lütfen tekrar giriş yapın.");
+          setLoading(false);
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("API Response:", data);
+
+        if (data.status === "success") {
+          // Check both possible response formats
+          const userList = Array.isArray(data.data?.users)
+            ? data.data.users
+            : Array.isArray(data.data?.USER_DETAILS)
+            ? data.data.USER_DETAILS
+            : null;
+
+          if (userList) {
+            // Map backend user data to frontend format
+            const mappedUsers: User[] = userList.map((user: any) => ({
+              id: user.id?.toString() || String(Math.random()),
+              name:
+                user.name ||
+                `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+                "Unknown Name",
+              email: user.email || "no-email@example.com",
+              role: mapUserRole(user.role),
+              status: user.status === "aktif" ? "active" : "inactive",
+            }));
+
+            setUsers(mappedUsers);
+            toast.success("Kullanıcı listesi güncellendi");
+          } else {
+            setError("Sunucudan gelen veri formatı hatalı.");
+            setUsers([]);
+            toast.error("API veri formatı hatalı, kullanıcılar gösterilemiyor");
+          }
+        } else {
+          setError(
+            "Kullanıcı verileri alınamadı: " +
+              (data.message || "Bilinmeyen hata")
+          );
+          setUsers([]);
+          toast.error("API hatası, kullanıcılar gösterilemiyor");
+        }
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        // Provide more specific error messages based on the error type
+        if (err instanceof Error) {
+          if (
+            err.message.includes("NetworkError") ||
+            err.message.includes("Failed to fetch")
+          ) {
+            setError(
+              "Ağ hatası: Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin."
+            );
+            toast.error("Sunucuya bağlanılamadı");
+          } else if (err.message.includes("Timeout")) {
+            setError(
+              "Zaman aşımı: Sunucu yanıt vermek için çok uzun süre bekledi. Lütfen daha sonra tekrar deneyin."
+            );
+            toast.error("Bağlantı zaman aşımına uğradı");
+          } else if (err.message.includes("API error: 500")) {
+            setError(
+              "Sunucu hatası: İşlem sırasında bir sorun oluştu. Teknik ekip bu konuda bilgilendirildi."
+            );
+            toast.error("Sunucu hatası");
+          } else if (err.message.includes("API error: 403")) {
+            setError(
+              "Erişim reddedildi: Bu verilere erişim için yetkiniz bulunmuyor."
+            );
+            toast.error("Erişim reddedildi");
+          } else if (err.message.includes("API error: 404")) {
+            setError("Kaynak bulunamadı: İstenen veriler sunucuda bulunamadı.");
+            toast.error("Kullanıcı verileri bulunamadı");
+          } else {
+            setError(`Bir hata oluştu: ${err.message}`);
+            toast.error(`Hata: ${err.message}`);
+          }
+        } else {
+          setError(
+            "Bilinmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+          );
+          toast.error("Bilinmeyen bir hata oluştu");
+        }
+
+        // Always set users to empty array when there's an error - do not fall back to any mock data
+        setUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  };
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -365,6 +665,12 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button variant="outline" onClick={refreshUsers} disabled={loading}>
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />
+            Yenile
+          </Button>
         </div>
       </div>
 
@@ -373,196 +679,260 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
           <CardTitle>Kullanıcı Listesi</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:hidden">
-            {filteredUsers.map((user) => (
-              <Card key={user.id} className="p-4">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium">{user.name}</div>
-                    <Badge
-                      variant={
-                        user.status === "active" ? "default" : "secondary"
-                      }
-                    >
-                      {user.status === "active" ? "Aktif" : "Pasif"}
-                    </Badge>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {user.email}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Select
-                      value={user.role}
-                      onValueChange={(value: User["role"]) =>
-                        handleRoleChange(user.id, value)
-                      }
-                    >
-                      <SelectTrigger
-                        className={`w-[180px] ${ROLE_COLORS[user.role].bg} ${
-                          ROLE_COLORS[user.role].text
-                        }`}
+          {loading && (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          )}
+
+          {error && !loading && (
+            <div className="text-center py-8 text-red-500">
+              <AlertTriangle className="mx-auto h-8 w-8 mb-2" />
+              <p>{error}</p>
+              <Button variant="outline" onClick={refreshUsers} className="mt-4">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Tekrar Dene
+              </Button>
+            </div>
+          )}
+
+          {!loading && !error && filteredUsers.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Kullanıcı bulunamadı</p>
+            </div>
+          )}
+
+          {!loading && !error && filteredUsers.length > 0 && (
+            <div className="grid gap-4 md:hidden">
+              {filteredUsers.map((user) => (
+                <Card key={user.id} className="p-4">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">{user.name}</div>
+                      <Badge
+                        variant={
+                          user.status === "active" ? "default" : "secondary"
+                        }
                       >
-                        <SelectValue placeholder="Rol seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem
-                          value="bireysel_kullanici"
-                          className="text-blue-800 hover:bg-blue-100"
-                        >
-                          Bireysel Kullanıcı
-                        </SelectItem>
-                        <SelectItem
-                          value="antrenor"
-                          className="text-green-800 hover:bg-green-100"
-                        >
-                          Antrenör
-                        </SelectItem>
-                        <SelectItem
-                          value="kulup_uyesi"
-                          className="text-purple-800 hover:bg-purple-100"
-                        >
-                          Kulüp Üyesi
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleSendAlert(user.id)}
-                    >
-                      <Bell className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>İsim</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Durum</TableHead>
-                  <TableHead className="text-right">İşlemler</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => {
-                  return (
-                    <TableRow
-                      key={user.id}
-                      onClick={() => handleOpenUserDetails(user)}
-                      className="cursor-pointer hover:bg-muted/50"
-                    >
-                      <TableCell className="font-mono text-xs text-muted-foreground">{`#${user.id}`}</TableCell>
-                      <TableCell className="font-medium">
-                        {/* Make name clickable */}
-                        <button
-                          className={`text-left hover:underline ${
-                            ROLE_COLORS[user.role]?.text || "text-gray-900"
+                        {user.status === "active" ? "Aktif" : "Pasif"}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {user.email}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Select
+                        value={user.role}
+                        onValueChange={(value: User["role"]) =>
+                          handleRoleChange(user.id, value)
+                        }
+                      >
+                        <SelectTrigger
+                          className={`w-[180px] ${ROLE_COLORS[user.role].bg} ${
+                            ROLE_COLORS[user.role].text
                           }`}
                         >
-                          {user.name}
-                        </button>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-block px-2 py-1 rounded-md ${
-                            ROLE_COLORS[user.role]?.bg || "bg-transparent"
-                          } ${ROLE_COLORS[user.role]?.text || "text-gray-900"}`}
-                        >
-                          {user.email}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={user.role}
-                          onValueChange={(value: User["role"]) =>
-                            handleRoleChange(user.id, value)
-                          }
-                        >
-                          <SelectTrigger
-                            className={`w-[180px] ${
-                              ROLE_COLORS[user.role].bg
-                            } ${ROLE_COLORS[user.role].text}`}
+                          <SelectValue placeholder="Rol seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem
+                            value="bireysel_kullanici"
+                            className="text-blue-800 hover:bg-blue-100"
                           >
-                            <SelectValue placeholder="Rol seçin" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem
-                              value="bireysel_kullanici"
-                              className="text-blue-800 hover:bg-blue-100"
-                            >
-                              Bireysel Kullanıcı
-                            </SelectItem>
-                            <SelectItem
-                              value="antrenor"
-                              className="text-yellow-800 hover:bg-yellow-100"
-                            >
-                              Antrenör
-                            </SelectItem>
-                            <SelectItem
-                              value="kulup_uyesi"
-                              className="text-purple-800 hover:bg-purple-100"
-                            >
-                              Kulüp Üyesi
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            user.status === "active"
-                              ? "border-green-200 bg-green-100 text-green-800"
-                              : "border-gray-200 bg-gray-100 text-gray-800"
-                          }
-                        >
-                          {user.status === "active" ? "Aktif" : "Devre Dışı"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {/* Actions Column */}
-                        <div className="flex items-center justify-end space-x-2">
-                          {/* Warning Button */}
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevent row click when clicking button
-                              handleOpenWarningModal(user);
-                            }}
-                            title="Uyarı Gönder"
+                            Bireysel Kullanıcı
+                          </SelectItem>
+                          <SelectItem
+                            value="antrenor"
+                            className="text-green-800 hover:bg-green-100"
                           >
-                            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                          </Button>
-
-                          {/* Status Switch */}
-                          <Switch
-                            checked={user.status === "active"}
-                            onCheckedChange={() =>
-                              handleUserStatusChange(user.id)
-                            }
-                            onClick={(e) => e.stopPropagation()} // Prevent row click when clicking switch
-                            aria-label="Kullanıcı durumu"
-                            title={
-                              user.status === "active"
-                                ? "Kullanıcıyı devre dışı bırak"
-                                : "Kullanıcıyı aktif et"
-                            }
-                          />
+                            Antrenör
+                          </SelectItem>
+                          <SelectItem
+                            value="kulup_uyesi"
+                            className="text-purple-800 hover:bg-purple-100"
+                          >
+                            Kulüp Üyesi
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleSendAlert(user.id)}
+                      >
+                        <Bell className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+          {!loading && !error && (
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>İsim</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Rol</TableHead>
+                    <TableHead>Durum</TableHead>
+                    <TableHead className="text-right">İşlemler</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {error && !loading && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center text-red-500"
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          <AlertTriangle className="h-8 w-8" />
+                          <p>{error}</p>
                         </div>
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                  )}
+                  {!loading && !error && filteredUsers.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center text-muted-foreground"
+                      >
+                        <p>Gösterilecek kullanıcı yok</p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!loading &&
+                    !error &&
+                    filteredUsers.length > 0 &&
+                    filteredUsers.map((user) => {
+                      return (
+                        <TableRow
+                          key={user.id}
+                          onClick={() => handleOpenUserDetails(user)}
+                          className="cursor-pointer hover:bg-muted/50"
+                        >
+                          <TableCell className="font-mono text-xs text-muted-foreground">{`#${user.id}`}</TableCell>
+                          <TableCell className="font-medium">
+                            {/* Make name clickable */}
+                            <button
+                              className={`text-left hover:underline ${
+                                ROLE_COLORS[user.role]?.text || "text-gray-900"
+                              }`}
+                            >
+                              {user.name}
+                            </button>
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-block px-2 py-1 rounded-md ${
+                                ROLE_COLORS[user.role]?.bg || "bg-transparent"
+                              } ${
+                                ROLE_COLORS[user.role]?.text || "text-gray-900"
+                              }`}
+                            >
+                              {user.email}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={user.role}
+                              onValueChange={(value: User["role"]) =>
+                                handleRoleChange(user.id, value)
+                              }
+                            >
+                              <SelectTrigger
+                                className={`w-[180px] ${
+                                  ROLE_COLORS[user.role].bg
+                                } ${ROLE_COLORS[user.role].text}`}
+                              >
+                                <SelectValue placeholder="Rol seçin" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem
+                                  value="bireysel_kullanici"
+                                  className="text-blue-800 hover:bg-blue-100"
+                                >
+                                  Bireysel Kullanıcı
+                                </SelectItem>
+                                <SelectItem
+                                  value="antrenor"
+                                  className="text-yellow-800 hover:bg-yellow-100"
+                                >
+                                  Antrenör
+                                </SelectItem>
+                                <SelectItem
+                                  value="kulup_uyesi"
+                                  className="text-purple-800 hover:bg-purple-100"
+                                >
+                                  Kulüp Üyesi
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={
+                                user.status === "active"
+                                  ? "border-green-200 bg-green-100 text-green-800"
+                                  : "border-gray-200 bg-gray-100 text-gray-800"
+                              }
+                            >
+                              {user.status === "active"
+                                ? "Aktif"
+                                : "Devre Dışı"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {/* Actions Column */}
+                            <div className="flex items-center justify-end space-x-2">
+                              {/* Warning Button */}
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent row click when clicking button
+                                  handleOpenWarningModal(user);
+                                }}
+                                title="Uyarı Gönder"
+                              >
+                                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                              </Button>
+
+                              {/* Status Switch */}
+                              <Switch
+                                checked={user.status === "active"}
+                                onCheckedChange={() =>
+                                  handleUserStatusChange(user.id)
+                                }
+                                onClick={(e) => e.stopPropagation()} // Prevent row click when clicking switch
+                                aria-label="Kullanıcı durumu"
+                                title={
+                                  user.status === "active"
+                                    ? "Kullanıcıyı devre dışı bırak"
+                                    : "Kullanıcıyı aktif et"
+                                }
+                              />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
       <WarningModal
