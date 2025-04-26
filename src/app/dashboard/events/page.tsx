@@ -26,7 +26,6 @@ import { DeleteEventModal } from "@/components/modals/DeleteEventModal";
 import { CategoryFilterDropdown } from "@/components/CategoryFilterDropdown";
 import { Plus, ChevronRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
 import {
   Tooltip,
@@ -45,6 +44,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Event, User } from "@/types/dashboard/eventDashboard";
 import { useSingleFetch } from "@/hooks";
+import { toast } from "sonner";
 
 // Kategori renkleri
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
@@ -55,12 +55,33 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   Yüzme: { bg: "bg-cyan-100", text: "text-cyan-800" },
   Koşu: { bg: "bg-red-100", text: "text-red-800" },
   Yoga: { bg: "bg-pink-100", text: "text-pink-800" },
+  Bisiklet: { bg: "bg-yellow-100", text: "text-yellow-800" },
+  Yürüyüş: { bg: "bg-gray-100", text: "text-gray-800" },
   Fitness: { bg: "bg-yellow-100", text: "text-yellow-800" },
   Diğer: { bg: "bg-gray-100", text: "text-gray-800" },
 };
 
+// Sport ID ve Kategori eşleştirmesi
+const SPORT_CATEGORY_MAP: Record<number, string> = {
+  4: "Futbol",
+  5: "Basketbol",
+  14: "Voleybol",
+  6: "Tenis",
+  9: "Yüzme",
+  10: "Koşu",
+  11: "Yoga",
+  13: "Bisiklet",
+  15: "Yürüyüş",
+  8: "Fitness",
+};
+
 // Durum renkleri
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+  ACTIVE: { bg: "bg-yellow-100", text: "text-yellow-800" },
+  PENDING: { bg: "bg-green-100", text: "text-green-800" },
+  REJECTED: { bg: "bg-red-100", text: "text-red-800" },
+  COMPLETED: { bg: "bg-gray-100", text: "text-gray-800" },
+  // Eski değerleri uyumluluk için tutalım
   pending: { bg: "bg-yellow-100", text: "text-yellow-800" },
   approved: { bg: "bg-green-100", text: "text-green-800" },
   rejected: { bg: "bg-red-100", text: "text-red-800" },
@@ -96,11 +117,17 @@ export default function EventsPage() {
   const hasFetched = useRef(false);
 
   // Helper function to map backend category to frontend category
-  const mapBackendCategory = (backendCategory?: string): string => {
+  const mapBackendCategory = (backendCategory?: string | number): string => {
+    // Eğer bir sport_id (number) geldiyse, direkt olarak dönüştür
+    if (typeof backendCategory === "number") {
+      return SPORT_CATEGORY_MAP[backendCategory] || "Diğer";
+    }
+
+    // Eğer zaten bir category string olarak geldiyse
     if (!backendCategory) return "Diğer";
 
     // Convert to lowercase and normalize Turkish characters for comparison
-    const normalizedCategory = backendCategory
+    const normalizedCategory = String(backendCategory)
       .toLowerCase()
       .replace(/ı/g, "i")
       .replace(/ğ/g, "g")
@@ -117,10 +144,11 @@ export default function EventsPage() {
     if (normalizedCategory.includes("yuzme")) return "Yüzme";
     if (normalizedCategory.includes("kosu")) return "Koşu";
     if (normalizedCategory.includes("yoga")) return "Yoga";
-    if (normalizedCategory.includes("fitness")) return "Fitness";
+    if (normalizedCategory.includes("bisiklet")) return "Bisiklet";
+    if (normalizedCategory.includes("yuruyus")) return "Yürüyüş";
 
     // If no match found, use the original category or default to "Diğer"
-    return backendCategory || "Diğer";
+    return String(backendCategory) || "Diğer";
   };
 
   // Function to fetch events - defined as useCallback for reuse
@@ -245,7 +273,14 @@ export default function EventsPage() {
       if (eventData && eventData.length > 0) {
         // Map backend data to frontend format
         try {
-          const mappedEvents = eventData.map((event: any) => {
+          const mappedEvents = eventData.map((event: any, index: number) => {
+            console.log(`Etkinlik ${index + 1} veri yapısı:`, {
+              id: event.id || event.event_id,
+              title: event.title || event.event_title || event.name,
+              sport_id: event.sport_id, // Sport ID'sini logla
+              date: event.date || event.event_date,
+            });
+
             // Create an organizer object that matches User interface
             const organizer: User = {
               id: event.organizer?.id || event.creator_id || "unknown",
@@ -257,6 +292,15 @@ export default function EventsPage() {
                 "unknown@example.com",
               role: "antrenor",
             };
+
+            // Sport ID varsa, bunu özellikle logla
+            if (event.sport_id !== undefined) {
+              console.log(
+                `Etkinlik "${event.title || "Isimsiz"}" için sport_id: ${
+                  event.sport_id
+                }, dönüştürülen kategori: ${mapBackendCategory(event.sport_id)}`
+              );
+            }
 
             // Map the event to our Event interface
             return {
@@ -272,10 +316,12 @@ export default function EventsPage() {
                 event.location_name ||
                 "No Location",
               category: mapBackendCategory(
-                event.category ||
-                  event.event_type ||
-                  event.sport_type ||
-                  "Diğer"
+                event.sport_id !== undefined
+                  ? event.sport_id
+                  : event.category ||
+                      event.event_type ||
+                      event.sport_type ||
+                      "Diğer"
               ),
               maxParticipants: event.max_participants || event.capacity || 50,
               participants:
@@ -292,6 +338,15 @@ export default function EventsPage() {
                   email: p.email || "unknown@example.com",
                   role: p.role || "bireysel_kullanici",
                 })) || [],
+              // API'den gelen current_participants alanını destekle
+              current_participants:
+                event.current_participants ||
+                event.participant_count ||
+                (event.participants &&
+                typeof event.participants === "object" &&
+                Array.isArray(event.participants)
+                  ? event.participants.length
+                  : event.participants?.[0]?.count || 0),
             };
           });
 
@@ -372,17 +427,23 @@ export default function EventsPage() {
   // Map backend status to frontend status
   const mapBackendStatus = (
     backendStatus: string
-  ): "pending" | "approved" | "rejected" | "completed" => {
+  ): "ACTIVE" | "PENDING" | "REJECTED" | "COMPLETED" => {
     const statusMap: Record<
       string,
-      "pending" | "approved" | "rejected" | "completed"
+      "ACTIVE" | "PENDING" | "REJECTED" | "COMPLETED"
     > = {
-      ACTIVE: "approved",
-      PENDING: "pending",
-      CANCELLED: "rejected",
-      COMPLETED: "completed",
+      ACTIVE: "ACTIVE",
+      PENDING: "PENDING",
+      active: "ACTIVE",
+      pending: "PENDING",
+      REJECTED: "REJECTED",
+      CANCELLED: "REJECTED",
+      rejected: "REJECTED",
+      cancelled: "REJECTED",
+      COMPLETED: "COMPLETED",
+      completed: "COMPLETED",
     };
-    return statusMap[backendStatus] || "pending";
+    return statusMap[backendStatus?.toUpperCase()] || "PENDING";
   };
 
   // Component State Hooks
@@ -399,7 +460,6 @@ export default function EventsPage() {
   >(null);
   const [isParticipantPreviewOpen, setIsParticipantPreviewOpen] =
     useState(false);
-  const { toast } = useToast();
 
   // Handle filter changes for subsequent requests
   const prevFiltersRef = useRef({
@@ -489,8 +549,8 @@ export default function EventsPage() {
       eventDate.setHours(23, 59, 59);
 
       // Sadece sayfa yüklendiğinde kontrol et, kullanıcı değiştirdiğinde değil
-      if (eventDate < now && event.status === "approved") {
-        return { ...event, status: "completed" as const };
+      if (eventDate < now && event.status === "ACTIVE") {
+        return { ...event, status: "COMPLETED" as const };
       }
       return event;
     })
@@ -499,8 +559,16 @@ export default function EventsPage() {
       const matchesSearch =
         event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.location.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Status filter için büyük/küçük harf uyumlu hale getirelim
       const matchesStatus =
-        statusFilter === "all" || event.status === statusFilter;
+        statusFilter === "all" ||
+        event.status === statusFilter ||
+        (statusFilter === "pending" && event.status === "PENDING") ||
+        (statusFilter === "approved" && event.status === "ACTIVE") ||
+        (statusFilter === "rejected" && event.status === "REJECTED") ||
+        (statusFilter === "completed" && event.status === "COMPLETED");
+
       const matchesCategories =
         selectedCategories.length === 0 ||
         selectedCategories.includes(event.category);
@@ -544,9 +612,8 @@ export default function EventsPage() {
         return event;
       })
     );
-    toast({
-      title: "Durum Güncellendi",
-      description: `Etkinlik durumu "${
+    toast.success(
+      `Etkinlik durumu "${
         updatedEvent.status === "completed"
           ? "Tamamlandı"
           : updatedEvent.status === "approved"
@@ -554,21 +621,109 @@ export default function EventsPage() {
           : updatedEvent.status === "rejected"
           ? "Reddedildi"
           : "Beklemede"
-      }" olarak güncellendi.`,
-    });
+      }" olarak güncellendi.`
+    );
 
     if (updatedEvent.status === "rejected") {
-      toast({
-        title: "Etkinlik Reddedildi",
-        description:
-          "Etkinliğiniz yönetici tarafından reddedildi. Lütfen etkinlik kurallarını kontrol edin.",
-        variant: "destructive",
-      });
+      toast.error(
+        "Etkinliğiniz yönetici tarafından reddedildi. Lütfen etkinlik kurallarını kontrol edin."
+      );
     }
   };
 
   const handleDeleteEvent = (id: string | number) => {
-    setEvents(events.filter((event) => event.id !== id));
+    // Backend API'ye silme isteği gönder
+    console.log(`Etkinlik silme isteği gönderiliyor: ID=${id}`);
+
+    const apiUrl = `${
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api"
+    }/events/${id}`;
+
+    // Tüm olası token kaynaklarını kontrol et
+    const tokenFromCookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("accessToken="))
+      ?.split("=")[1];
+
+    const tokenFromLocalStorage = localStorage.getItem("token");
+    const tokenFromSportlinkStorage = localStorage.getItem("sportlink_token");
+
+    // Kullanılabilecek ilk token'ı seç
+    const token =
+      tokenFromCookie || tokenFromLocalStorage || tokenFromSportlinkStorage;
+
+    console.log("Kimlik doğrulama token'ı bulundu:", !!token);
+
+    fetch(apiUrl, {
+      method: "DELETE",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // Cookie tabanlı auth için
+    })
+      .then((response) => {
+        console.log(`Sunucu yanıtı: ${response.status} ${response.statusText}`);
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.error(
+              "Kimlik doğrulama hatası - Token:",
+              token ? token.substring(0, 10) + "..." : "Bulunamadı"
+            );
+            throw new Error(
+              "Oturum süresi dolmuş. Kimlik doğrulama yapılamadı."
+            );
+          } else if (response.status === 403) {
+            throw new Error("Bu etkinliği silme yetkiniz bulunmuyor.");
+          } else if (response.status === 404) {
+            throw new Error("Etkinlik bulunamadı.");
+          } else if (response.status === 500) {
+            throw new Error(
+              "Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin."
+            );
+          } else {
+            throw new Error(
+              `Etkinlik silinirken bir hata oluştu: HTTP ${response.status}`
+            );
+          }
+        }
+
+        return response.text().then((text) => {
+          try {
+            return text ? JSON.parse(text) : {};
+          } catch (e) {
+            console.log("JSON parse hatası, boş sonuç dönüyor:", e);
+            return {};
+          }
+        });
+      })
+      .then((data) => {
+        console.log("Silme başarılı, sunucu yanıtı:", data);
+
+        // Etkinlik adını bul
+        const deletedEvent = events.find((e) => e.id === id);
+        const eventName = deletedEvent?.title || "Etkinlik";
+
+        // UI'dan etkinliği kaldır
+        setEvents(events.filter((event) => event.id !== id));
+
+        // Başarılı silme bildirimi göster - Sonner toast formatında
+        toast.success(`"${eventName}" etkinliği başarıyla silindi.`, {
+          duration: 5000,
+        });
+
+        // Konsola da başarılı olduğunu yazalım
+        console.log(
+          "%c ✅ Etkinlik başarıyla silindi!",
+          "color: green; font-weight: bold; font-size: 14px;"
+        );
+      })
+      .catch((error) => {
+        console.error("Silme hatası:", error);
+        // Hata bildirimi göster - Sonner toast formatında
+        toast.error(error.message || "Etkinlik silinirken bir hata oluştu.");
+      });
   };
 
   const handleAddNewEvent = (newEvent: Partial<Event>) => {
@@ -603,7 +758,7 @@ export default function EventsPage() {
       category: newEvent.category || "",
       participants: newEvent.participants || 0, // Ensure participants exists
       maxParticipants: newEvent.maxParticipants || 100, // Ensure maxParticipants exists
-      status: newEvent.status || "pending", // Ensure status exists
+      status: newEvent.status || "PENDING", // Ensure status exists
       organizer: organizer, // Use the determined organizer
       image: newEvent.image,
       participantList: newEvent.participantList || [], // Ensure participantList exists
@@ -635,44 +790,109 @@ export default function EventsPage() {
       return updatedEvents;
     });
 
-    toast({
-      title: "Başarılı",
-      description: "Etkinlik başarıyla oluşturuldu ve onay için gönderildi.",
-    });
+    toast.success("Etkinlik başarıyla oluşturuldu ve onay için gönderildi.");
   };
 
   // handleStatusChange fonksiyonunu güncelleyelim
   const handleStatusChange = (
     eventId: string | number,
-    newStatus: Event["status"]
+    newStatus: "ACTIVE" | "PENDING" | "REJECTED" | "COMPLETED"
   ) => {
+    // API'ye durum değişikliği gönder
+    console.log(
+      `Etkinlik durumu güncelleniyor: ID=${eventId}, Yeni Durum=${newStatus}`
+    );
+
+    const apiUrl = `${
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api"
+    }/events/${eventId}/status`;
+
+    // Tüm olası token kaynaklarını kontrol et (silme işlemiyle aynı mantık)
+    const tokenFromCookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("accessToken="))
+      ?.split("=")[1];
+
+    const tokenFromLocalStorage = localStorage.getItem("token");
+    const tokenFromSportlinkStorage = localStorage.getItem("sportlink_token");
+
+    // Kullanılabilecek ilk token'ı seç
+    const token =
+      tokenFromCookie || tokenFromLocalStorage || tokenFromSportlinkStorage;
+
+    // Veriyi hazırla
+    const updateData = {
+      status: newStatus,
+    };
+
+    // İlgili durumun başarılı mesajını hazırla
+    const successMessage = `Etkinlik durumu "${
+      newStatus === "COMPLETED"
+        ? "Tamamlandı"
+        : newStatus === "ACTIVE"
+        ? "Onaylandı"
+        : newStatus === "REJECTED"
+        ? "Reddedildi"
+        : "Beklemede"
+    }" olarak güncellendi.`;
+
+    // İsteği gönder, ancak arayüzü hemen güncelle (iyimser güncelleme)
     setEvents((prevEvents) =>
       prevEvents.map((event) =>
         event.id === eventId ? { ...event, status: newStatus } : event
       )
     );
 
-    toast({
-      title: "Durum Güncellendi",
-      description: `Etkinlik durumu "${
-        newStatus === "completed"
-          ? "Tamamlandı"
-          : newStatus === "approved"
-          ? "Onaylandı"
-          : newStatus === "rejected"
-          ? "Reddedildi"
-          : "Beklemede"
-      }" olarak güncellendi.`,
-    });
+    // Kullanıcıya bilgi ver
+    toast.success(successMessage);
 
-    if (newStatus === "rejected") {
-      toast({
-        title: "Etkinlik Reddedildi",
-        description:
-          "Etkinliğiniz yönetici tarafından reddedildi. Lütfen etkinlik kurallarını kontrol edin.",
-        variant: "destructive",
-      });
+    if (newStatus === "REJECTED") {
+      toast.error(
+        "Etkinliğiniz yönetici tarafından reddedildi. Lütfen etkinlik kurallarını kontrol edin."
+      );
     }
+
+    // API çağrısı yap
+    fetch(apiUrl, {
+      method: "PATCH",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updateData),
+      credentials: "include",
+    })
+      .then((response) => {
+        console.log(
+          `Durum güncelleme yanıtı: ${response.status} ${response.statusText}`
+        );
+
+        if (!response.ok) {
+          // Başarısız olursa, kullanıcıya bilgi ver
+          throw new Error(`Durum güncellenemedi: HTTP ${response.status}`);
+        }
+
+        return response.text().then((text) => {
+          try {
+            return text ? JSON.parse(text) : {};
+          } catch (e) {
+            console.log("JSON parse hatası, boş sonuç dönüyor:", e);
+            return {};
+          }
+        });
+      })
+      .then((data) => {
+        console.log("Durum güncelleme başarılı, sunucu yanıtı:", data);
+      })
+      .catch((error) => {
+        console.error("Durum güncelleme hatası:", error);
+
+        // Hata durumunda kullanıcıya bilgi ver ve eski duruma geri döndür
+        toast.error("Etkinlik durumu güncellenirken bir hata oluştu.");
+
+        // API hatası olursa UI'ı önceki duruma geri döndür (rollback)
+        fetchEvents();
+      });
   };
 
   return (
@@ -804,11 +1024,7 @@ export default function EventsPage() {
                           <TooltipTrigger asChild>
                             <button
                               onClick={() => setSelectedEventForPreview(event)}
-                              className={`font-medium ${
-                                CATEGORY_COLORS[event.category].text
-                              } hover:${
-                                CATEGORY_COLORS[event.category].text
-                              } hover:underline cursor-pointer text-left`}
+                              className={`font-medium text-gray-900 hover:underline cursor-pointer text-left`}
                             >
                               {event.title}
                             </button>
@@ -851,51 +1067,189 @@ export default function EventsPage() {
                             "Participant count clicked for event:",
                             event.title
                           );
-                          console.log(
-                            "Event participantList:",
-                            event.participantList
-                          );
-                          if (
-                            event.participantList &&
-                            event.participantList.length > 0
-                          ) {
-                            console.log(
-                              "Setting participants and opening dialog..."
-                            );
-                            setParticipantsToPreview(event.participantList);
-                            setIsParticipantPreviewOpen(true);
-                          } else {
-                            console.log(
-                              "No participants to show or list is empty."
-                            );
-                            // Optionally show a toast if no participants
-                            toast({
-                              title: "Bilgi",
-                              description:
-                                "Bu etkinlik için gösterilecek katılımcı bulunmamaktadır.",
-                            });
-                          }
+                          // Katılımcı listesini API'den çek
+                          const fetchParticipants = async () => {
+                            try {
+                              setLoading(true);
+                              const token = localStorage.getItem("token") || "";
+                              const tokenFromSportlinkStorage =
+                                localStorage.getItem("sportlink_token");
+                              const authToken =
+                                token || tokenFromSportlinkStorage || "";
+
+                              // Alternatif endpoint'leri dene
+                              let response;
+                              let apiUrl =
+                                process.env.NEXT_PUBLIC_API_URL ||
+                                "http://localhost:3000/api";
+
+                              try {
+                                // İlk deneme - standart /events/{id}/participants endpoint
+                                response = await fetch(
+                                  `${apiUrl}/events/${event.id}/participants`,
+                                  {
+                                    headers: {
+                                      Authorization: `Bearer ${authToken}`,
+                                      "Content-Type": "application/json",
+                                    },
+                                    credentials: "include",
+                                  }
+                                );
+
+                                if (response.status === 404) {
+                                  // İkinci deneme - event_participants endpoint
+                                  response = await fetch(
+                                    `${apiUrl}/event_participants?event_id=${event.id}`,
+                                    {
+                                      headers: {
+                                        Authorization: `Bearer ${authToken}`,
+                                        "Content-Type": "application/json",
+                                      },
+                                      credentials: "include",
+                                    }
+                                  );
+
+                                  if (response.status === 404) {
+                                    // Üçüncü deneme - event detayları ile birlikte tüm katılımcıları getir
+                                    response = await fetch(
+                                      `${apiUrl}/events/${event.id}?include=participants`,
+                                      {
+                                        headers: {
+                                          Authorization: `Bearer ${authToken}`,
+                                          "Content-Type": "application/json",
+                                        },
+                                        credentials: "include",
+                                      }
+                                    );
+                                  }
+                                }
+                              } catch (fetchError) {
+                                console.error("Endpoint hatası:", fetchError);
+
+                                // Eğer gerçek API'ler bulunamazsa, mevcut participantList kullan (fallback)
+                                if (
+                                  event.participantList &&
+                                  event.participantList.length > 0
+                                ) {
+                                  setParticipantsToPreview(
+                                    event.participantList
+                                  );
+                                  setIsParticipantPreviewOpen(true);
+                                  setLoading(false);
+                                  return;
+                                } else {
+                                  toast.info(
+                                    "Katılımcı bilgilerine şu anda erişilemiyor."
+                                  );
+                                  setLoading(false);
+                                  return;
+                                }
+                              }
+
+                              if (!response.ok) {
+                                // Eğer tüm API çağrıları başarısız olursa, mevcut participantList'e geri dön
+                                if (
+                                  event.participantList &&
+                                  event.participantList.length > 0
+                                ) {
+                                  setParticipantsToPreview(
+                                    event.participantList
+                                  );
+                                  setIsParticipantPreviewOpen(true);
+                                  setLoading(false);
+                                  return;
+                                }
+                                throw new Error(
+                                  `API error: ${response.status}`
+                                );
+                              }
+
+                              const data = await response.json();
+                              console.log("Katılımcı verisi:", data);
+
+                              // Katılımcı verisini doğru formata dönüştür
+                              let participantList = [];
+
+                              // Farklı API yanıt formatlarını kontrol et
+                              if (data.participants) {
+                                participantList = Array.isArray(
+                                  data.participants
+                                )
+                                  ? data.participants
+                                  : [];
+                              } else if (data.data?.participants) {
+                                participantList = Array.isArray(
+                                  data.data.participants
+                                )
+                                  ? data.data.participants
+                                  : [];
+                              } else if (Array.isArray(data)) {
+                                participantList = data;
+                              } else if (
+                                data.data &&
+                                Array.isArray(data.data)
+                              ) {
+                                participantList = data.data;
+                              } else if (
+                                data.event_participants &&
+                                Array.isArray(data.event_participants)
+                              ) {
+                                participantList = data.event_participants;
+                              }
+
+                              // Veriyi User tipine dönüştür
+                              const mappedParticipants = participantList.map(
+                                (p: any) => ({
+                                  id: p.id || p.user_id || "unknown",
+                                  name: p.name || p.first_name || "Unknown",
+                                  surname: p.surname || p.last_name || "",
+                                  email: p.email || "unknown@example.com",
+                                  role: p.role || "bireysel_kullanici",
+                                })
+                              );
+
+                              if (mappedParticipants.length > 0) {
+                                setParticipantsToPreview(mappedParticipants);
+                                setIsParticipantPreviewOpen(true);
+                              } else {
+                                toast.info(
+                                  "Bu etkinlik için gösterilecek katılımcı bulunmamaktadır."
+                                );
+                              }
+                            } catch (error) {
+                              console.error(
+                                "Katılımcılar çekilirken hata:",
+                                error
+                              );
+                              toast.error(
+                                "Katılımcı listesi alınamadı. Lütfen daha sonra tekrar deneyin."
+                              );
+                            } finally {
+                              setLoading(false);
+                            }
+                          };
+
+                          fetchParticipants();
                         }}
-                        disabled={
-                          !event.participantList ||
-                          event.participantList.length === 0
-                        } // Disable if no list or empty
-                        title={
-                          event.participantList &&
-                          event.participantList.length > 0
-                            ? "Katılımcıları Görüntüle"
-                            : "Katılımcı Yok"
-                        }
+                        aria-label="Katılımcıları Görüntüle"
                       >
-                        {event.participants}/{event.maxParticipants}
+                        {/* Katılımcı sayısını göster - API'den gelen veriyi tercih et */}
+                        {event.current_participants || event.participants || 0}/
+                        {event.maxParticipants}
                       </button>
                     </TableCell>
                     <TableCell>
                       <Select
                         value={event.status}
-                        onValueChange={(value: Event["status"]) =>
-                          handleStatusChange(event.id, value)
-                        }
+                        onValueChange={(value) => {
+                          // Status değerini "ACTIVE" | "PENDING" | "REJECTED" | "COMPLETED" formatına çevir
+                          const normalizedStatus = value.toUpperCase() as
+                            | "ACTIVE"
+                            | "PENDING"
+                            | "REJECTED"
+                            | "COMPLETED";
+                          handleStatusChange(event.id, normalizedStatus);
+                        }}
                       >
                         <SelectTrigger
                           className={`w-[140px] ${
@@ -906,25 +1260,25 @@ export default function EventsPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem
-                            value="pending"
+                            value="PENDING"
                             className="text-yellow-800 hover:bg-yellow-100"
                           >
                             Beklemede
                           </SelectItem>
                           <SelectItem
-                            value="approved"
+                            value="ACTIVE"
                             className="text-green-800 hover:bg-green-100"
                           >
                             Onaylandı
                           </SelectItem>
                           <SelectItem
-                            value="rejected"
+                            value="REJECTED"
                             className="text-red-800 hover:bg-red-100"
                           >
                             Reddedildi
                           </SelectItem>
                           <SelectItem
-                            value="completed"
+                            value="COMPLETED"
                             className="text-gray-800 hover:bg-gray-100"
                           >
                             Tamamlandı

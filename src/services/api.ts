@@ -1,7 +1,7 @@
-import axios from 'axios';
-import Cookies from 'js-cookie';
-import { toast } from 'sonner';
-import { useAuthStore } from '@/store/authStore';
+import axios from "axios";
+import Cookies from "js-cookie";
+import { toast } from "sonner";
+import { useAuthStore } from "@/store/authStore";
 
 interface BackendProfileData {
   first_name: string;
@@ -33,13 +33,13 @@ interface AdminInviteData {
 }
 
 interface UpdateProfileData {
-  first_name: string
-  last_name: string
-  email: string
+  first_name: string;
+  last_name: string;
+  email: string;
 }
 
 // API URL'ini al
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 const api = axios.create({
   baseURL: API_URL,
@@ -48,7 +48,7 @@ const api = axios.create({
 
 // Request interceptor
 api.interceptors.request.use((config) => {
-  const token = Cookies.get('accessToken');
+  const token = Cookies.get("accessToken");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -60,8 +60,8 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      Cookies.remove('accessToken');
-      window.location.href = '/auth/login';
+      Cookies.remove("accessToken");
+      window.location.href = "/auth/login";
     }
     return Promise.reject(error);
   }
@@ -70,10 +70,10 @@ api.interceptors.response.use(
 // Profil bilgilerini getir
 export const getProfile = async (): Promise<ProfileData> => {
   try {
-    const response = await api.get('/profile');
+    const response = await api.get("/profile");
     return response.data;
   } catch (error) {
-    console.error('Profil getirme hatası:', error);
+    console.error("Profil getirme hatası:", error);
     throw error;
   }
 };
@@ -84,9 +84,11 @@ export const updateProfile = async (data: UpdateProfileData) => {
     const response = await api.put("/profile", data);
     return response.data;
   } catch (error) {
-    console.error('Profil güncelleme hatası:', error);
+    console.error("Profil güncelleme hatası:", error);
     if (axios.isAxiosError(error)) {
-      const errorMessage = error.response?.data?.message || 'Profil güncellenirken bir hata oluştu';
+      const errorMessage =
+        error.response?.data?.message ||
+        "Profil güncellenirken bir hata oluştu";
       throw new Error(errorMessage);
     }
     throw error;
@@ -98,15 +100,17 @@ export const changePassword = async (data: PasswordData) => {
   try {
     const requestData = {
       old_password: data.current_password,
-      new_password: data.new_password
+      new_password: data.new_password,
     };
 
-    const response = await api.put('/auth/change-password', requestData);
+    const response = await api.put("/auth/change-password", requestData);
     return response.data;
   } catch (error) {
-    console.error('Şifre değiştirme API hatası:', error);
+    console.error("Şifre değiştirme API hatası:", error);
     if (axios.isAxiosError(error)) {
-      const errorMessage = error.response?.data?.message || 'Şifre değiştirilirken bir hata oluştu';
+      const errorMessage =
+        error.response?.data?.message ||
+        "Şifre değiştirilirken bir hata oluştu";
       throw new Error(errorMessage);
     }
     throw error;
@@ -117,19 +121,20 @@ export const changePassword = async (data: PasswordData) => {
 export const uploadAvatar = async (file: File) => {
   try {
     const formData = new FormData();
-    formData.append('avatar', file);
+    formData.append("avatar", file);
 
-    const response = await api.post('/profile/avatar', formData, {
+    const response = await api.post("/profile/avatar", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
 
     return response.data;
   } catch (error) {
-    console.error('Avatar yükleme API hatası:', error);
+    console.error("Avatar yükleme API hatası:", error);
     if (axios.isAxiosError(error)) {
-      const errorMessage = error.response?.data?.message || 'Avatar yüklenirken bir hata oluştu';
+      const errorMessage =
+        error.response?.data?.message || "Avatar yüklenirken bir hata oluştu";
       throw new Error(errorMessage);
     }
     throw error;
@@ -142,13 +147,15 @@ export const inviteAdmin = async (data: AdminInviteData) => {
     const response = await api.post("/admin/invite", data);
     return response.data;
   } catch (error) {
-    console.error('Admin davet hatası:', error);
+    console.error("Admin davet hatası:", error);
     if (axios.isAxiosError(error)) {
-      const errorMessage = error.response?.data?.message || 'Admin davet edilirken bir hata oluştu';
+      const errorMessage =
+        error.response?.data?.message ||
+        "Admin davet edilirken bir hata oluştu";
       throw new Error(errorMessage);
     }
     throw error;
   }
-}
+};
 
-export default api; 
+export default api;

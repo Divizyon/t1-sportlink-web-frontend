@@ -17,8 +17,17 @@ export interface Event {
   category: string;
   participants: number;
   maxParticipants: number;
-  status: "pending" | "approved" | "rejected" | "completed";
+  status:
+    | "ACTIVE"
+    | "PENDING"
+    | "REJECTED"
+    | "COMPLETED"
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "completed";
   organizer: User;
   image?: string;
   participantList?: User[];
+  current_participants?: number;
 }
