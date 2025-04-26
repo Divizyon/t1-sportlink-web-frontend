@@ -295,7 +295,14 @@ export function TodaysEvents({
         <div key={event.id} className="space-y-1">
           <div
             className="flex items-start gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50 cursor-pointer"
-            onClick={() => onEventSelect && onEventSelect(event)}
+            onClick={() => {
+              if (onEventSelect && event?.id) {
+                // Only pass the event ID, rather than the whole event object
+                // This forces the EventDetailModal to fetch the full details from the API
+                const eventWithIdOnly = { id: event.id } as Event;
+                onEventSelect(eventWithIdOnly);
+              }
+            }}
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
               <Calendar className="h-5 w-5 text-primary" />

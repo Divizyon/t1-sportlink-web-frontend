@@ -60,6 +60,7 @@ import { UserDetailModal } from "@/components/modals/UserDetailModal";
 import { enrichUserData } from "@/lib/userDataService";
 import api from "@/services/api";
 import Cookies from "js-cookie";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Participant {
   id: string;
@@ -256,21 +257,24 @@ export function EventDetailModal({
   const [isCancelling, setIsCancelling] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
 
-  // Initialize with empty event or provided event
-  const [formData, setFormData] = useState<Event>(event || createEmptyEvent());
+  // Initialize with an empty event - we will fill it only after real data is fetched
+  const [formData, setFormData] = useState<Event>(createEmptyEvent());
 
-  // Add console logging to show when the modal is opened and what data is being used
+  // Update the useEffect to handle when only an event ID is provided
   useEffect(() => {
     if (open) {
       console.log("EventDetailModal opened, event:", event);
+      // Always reset to empty event when modal is opened
+      setFormData(createEmptyEvent());
+      setFetchingEvent(true);
+
       if (event?.id) {
         console.log("Fetching event details for ID:", event.id);
-        // If an event is provided, fetch its details
+        // Fetch event details when only an ID is provided
         fetchEventDetails(event.id);
       } else {
         console.warn("No event ID available");
-        // Initialize with empty event if none provided
-        setFormData(createEmptyEvent());
+        setFetchingEvent(false);
       }
     }
   }, [open, event]);
@@ -939,532 +943,576 @@ export function EventDetailModal({
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-3 mb-4 md:mb-6">
-              <TabsTrigger value="details" className="text-sm md:text-base">
-                Detaylar
-              </TabsTrigger>
-              <TabsTrigger
-                value="participants"
-                className="text-sm md:text-base relative"
-              >
-                Katılımcılar
-                <Badge className="ml-1 bg-blue-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
-                  {formData.participants?.length || 0}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger
-                value="reports"
-                className="text-sm md:text-base relative"
-              >
-                Raporlar
-                {formData.reports &&
-                  formData.reports.filter((r) => r.status === "pending")
-                    .length > 0 && (
-                    <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
-                      {
-                        formData.reports.filter((r) => r.status === "pending")
-                          .length
-                      }
-                    </Badge>
-                  )}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="details" className="space-y-4 md:space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                <div className="space-y-2 md:space-y-3">
-                  <Label className="text-sm md:text-base">Başlık</Label>
-                  {isEditing ? (
-                    <Input
-                      name="title"
-                      value={formData.title}
-                      onChange={handleChange}
-                      className="w-full"
-                    />
-                  ) : (
-                    <p className="text-sm md:text-base">{formData.title}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2 md:space-y-3">
-                  <Label className="text-sm md:text-base">Kategori</Label>
-                  {isEditing ? (
-                    <Select
-                      value={formData.category}
-                      onValueChange={handleCategoryChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Kategori seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      {rawEventData?.sport?.icon && (
-                        <span className="text-xl">
-                          {rawEventData.sport.icon}
-                        </span>
-                      )}
-                      <Badge className="px-2 py-1">{formData.category}</Badge>
-                    </div>
-                  )}
-                </div>
-
-                {/* Status info */}
-                <div className="space-y-2 md:space-y-3">
-                  <Label className="text-sm md:text-base">Durum</Label>
-                  <div>
-                    {getStatusBadge(formData.status)}
-                    {rawEventData?.is_full && (
-                      <Badge
-                        variant="outline"
-                        className="ml-2 bg-red-50 text-red-700 border-red-200"
-                      >
-                        Dolu
-                      </Badge>
-                    )}
+          {fetchingEvent ? (
+            // Show skeleton loading UI
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <Skeleton className="h-8 w-3/4" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-6 w-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-6 w-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-6 w-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-6 w-full" />
                   </div>
                 </div>
-
-                <div className="space-y-2 md:space-y-3">
-                  <Label className="text-sm md:text-base">Tarih</Label>
-                  {isEditing ? (
-                    <div className="grid gap-2">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !formData.date && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {formData.date ? (
-                              format(formData.date, "PPP", { locale: tr })
-                            ) : (
-                              <span>Tarih seçin</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <DatePickerWithPresets
-                            selected={formData.date}
-                            onSelect={handleDateChange}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  ) : (
-                    <p className="text-sm md:text-base">
-                      {format(formData.date, "PPP", { locale: tr })}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2 md:space-y-3">
-                  <Label className="text-sm md:text-base">Saat</Label>
-                  {isEditing ? (
-                    <Input
-                      type="time"
-                      name="time"
-                      value={formData.time}
-                      onChange={handleChange}
-                      className="w-full"
-                    />
-                  ) : (
-                    <div className="text-sm md:text-base">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>Başlangıç: {formData.time}</span>
-                      </div>
-                      {rawEventData?.end_time && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <Clock className="h-4 w-4" />
-                          <span>
-                            Bitiş:{" "}
-                            {formatTimeFromISOString(rawEventData.end_time)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2 md:space-y-3">
-                  <Label className="text-sm md:text-base">
-                    Katılımcı Durumu
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <span>
-                      {rawEventData?.current_participants ||
-                        formData.participants.length}{" "}
-                      / {formData.maxParticipants}
-                    </span>
-                    <div className="h-2 bg-gray-200 rounded-full flex-1">
-                      <div
-                        className="h-2 bg-primary rounded-full"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            ((rawEventData?.current_participants ||
-                              formData.participants.length) /
-                              formData.maxParticipants) *
-                              100
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 md:space-y-3 col-span-1 md:col-span-2">
-                  <Label className="text-sm md:text-base">Konum</Label>
-                  {isEditing ? (
-                    <Input
-                      name="location"
-                      value={formData.location}
-                      onChange={handleChange}
-                      className="w-full"
-                    />
-                  ) : (
-                    <p className="text-sm md:text-base flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      {formData.location}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2 md:space-y-3 col-span-1 md:col-span-2">
-                  <Label className="text-sm md:text-base">Açıklama</Label>
-                  {isEditing ? (
-                    <Textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      className="min-h-[100px] md:min-h-[150px]"
-                    />
-                  ) : (
-                    <p className="text-sm md:text-base whitespace-pre-wrap">
-                      {formData.description}
-                    </p>
-                  )}
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-1/4" />
+                  <Skeleton className="h-24 w-full" />
                 </div>
               </div>
-            </TabsContent>
+            </div>
+          ) : (
+            // Show actual content once data is fetched
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-3 mb-4 md:mb-6">
+                <TabsTrigger value="details" className="text-sm md:text-base">
+                  Detaylar
+                </TabsTrigger>
+                <TabsTrigger
+                  value="participants"
+                  className="text-sm md:text-base relative"
+                >
+                  Katılımcılar
+                  <Badge className="ml-1 bg-blue-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
+                    {formData.participants?.length || 0}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="reports"
+                  className="text-sm md:text-base relative"
+                >
+                  Raporlar
+                  {formData.reports &&
+                    formData.reports.filter((r) => r.status === "pending")
+                      .length > 0 && (
+                      <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
+                        {
+                          formData.reports.filter((r) => r.status === "pending")
+                            .length
+                        }
+                      </Badge>
+                    )}
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Katılımcılar Tab */}
-            <TabsContent value="participants" className="relative">
-              {formData.participants?.length === 0 ? (
-                <div className="p-8 text-center">
-                  <p className="text-muted-foreground">
-                    Bu etkinliğe henüz katılımcı bulunmuyor.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {formData.participants?.map((participant) => (
-                    <div
-                      key={participant.id}
-                      className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => handleViewParticipantProfile(participant)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage
-                            src={participant.avatar}
-                            alt={participant.name}
-                          />
-                          <AvatarFallback>{participant.name[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{participant.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {participant.email}
-                          </p>
-                        </div>
-                      </div>
+              <TabsContent value="details" className="space-y-4 md:space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  <div className="space-y-2 md:space-y-3">
+                    <Label className="text-sm md:text-base">Başlık</Label>
+                    {isEditing ? (
+                      <Input
+                        name="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        className="w-full"
+                      />
+                    ) : (
+                      <p className="text-sm md:text-base">{formData.title}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 md:space-y-3">
+                    <Label className="text-sm md:text-base">Kategori</Label>
+                    {isEditing ? (
+                      <Select
+                        value={formData.category}
+                        onValueChange={handleCategoryChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Kategori seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
                       <div className="flex items-center space-x-2">
+                        {rawEventData?.sport?.icon && (
+                          <span className="text-xl">
+                            {rawEventData.sport.icon}
+                          </span>
+                        )}
+                        <Badge className="px-2 py-1">{formData.category}</Badge>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Status info */}
+                  <div className="space-y-2 md:space-y-3">
+                    <Label className="text-sm md:text-base">Durum</Label>
+                    <div>
+                      {getStatusBadge(formData.status)}
+                      {rawEventData?.is_full && (
                         <Badge
                           variant="outline"
-                          className={
-                            participant.status === "active"
-                              ? "bg-green-50 text-green-700 border-green-200"
-                              : "bg-gray-50 text-gray-700 border-gray-200"
-                          }
+                          className="ml-2 bg-red-50 text-red-700 border-red-200"
                         >
-                          {participant.status === "active" ? "Aktif" : "Pasif"}
+                          Dolu
                         </Badge>
-                        <button
-                          className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                          aria-label="Katılımcı profili"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewParticipantProfile(participant);
-                          }}
-                        >
-                          <Info className="h-4 w-4" />
-                        </button>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
+                  </div>
 
-            {/* Raporlar Tab */}
-            <TabsContent value="reports" className="space-y-4 pt-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Raporlar</h3>
-                  {formData.reports && (
-                    <Badge
-                      variant="outline"
-                      className="bg-orange-50 text-orange-700 border-orange-200"
-                    >
-                      {
-                        formData.reports.filter((r) => r.status === "pending")
-                          .length
-                      }{" "}
-                      Bekleyen
-                    </Badge>
-                  )}
-                </div>
-
-                {formData.reports && formData.reports.length > 0 ? (
-                  <div className="space-y-3">
-                    {formData.reports.map((report) => (
-                      <div
-                        key={report.id}
-                        className="border rounded-lg overflow-hidden"
-                      >
-                        <div
-                          className={cn(
-                            "p-3",
-                            report.status === "pending"
-                              ? "bg-yellow-50"
-                              : report.status === "reviewed"
-                              ? "bg-blue-50"
-                              : "bg-gray-50"
-                          )}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">
-                                {report.reporterName}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {report.date}
-                              </p>
-                            </div>
-                            <Badge
-                              variant="outline"
+                  <div className="space-y-2 md:space-y-3">
+                    <Label className="text-sm md:text-base">Tarih</Label>
+                    {isEditing ? (
+                      <div className="grid gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
                               className={cn(
-                                "text-xs",
-                                report.status === "pending"
-                                  ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                                  : report.status === "reviewed"
-                                  ? "bg-blue-100 text-blue-800 border-blue-300"
-                                  : "bg-gray-100 text-gray-800 border-gray-300"
+                                "w-full justify-start text-left font-normal",
+                                !formData.date && "text-muted-foreground"
                               )}
                             >
-                              {report.status === "pending"
-                                ? "Beklemede"
-                                : report.status === "reviewed"
-                                ? "İncelendi"
-                                : "Reddedildi"}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="p-3">
-                          <p className="text-sm">{report.reason}</p>
-                        </div>
-                        {report.status === "pending" && (
-                          <div className="p-3 border-t flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDismissReport(report.id)}
-                            >
-                              <XCircle className="mr-1 h-4 w-4" />
-                              Reddet
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {formData.date ? (
+                                format(formData.date, "PPP", { locale: tr })
+                              ) : (
+                                <span>Tarih seçin</span>
+                              )}
                             </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleReviewReport(report.id)}
-                            >
-                              <CheckCircle className="mr-1 h-4 w-4" />
-                              İncelendi
-                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <DatePickerWithPresets
+                              selected={formData.date}
+                              onSelect={handleDateChange}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    ) : (
+                      <p className="text-sm md:text-base">
+                        {format(formData.date, "PPP", { locale: tr })}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 md:space-y-3">
+                    <Label className="text-sm md:text-base">Saat</Label>
+                    {isEditing ? (
+                      <Input
+                        type="time"
+                        name="time"
+                        value={formData.time}
+                        onChange={handleChange}
+                        className="w-full"
+                      />
+                    ) : (
+                      <div className="text-sm md:text-base">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>Başlangıç: {formData.time}</span>
+                        </div>
+                        {rawEventData?.end_time && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <Clock className="h-4 w-4" />
+                            <span>
+                              Bitiş:{" "}
+                              {formatTimeFromISOString(rawEventData.end_time)}
+                            </span>
                           </div>
                         )}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Flag className="mx-auto h-8 w-8 opacity-30 mb-2" />
-                    <p>Bu etkinlik için henüz rapor bulunmuyor.</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* İşlemler Tab */}
-            <TabsContent value="actions" className="space-y-4 pt-4">
-              <div className="space-y-4">
-                <div className="border p-4 rounded-lg space-y-4">
-                  <h3 className="text-lg font-semibold">Etkinlik Durumu</h3>
-                  <div className="flex items-center gap-3">
-                    <p className="text-muted-foreground">Mevcut Durum:</p>
-                    {getStatusBadge(formData.status)}
+                    )}
                   </div>
 
-                  {formData.status === "pending" && (
-                    <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                      <Button
-                        className="flex-1"
-                        onClick={handleApproveEvent}
-                        disabled={loading}
-                      >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Etkinliği Onayla
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={openRejectDialog}
-                        disabled={loading}
-                      >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Etkinliği Reddet
-                      </Button>
-                    </div>
-                  )}
-
-                  {showRejectDialog && (
-                    <div className="border p-3 rounded-lg mt-3 space-y-3 bg-gray-50">
-                      <h4 className="font-medium">Reddetme Nedeni</h4>
-                      <div className="space-y-2">
-                        <Select
-                          value={rejectionReason}
-                          onValueChange={setRejectionReason}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Reddetme nedeni seçin" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {rejectionReasons.map((reason) => (
-                              <SelectItem key={reason} value={reason}>
-                                {reason}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        <Textarea
-                          placeholder="Ek açıklama (isteğe bağlı)"
-                          value={rejectionComment}
-                          onChange={(e) => setRejectionComment(e.target.value)}
-                          className="h-20"
+                  <div className="space-y-2 md:space-y-3">
+                    <Label className="text-sm md:text-base">
+                      Katılımcı Durumu
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>
+                        {rawEventData?.current_participants ||
+                          formData.participants.length}{" "}
+                        / {formData.maxParticipants}
+                      </span>
+                      <div className="h-2 bg-gray-200 rounded-full flex-1">
+                        <div
+                          className="h-2 bg-primary rounded-full"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              ((rawEventData?.current_participants ||
+                                formData.participants.length) /
+                                formData.maxParticipants) *
+                                100
+                            )}%`,
+                          }}
                         />
-
-                        <div className="flex justify-end gap-2 pt-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowRejectDialog(false)}
-                            disabled={loading}
-                          >
-                            İptal
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleRejectEvent}
-                            disabled={loading}
-                          >
-                            Etkinliği Reddet
-                          </Button>
-                        </div>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="space-y-2 md:space-y-3 col-span-1 md:col-span-2">
+                    <Label className="text-sm md:text-base">Konum</Label>
+                    {isEditing ? (
+                      <Input
+                        name="location"
+                        value={formData.location}
+                        onChange={handleChange}
+                        className="w-full"
+                      />
+                    ) : (
+                      <p className="text-sm md:text-base flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        {formData.location}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 md:space-y-3 col-span-1 md:col-span-2">
+                    <Label className="text-sm md:text-base">Açıklama</Label>
+                    {isEditing ? (
+                      <Textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        className="min-h-[100px] md:min-h-[150px]"
+                      />
+                    ) : (
+                      <p className="text-sm md:text-base whitespace-pre-wrap">
+                        {formData.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Katılımcılar Tab */}
+              <TabsContent value="participants" className="relative">
+                {formData.participants?.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <p className="text-muted-foreground">
+                      Bu etkinliğe henüz katılımcı bulunmuyor.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {formData.participants?.map((participant) => (
+                      <div
+                        key={participant.id}
+                        className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() =>
+                          handleViewParticipantProfile(participant)
+                        }
+                      >
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage
+                              src={participant.avatar}
+                              alt={participant.name}
+                            />
+                            <AvatarFallback>
+                              {participant.name[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{participant.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {participant.email}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge
+                            variant="outline"
+                            className={
+                              participant.status === "active"
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : "bg-gray-50 text-gray-700 border-gray-200"
+                            }
+                          >
+                            {participant.status === "active"
+                              ? "Aktif"
+                              : "Pasif"}
+                          </Badge>
+                          <button
+                            className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                            aria-label="Katılımcı profili"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewParticipantProfile(participant);
+                            }}
+                          >
+                            <Info className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Raporlar Tab */}
+              <TabsContent value="reports" className="space-y-4 pt-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Raporlar</h3>
+                    {formData.reports && (
+                      <Badge
+                        variant="outline"
+                        className="bg-orange-50 text-orange-700 border-orange-200"
+                      >
+                        {
+                          formData.reports.filter((r) => r.status === "pending")
+                            .length
+                        }{" "}
+                        Bekleyen
+                      </Badge>
+                    )}
+                  </div>
+
+                  {formData.reports && formData.reports.length > 0 ? (
+                    <div className="space-y-3">
+                      {formData.reports.map((report) => (
+                        <div
+                          key={report.id}
+                          className="border rounded-lg overflow-hidden"
+                        >
+                          <div
+                            className={cn(
+                              "p-3",
+                              report.status === "pending"
+                                ? "bg-yellow-50"
+                                : report.status === "reviewed"
+                                ? "bg-blue-50"
+                                : "bg-gray-50"
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">
+                                  {report.reporterName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {report.date}
+                                </p>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "text-xs",
+                                  report.status === "pending"
+                                    ? "bg-yellow-100 text-yellow-800 border-yellow-300"
+                                    : report.status === "reviewed"
+                                    ? "bg-blue-100 text-blue-800 border-blue-300"
+                                    : "bg-gray-100 text-gray-800 border-gray-300"
+                                )}
+                              >
+                                {report.status === "pending"
+                                  ? "Beklemede"
+                                  : report.status === "reviewed"
+                                  ? "İncelendi"
+                                  : "Reddedildi"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="p-3">
+                            <p className="text-sm">{report.reason}</p>
+                          </div>
+                          {report.status === "pending" && (
+                            <div className="p-3 border-t flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDismissReport(report.id)}
+                              >
+                                <XCircle className="mr-1 h-4 w-4" />
+                                Reddet
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleReviewReport(report.id)}
+                              >
+                                <CheckCircle className="mr-1 h-4 w-4" />
+                                İncelendi
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Flag className="mx-auto h-8 w-8 opacity-30 mb-2" />
+                      <p>Bu etkinlik için henüz rapor bulunmuyor.</p>
+                    </div>
                   )}
                 </div>
+              </TabsContent>
 
-                <div className="border p-4 rounded-lg space-y-4">
-                  <h3 className="text-lg font-semibold">Etkinlik Yönetimi</h3>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      variant={isEditing ? "default" : "outline"}
-                      className="flex-1"
-                      onClick={() => setIsEditing(!isEditing)}
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      {isEditing
-                        ? "Düzenleme Modundasınız"
-                        : "Etkinliği Düzenle"}
-                    </Button>
+              {/* İşlemler Tab */}
+              <TabsContent value="actions" className="space-y-4 pt-4">
+                <div className="space-y-4">
+                  <div className="border p-4 rounded-lg space-y-4">
+                    <h3 className="text-lg font-semibold">Etkinlik Durumu</h3>
+                    <div className="flex items-center gap-3">
+                      <p className="text-muted-foreground">Mevcut Durum:</p>
+                      {getStatusBadge(formData.status)}
+                    </div>
 
-                    <Button
-                      variant="destructive"
-                      className="flex-1"
-                      disabled={loading}
-                      onClick={handleDelete}
-                    >
-                      <Trash className="mr-2 h-4 w-4" />
-                      Etkinliği Sil
-                    </Button>
+                    {formData.status === "pending" && (
+                      <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                        <Button
+                          className="flex-1"
+                          onClick={handleApproveEvent}
+                          disabled={loading}
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Etkinliği Onayla
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={openRejectDialog}
+                          disabled={loading}
+                        >
+                          <XCircle className="mr-2 h-4 w-4" />
+                          Etkinliği Reddet
+                        </Button>
+                      </div>
+                    )}
+
+                    {showRejectDialog && (
+                      <div className="border p-3 rounded-lg mt-3 space-y-3 bg-gray-50">
+                        <h4 className="font-medium">Reddetme Nedeni</h4>
+                        <div className="space-y-2">
+                          <Select
+                            value={rejectionReason}
+                            onValueChange={setRejectionReason}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Reddetme nedeni seçin" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {rejectionReasons.map((reason) => (
+                                <SelectItem key={reason} value={reason}>
+                                  {reason}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          <Textarea
+                            placeholder="Ek açıklama (isteğe bağlı)"
+                            value={rejectionComment}
+                            onChange={(e) =>
+                              setRejectionComment(e.target.value)
+                            }
+                            className="h-20"
+                          />
+
+                          <div className="flex justify-end gap-2 pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowRejectDialog(false)}
+                              disabled={loading}
+                            >
+                              İptal
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={handleRejectEvent}
+                              disabled={loading}
+                            >
+                              Etkinliği Reddet
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border p-4 rounded-lg space-y-4">
+                    <h3 className="text-lg font-semibold">Etkinlik Yönetimi</h3>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button
+                        variant={isEditing ? "default" : "outline"}
+                        className="flex-1"
+                        onClick={() => setIsEditing(!isEditing)}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        {isEditing
+                          ? "Düzenleme Modundasınız"
+                          : "Etkinliği Düzenle"}
+                      </Button>
+
+                      <Button
+                        variant="destructive"
+                        className="flex-1"
+                        disabled={loading}
+                        onClick={handleDelete}
+                      >
+                        <Trash className="mr-2 h-4 w-4" />
+                        Etkinliği Sil
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="border p-4 rounded-lg space-y-4">
+                    <h3 className="text-lg font-semibold">Etkinlik İptali</h3>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button
+                        variant="destructive"
+                        className="flex-1"
+                        disabled={loading}
+                        onClick={cancelEvent}
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Etkinliği İptal Et
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="border p-4 rounded-lg space-y-4">
+                    <h3 className="text-lg font-semibold">
+                      Etkinlik Tamamlama
+                    </h3>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button
+                        variant="default"
+                        className="flex-1"
+                        disabled={loading}
+                        onClick={completeEvent}
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Etkinliği Tamamla
+                      </Button>
+                    </div>
                   </div>
                 </div>
-
-                <div className="border p-4 rounded-lg space-y-4">
-                  <h3 className="text-lg font-semibold">Etkinlik İptali</h3>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      variant="destructive"
-                      className="flex-1"
-                      disabled={loading}
-                      onClick={cancelEvent}
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Etkinliği İptal Et
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="border p-4 rounded-lg space-y-4">
-                  <h3 className="text-lg font-semibold">Etkinlik Tamamlama</h3>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      variant="default"
-                      className="flex-1"
-                      disabled={loading}
-                      onClick={completeEvent}
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Etkinliği Tamamla
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          )}
 
           <DialogFooter className="gap-2">
-            {isEditing ? (
+            {fetchingEvent ? (
+              <Skeleton className="h-10 w-24" />
+            ) : isEditing ? (
               <>
                 <Button
                   type="button"
