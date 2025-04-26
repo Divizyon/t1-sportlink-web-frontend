@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,17 +56,10 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { useRouter } from "next/navigation";
-import {
-  UserDetailModal,
-  sampleUser,
-} from "@/components/modals/UserDetailModal";
-import {
-  DETAILED_EVENT,
-  DetailedEvent,
-  EventParticipant,
-  DEFAULT_USER_EVENTS,
-} from "@/mocks";
+import { UserDetailModal } from "@/components/modals/UserDetailModal";
 import { enrichUserData } from "@/lib/userDataService";
+import api from "@/services/api";
+import Cookies from "js-cookie";
 
 interface Participant {
   id: string;
@@ -90,6 +83,22 @@ interface Report {
   status: "pending" | "reviewed" | "dismissed";
 }
 
+interface ApiEventRating {
+  id: string;
+  event_id: string;
+  rating: number;
+  review?: string;
+  created_at: string;
+}
+
+interface ApiEventParticipant {
+  id: string;
+  event_id: string;
+  user_id: string;
+  role: string;
+  joined_at: string;
+}
+
 interface Event {
   id: string;
   title: string;
@@ -99,13 +108,64 @@ interface Event {
   location: string;
   organizer: string;
   participants: Participant[];
-  status: "pending" | "approved" | "rejected" | "completed";
+  status: "pending" | "approved" | "rejected" | "completed" | "cancelled";
   maxParticipants: number;
   createdAt: Date;
   category?: string;
   tags?: string[];
   rejectionReason?: string;
   reports?: Report[];
+}
+
+// Create empty initial event
+const createEmptyEvent = (): Event => ({
+  id: "",
+  title: "",
+  description: "",
+  date: new Date(),
+  time: "",
+  location: "",
+  organizer: "",
+  participants: [],
+  status: "pending",
+  maxParticipants: 0,
+  createdAt: new Date(),
+  category: "",
+  reports: [],
+});
+
+// Raw event interface matching the backend response format
+interface EventFromAPI {
+  id: string;
+  creator_id: string;
+  sport_id: string;
+  title: string;
+  description: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  location_name: string;
+  location_latitude: number;
+  location_longitude: number;
+  max_participants: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  participants?: ApiEventParticipant[];
+  ratings?: ApiEventRating[];
+  reports?: any[];
+  creator_name?: string;
+  sport_category?: string;
+  // New properties from the API response
+  current_participants?: number;
+  is_full?: boolean;
+  sport?: {
+    id: number;
+    icon: string;
+    name: string;
+    description: string;
+  };
+  creator_role?: string;
 }
 
 interface EventDetailModalProps {
@@ -137,6 +197,44 @@ const rejectionReasons = [
   "Diğer",
 ];
 
+// Map backend status to frontend status
+const mapEventStatus = (
+  status: string
+): "pending" | "approved" | "rejected" | "completed" => {
+  switch (status) {
+    case "PENDING":
+      return "pending";
+    case "ACTIVE":
+      return "approved";
+    case "REJECTED":
+      return "rejected";
+    case "COMPLETED":
+      return "completed";
+    default:
+      return "pending";
+  }
+};
+
+// Add a helper function to format time strings for display
+const formatTimeFromISOString = (isoString: string): string => {
+  try {
+    // Extract just the time part and format to HH:MM
+    const timeMatch = isoString.match(/T(\d{2}:\d{2})/);
+    if (timeMatch && timeMatch[1]) {
+      return timeMatch[1];
+    }
+    // Fallback to date object parsing
+    return new Date(isoString).toLocaleTimeString("tr-TR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  } catch (error) {
+    console.error("Error formatting time:", error);
+    return "00:00";
+  }
+};
+
 export function EventDetailModal({
   open,
   onOpenChange,
@@ -147,17 +245,161 @@ export function EventDetailModal({
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const [loading, setLoading] = useState(false);
+  const [fetchingEvent, setFetchingEvent] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [rejectionComment, setRejectionComment] = useState("");
   const [selectedParticipant, setSelectedParticipant] =
     useState<Participant | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [rawEventData, setRawEventData] = useState<EventFromAPI | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
-  // Use the mock data from the dedicated mocks file instead of inline data
-  const mockEvent: Event = event || DETAILED_EVENT;
+  // Initialize with empty event or provided event
+  const [formData, setFormData] = useState<Event>(event || createEmptyEvent());
 
-  const [formData, setFormData] = useState<Event>(mockEvent);
+  // Add console logging to show when the modal is opened and what data is being used
+  useEffect(() => {
+    if (open) {
+      console.log("EventDetailModal opened, event:", event);
+      if (event?.id) {
+        console.log("Fetching event details for ID:", event.id);
+        // If an event is provided, fetch its details
+        fetchEventDetails(event.id);
+      } else {
+        console.warn("No event ID available");
+        // Initialize with empty event if none provided
+        setFormData(createEmptyEvent());
+      }
+    }
+  }, [open, event]);
+
+  // Add more logging to fetchEventDetails
+  const fetchEventDetails = async (eventId: string) => {
+    try {
+      console.log(`Starting to fetch details for event ${eventId}...`);
+      setFetchingEvent(true);
+
+      // Fix the endpoint path
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      // Ensure eventId is treated as a string regardless of whether it's passed as a number or string
+      const eventEndpoint = `${baseUrl}/events/${eventId}`;
+      console.log("Using event endpoint:", eventEndpoint);
+
+      // Fetch event details from the API
+      const response = await api.get(eventEndpoint);
+
+      console.log(`Raw API response for event ${eventId}:`, response);
+      console.log(`API response data for event ${eventId}:`, response.data);
+
+      if (response.data.status === "success" && response.data.data?.event) {
+        const apiEvent = response.data.data.event;
+        console.log("Raw API event data:", apiEvent);
+        setRawEventData(apiEvent);
+
+        // Transform the API data to match our component's expected format
+        const transformedEvent: Event = {
+          id: apiEvent.id.toString(), // Ensure ID is always stored as string in our state
+          title: apiEvent.title,
+          description: apiEvent.description || "",
+          date: new Date(apiEvent.event_date),
+          time: formatTimeFromISOString(apiEvent.start_time || ""),
+          location: apiEvent.location_name,
+          organizer: apiEvent.creator_name || "Unknown",
+          status: mapEventStatus(apiEvent.status),
+          maxParticipants: apiEvent.max_participants,
+          createdAt: new Date(apiEvent.created_at),
+          category: apiEvent.sport_category || apiEvent.sport?.name || "Other",
+          participants: [], // We'll fetch participants separately or use apiEvent.current_participants as a count
+          reports: [], // We'll fetch reports separately if available
+        };
+
+        // If sport data is available, enhance the event with that information
+        if (apiEvent.sport) {
+          transformedEvent.category = apiEvent.sport.name;
+          // You could add other sport-related fields here if needed
+        }
+
+        console.log("Transformed event data:", transformedEvent);
+        setFormData(transformedEvent);
+
+        // If there's a current_participants count but no actual participant data,
+        // we might want to fetch detailed participant information
+        if (
+          apiEvent.current_participants > 0 &&
+          (!apiEvent.participants || apiEvent.participants.length === 0)
+        ) {
+          fetchEventParticipants(eventId);
+        }
+      } else {
+        console.warn(
+          "Invalid API response format or missing event data:",
+          response.data
+        );
+        toast.error("Etkinlik detayları yüklenirken bir hata oluştu");
+      }
+    } catch (error: any) {
+      console.error("Error fetching event details:", error);
+      // More detailed error reporting
+      if (error.response) {
+        console.error(
+          "API error response:",
+          error.response.status,
+          error.response.data
+        );
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+      }
+      toast.error("Etkinlik detayları yüklenirken bir hata oluştu");
+    } finally {
+      setFetchingEvent(false);
+    }
+  };
+
+  // Add a function to fetch participants separately if needed
+  const fetchEventParticipants = async (eventId: string) => {
+    try {
+      console.log(`Fetching participants for event ${eventId}`);
+
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const participantsEndpoint = `${baseUrl}/events/${eventId}/participants`;
+      console.log("Using participants endpoint:", participantsEndpoint);
+
+      const response = await api.get(participantsEndpoint);
+      console.log("Raw participants response:", response);
+
+      if (
+        response.data.status === "success" &&
+        Array.isArray(response.data.data)
+      ) {
+        const participants: Participant[] = response.data.data.map(
+          (p: any) => ({
+            id: p.user_id || p.id,
+            name:
+              p.name ||
+              `${p.first_name || ""} ${p.last_name || ""}`.trim() ||
+              "Anonim Kullanıcı",
+            email:
+              p.email ||
+              `user-${(p.user_id || p.id || "").substring(0, 4)}@example.com`,
+            avatar: p.avatar,
+            registeredDate: p.joined_at
+              ? new Date(p.joined_at).toLocaleDateString()
+              : undefined,
+          })
+        );
+
+        setFormData((prev) => ({
+          ...prev,
+          participants,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching event participants:", error);
+      toast.error("Katılımcı bilgileri yüklenirken bir hata oluştu");
+    }
+  };
 
   // Function to fetch detailed user data
   const fetchParticipantDetails = async (participant: Participant) => {
@@ -174,26 +416,57 @@ export function EventDetailModal({
       // Open the modal immediately to show loading state
       setShowUserModal(true);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      try {
+        // Check if we should use /api prefix
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+        const userEndpoint = `${baseUrl}/users/${participant.id}`;
+        console.log("Using user endpoint:", userEndpoint);
 
-      // In a real app, fetch from API:
-      // const response = await fetch(`/api/users/${participant.id}`);
-      // const userData = await response.json();
+        // Try to fetch user details from the API
+        const response = await api.get(userEndpoint);
 
-      // For now, use sample data merged with the participant data
-      const detailedUser: Participant = {
-        ...sampleUser,
-        id: participant.id,
-        name: participant.name,
-        email: participant.email,
-        avatar: participant.avatar,
-        status: participant.status || "active",
-        isLoading: false,
-      };
+        console.log(`User API response:`, response);
 
-      // Update with detailed data
-      setSelectedParticipant(detailedUser);
+        if (response.data.status === "success" && response.data.data) {
+          const userData = response.data.data;
+
+          // Map the API response to our participant format
+          const detailedUser: Participant = {
+            ...participant,
+            name: `${userData.first_name} ${userData.last_name}`,
+            email: userData.email,
+            avatar: userData.avatar || participant.avatar,
+            status: userData.status || "active",
+            isLoading: false,
+          };
+
+          setSelectedParticipant(detailedUser);
+        } else {
+          console.error("Invalid user API response format:", response.data);
+          setSelectedParticipant({
+            ...participant,
+            isLoading: false,
+          });
+          toast.error("Kullanıcı bilgileri alınamadı");
+        }
+      } catch (error: any) {
+        console.error("API Error fetching user details:", error);
+        // More detailed error reporting
+        if (error.response) {
+          console.error(
+            "API error response:",
+            error.response.status,
+            error.response.data
+          );
+        } else if (error.request) {
+          console.error("No response received:", error.request);
+        }
+        setSelectedParticipant({
+          ...participant,
+          isLoading: false,
+        });
+        toast.error("Kullanıcı bilgileri alınamadı");
+      }
     } catch (error) {
       console.error("Error fetching user details:", error);
 
@@ -205,6 +478,7 @@ export function EventDetailModal({
         };
         setSelectedParticipant(fallbackUser);
       }
+      toast.error("Kullanıcı bilgileri alınamadı");
     }
   };
 
@@ -221,49 +495,156 @@ export function EventDetailModal({
     }
   };
 
-  const handleSave = () => {
-    setLoading(true);
-
-    // Simüle edilmiş API çağrısı
-    setTimeout(() => {
-      setLoading(false);
-      setIsEditing(false);
-      toast.success("Etkinlik bilgileri güncellendi");
-      if (onSuccess) onSuccess();
-    }, 1000);
-  };
-
-  const handleDelete = () => {
-    if (confirm("Bu etkinliği silmek istediğinizden emin misiniz?")) {
+  const handleSave = async () => {
+    try {
       setLoading(true);
 
-      // Simüle edilmiş API çağrısı
-      setTimeout(() => {
-        setLoading(false);
-        toast.success("Etkinlik silindi");
-        onOpenChange(false);
+      // Only proceed if we have raw event data
+      if (!rawEventData || !formData.id) {
+        toast.error("Güncellenecek etkinlik verisi bulunamadı");
+        return;
+      }
+
+      // Prepare update data
+      const updateData = {
+        title: formData.title,
+        description: formData.description,
+        // Map other fields that can be updated
+        event_date: formData.date.toISOString().split("T")[0],
+        sport_id: rawEventData.sport_id, // Keep the original sport_id
+        location_name: formData.location,
+        max_participants: formData.maxParticipants,
+      };
+
+      // Construct the API endpoint
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const updateEndpoint = `${baseUrl}/events/${formData.id}`;
+      console.log("Using update endpoint:", updateEndpoint);
+
+      // Update the event
+      const response = await api.put(updateEndpoint, updateData);
+
+      console.log("Update response:", response);
+
+      if (response.data.status === "success") {
+        toast.success("Etkinlik bilgileri güncellendi");
+        // Refresh event data
+        fetchEventDetails(formData.id);
+        setIsEditing(false);
         if (onSuccess) onSuccess();
-      }, 1000);
+      } else {
+        toast.error(
+          response.data.message || "Etkinlik güncellenirken bir hata oluştu"
+        );
+      }
+    } catch (error: any) {
+      console.error("Error updating event:", error);
+      if (error.response) {
+        console.error(
+          "API error response:",
+          error.response.status,
+          error.response.data
+        );
+      }
+      toast.error("Etkinlik güncellenirken bir hata oluştu");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleApproveEvent = () => {
-    setLoading(true);
+  const handleDelete = async () => {
+    if (confirm("Bu etkinliği silmek istediğinizden emin misiniz?")) {
+      try {
+        setLoading(true);
 
-    // Simüle edilmiş API çağrısı
-    setTimeout(() => {
-      setFormData((prev) => ({ ...prev, status: "approved" }));
+        // Construct the API endpoint
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+        const deleteEndpoint = `${baseUrl}/events/${formData.id}`;
+        console.log("Using delete endpoint:", deleteEndpoint);
+
+        // Delete the event
+        const response = await api.delete(deleteEndpoint);
+
+        console.log("Delete response:", response);
+
+        if (response.data.status === "success") {
+          toast.success("Etkinlik silindi");
+          onOpenChange(false);
+          if (onSuccess) onSuccess();
+        } else {
+          toast.error(
+            response.data.message || "Etkinlik silinirken bir hata oluştu"
+          );
+        }
+      } catch (error: any) {
+        console.error("Error deleting event:", error);
+        if (error.response) {
+          console.error(
+            "API error response:",
+            error.response.status,
+            error.response.data
+          );
+        }
+        toast.error("Etkinlik silinirken bir hata oluştu");
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleApproveEvent = async () => {
+    try {
+      setLoading(true);
+
+      // Construct the API endpoint
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const statusEndpoint = `${baseUrl}/events/${formData.id}/status`;
+      console.log("Using status endpoint:", statusEndpoint);
+
+      // Update event status to ACTIVE
+      const response = await api.patch(
+        statusEndpoint,
+        { status: "ACTIVE" },
+        {
+          headers: {
+            Authorization: `Bearer ${Cookies.get("accessToken")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Approve response:", response);
+
+      if (response.data.status === "success") {
+        toast.success("Etkinlik onaylandı");
+        // Update local state
+        setFormData((prev) => ({ ...prev, status: "approved" }));
+        if (onSuccess) onSuccess();
+      } else {
+        toast.error(
+          response.data.message || "Etkinlik onaylanırken bir hata oluştu"
+        );
+      }
+    } catch (error: any) {
+      console.error("Error approving event:", error);
+      if (error.response) {
+        console.error(
+          "API error response:",
+          error.response.status,
+          error.response.data
+        );
+      }
+      toast.error("Etkinlik onaylanırken bir hata oluştu");
+    } finally {
       setLoading(false);
-      toast.success("Etkinlik onaylandı");
-      if (onSuccess) onSuccess();
-    }, 1000);
+    }
   };
 
   const openRejectDialog = () => {
     setShowRejectDialog(true);
   };
 
-  const handleRejectEvent = () => {
+  const handleRejectEvent = async () => {
     if (!rejectionReason) {
       toast.error("Lütfen bir red sebebi seçin");
       return;
@@ -271,19 +652,61 @@ export function EventDetailModal({
 
     setLoading(true);
 
-    // Simüle edilmiş API çağrısı
-    setTimeout(() => {
-      setFormData((prev) => ({
-        ...prev,
-        status: "rejected",
-        rejectionReason:
-          rejectionReason + (rejectionComment ? ` - ${rejectionComment}` : ""),
-      }));
+    try {
+      // Construct the API endpoint
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const statusEndpoint = `${baseUrl}/events/${formData.id}/status`;
+      console.log("Using status endpoint:", statusEndpoint);
+
+      // Update event status to REJECTED
+      const response = await api.patch(
+        statusEndpoint,
+        {
+          status: "REJECTED",
+          rejection_reason:
+            rejectionReason +
+            (rejectionComment ? ` - ${rejectionComment}` : ""),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${Cookies.get("accessToken")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Reject response:", response.data);
+
+      if (response.data.status === "success") {
+        toast.success("Etkinlik reddedildi ve neden bildirildi");
+        // Update local state
+        setFormData((prev) => ({
+          ...prev,
+          status: "rejected",
+          rejectionReason:
+            rejectionReason +
+            (rejectionComment ? ` - ${rejectionComment}` : ""),
+        }));
+        setShowRejectDialog(false);
+        if (onSuccess) onSuccess();
+      } else {
+        toast.error(
+          response.data.message || "Etkinlik reddedilirken bir hata oluştu"
+        );
+      }
+    } catch (error: any) {
+      console.error("Error rejecting event:", error);
+      if (error.response) {
+        console.error(
+          "API error response:",
+          error.response.status,
+          error.response.data
+        );
+      }
+      toast.error("Etkinlik reddedilirken bir hata oluştu");
+    } finally {
       setLoading(false);
-      setShowRejectDialog(false);
-      toast.success("Etkinlik reddedildi ve neden bildirildi");
-      if (onSuccess) onSuccess();
-    }, 1000);
+    }
   };
 
   const getStatusBadge = (status: Event["status"]) => {
@@ -377,6 +800,130 @@ export function EventDetailModal({
     }, 300);
   };
 
+  const cancelEvent = async () => {
+    try {
+      console.log(`Attempting to cancel event ${formData.id}...`);
+      setIsCancelling(true);
+
+      // Construct the API endpoint
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const cancelEndpoint = `${baseUrl}/api/events/${formData.id}/cancel`;
+      console.log("Using cancel endpoint:", cancelEndpoint);
+
+      const response = await api.post(
+        cancelEndpoint,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${Cookies.get("accessToken")}`,
+          },
+        }
+      );
+
+      console.log("Cancel event response:", response.data);
+
+      if (response.data.status === "success") {
+        toast.success("Etkinlik başarıyla iptal edildi");
+
+        // Update the event status in the UI
+        setFormData({
+          ...formData,
+          status: "cancelled",
+        });
+
+        // If onEventStatusChange callback is provided, call it
+        if (onSuccess) {
+          onSuccess();
+        }
+
+        // Close the modal
+        onOpenChange(false);
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        toast.error("Etkinlik iptal edilirken bir hata oluştu");
+      }
+    } catch (error: any) {
+      console.error("Error cancelling event:", error);
+
+      // More detailed error reporting
+      if (error.response) {
+        console.error(
+          "API error response:",
+          error.response.status,
+          error.response.data
+        );
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+      }
+
+      toast.error("Etkinlik iptal edilirken bir hata oluştu");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const completeEvent = async () => {
+    try {
+      console.log(`Attempting to complete event ${formData.id}...`);
+      setIsCompleting(true);
+
+      // Construct the API endpoint
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const completeEndpoint = `${baseUrl}/api/events/${formData.id}/complete`;
+      console.log("Using complete endpoint:", completeEndpoint);
+
+      const response = await api.post(
+        completeEndpoint,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${Cookies.get("accessToken")}`,
+          },
+        }
+      );
+
+      console.log("Complete event response:", response.data);
+
+      if (response.data.status === "success") {
+        toast.success("Etkinlik başarıyla tamamlandı");
+
+        // Update the event status in the UI
+        setFormData({
+          ...formData,
+          status: "completed",
+        });
+
+        // If onEventStatusChange callback is provided, call it
+        if (onSuccess) {
+          onSuccess();
+        }
+
+        // Close the modal
+        onOpenChange(false);
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        toast.error("Etkinlik tamamlanırken bir hata oluştu");
+      }
+    } catch (error: any) {
+      console.error("Error completing event:", error);
+
+      // More detailed error reporting
+      if (error.response) {
+        console.error(
+          "API error response:",
+          error.response.status,
+          error.response.data
+        );
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+      }
+
+      toast.error("Etkinlik tamamlanırken bir hata oluştu");
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -415,15 +962,16 @@ export function EventDetailModal({
                 className="text-sm md:text-base relative"
               >
                 Raporlar
-                {formData.reports?.filter((r) => r.status === "pending")
-                  .length > 0 && (
-                  <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
-                    {
-                      formData.reports.filter((r) => r.status === "pending")
-                        .length
-                    }
-                  </Badge>
-                )}
+                {formData.reports &&
+                  formData.reports.filter((r) => r.status === "pending")
+                    .length > 0 && (
+                    <Badge className="ml-1 bg-red-600 text-[10px] px-1 h-4 min-w-4 absolute -top-1 -right-1">
+                      {
+                        formData.reports.filter((r) => r.status === "pending")
+                          .length
+                      }
+                    </Badge>
+                  )}
               </TabsTrigger>
             </TabsList>
 
@@ -462,20 +1010,64 @@ export function EventDetailModal({
                       </SelectContent>
                     </Select>
                   ) : (
-                    <p className="text-sm md:text-base">{formData.category}</p>
+                    <div className="flex items-center space-x-2">
+                      {rawEventData?.sport?.icon && (
+                        <span className="text-xl">
+                          {rawEventData.sport.icon}
+                        </span>
+                      )}
+                      <Badge className="px-2 py-1">{formData.category}</Badge>
+                    </div>
                   )}
+                </div>
+
+                {/* Status info */}
+                <div className="space-y-2 md:space-y-3">
+                  <Label className="text-sm md:text-base">Durum</Label>
+                  <div>
+                    {getStatusBadge(formData.status)}
+                    {rawEventData?.is_full && (
+                      <Badge
+                        variant="outline"
+                        className="ml-2 bg-red-50 text-red-700 border-red-200"
+                      >
+                        Dolu
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2 md:space-y-3">
                   <Label className="text-sm md:text-base">Tarih</Label>
                   {isEditing ? (
-                    <DatePickerWithPresets
-                      date={formData.date}
-                      setDate={handleDateChange}
-                    />
+                    <div className="grid gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !formData.date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.date ? (
+                              format(formData.date, "PPP", { locale: tr })
+                            ) : (
+                              <span>Tarih seçin</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <DatePickerWithPresets
+                            selected={formData.date}
+                            onSelect={handleDateChange}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   ) : (
-                    <p className="text-sm md:text-base flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
+                    <p className="text-sm md:text-base">
                       {format(formData.date, "PPP", { locale: tr })}
                     </p>
                   )}
@@ -492,11 +1084,50 @@ export function EventDetailModal({
                       className="w-full"
                     />
                   ) : (
-                    <p className="text-sm md:text-base flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      {formData.time}
-                    </p>
+                    <div className="text-sm md:text-base">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        <span>Başlangıç: {formData.time}</span>
+                      </div>
+                      {rawEventData?.end_time && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <Clock className="h-4 w-4" />
+                          <span>
+                            Bitiş:{" "}
+                            {formatTimeFromISOString(rawEventData.end_time)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   )}
+                </div>
+
+                <div className="space-y-2 md:space-y-3">
+                  <Label className="text-sm md:text-base">
+                    Katılımcı Durumu
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span>
+                      {rawEventData?.current_participants ||
+                        formData.participants.length}{" "}
+                      / {formData.maxParticipants}
+                    </span>
+                    <div className="h-2 bg-gray-200 rounded-full flex-1">
+                      <div
+                        className="h-2 bg-primary rounded-full"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            ((rawEventData?.current_participants ||
+                              formData.participants.length) /
+                              formData.maxParticipants) *
+                              100
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2 md:space-y-3 col-span-1 md:col-span-2">
@@ -795,6 +1426,36 @@ export function EventDetailModal({
                     >
                       <Trash className="mr-2 h-4 w-4" />
                       Etkinliği Sil
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="border p-4 rounded-lg space-y-4">
+                  <h3 className="text-lg font-semibold">Etkinlik İptali</h3>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      disabled={loading}
+                      onClick={cancelEvent}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Etkinliği İptal Et
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="border p-4 rounded-lg space-y-4">
+                  <h3 className="text-lg font-semibold">Etkinlik Tamamlama</h3>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button
+                      variant="default"
+                      className="flex-1"
+                      disabled={loading}
+                      onClick={completeEvent}
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Etkinliği Tamamla
                     </Button>
                   </div>
                 </div>

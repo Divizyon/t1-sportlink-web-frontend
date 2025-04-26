@@ -10,6 +10,7 @@ import {
   filterEvents,
 } from "@/lib/eventUtils";
 import { calculatePercentage, calculateGrowth } from "@/lib/dashboardUtils";
+import Cookies from "js-cookie";
 
 interface UseDashboardEventsProps {
   initialCategories?: string[];
@@ -32,21 +33,27 @@ export function useDashboardEvents({
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        // Try to fetch from backend first
+        console.log("Fetching events from API...");
+        setLoading(true);
+
+        // Try to fetch from backend
         try {
-          const response = await fetch("http://localhost:3000/api/events", {
+          const token =
+            localStorage.getItem("token") || Cookies.get("accessToken") || "";
+
+          const response = await fetch("/api/events", {
             headers: {
-              Authorization: "Bearer " + localStorage.getItem("token"),
+              Authorization: "Bearer " + token,
               "Content-Type": "application/json",
             },
             credentials: "include", // Include cookies for session-based auth
           });
 
-          // Immediately fall back to mock data if we get a 401
-          if (response.status === 401) {
-            console.warn(
-              "Authentication failed (401 Unauthorized), using mock data"
-            );
+          console.log("API Response status:", response.status);
+
+          // Immediately fall back to mock data if we get a 401 or 404
+          if (response.status === 401 || response.status === 404) {
+            console.warn(`API Error (${response.status}), using mock data`);
             setEvents(TODAY_EVENTS);
             setLoading(false);
             return;
@@ -54,6 +61,8 @@ export function useDashboardEvents({
 
           if (response.ok) {
             const data = await response.json();
+            console.log("API Response data:", data);
+
             if (data.status === "success" && Array.isArray(data.data?.events)) {
               // Map backend data format to frontend format
               const mappedEvents = data.data.events.map((event: any) => ({
@@ -62,9 +71,9 @@ export function useDashboardEvents({
                 description: event.description || "",
                 date: new Date(event.event_date),
                 time:
-                  event.start_time.split("T")[1]?.substring(0, 5) || "00:00",
+                  event.start_time?.split("T")[1]?.substring(0, 5) || "00:00",
                 location: event.location_name,
-                category: event.sport_name || "Other",
+                category: event.sport_name || event.sport_category || "Other",
                 participants: event.participant_count || 0,
                 maxParticipants: event.max_participants,
                 status: mapBackendStatus(event.status),
@@ -75,21 +84,26 @@ export function useDashboardEvents({
                   .split("T")[0],
               }));
 
+              console.log(`Mapped ${mappedEvents.length} events from API`);
               setEvents(mappedEvents);
               setLoading(false);
               return;
+            } else {
+              console.warn("API returned invalid format:", data);
             }
+          } else {
+            console.warn("API returned non-OK status:", response.status);
           }
-          throw new Error("API returned invalid format");
+          throw new Error("API returned invalid format or error status");
         } catch (apiError) {
           console.warn("Failed to fetch from API, using mock data:", apiError);
 
           // Fallback to mock data if API fails
-          // Using only TODAY_EVENTS since EVENT_DETAILS is not available
           setEvents(TODAY_EVENTS);
           setLoading(false);
         }
       } catch (err) {
+        console.error("Error in useDashboardEvents:", err);
         setError(
           err instanceof Error ? err : new Error("Failed to fetch events")
         );
@@ -98,7 +112,7 @@ export function useDashboardEvents({
     };
 
     fetchEvents();
-  }, []); // Empty dependency array to run only once
+  }, []);
 
   // Map backend status to frontend status
   const mapBackendStatus = (backendStatus: string): EventStatus => {
