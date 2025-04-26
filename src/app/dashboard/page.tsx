@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { MonthlyEventsChart } from "@/components/dashboard/analytics/MonthlyEventsChart";
 import { TodaysEvents } from "@/components/dashboard/home/TodaysEvents";
-import { RecentParticipants } from "@/components/dashboard/home/RecentParticipants";
+import { RecentReports } from "@/components/dashboard/home/RecentReports";
 import { UserTable } from "@/components/dashboard/users/UserTable";
 import { EventParticipationChart } from "@/components/dashboard/analytics/EventParticipationChart";
 import { EventDetailModal } from "@/components/modals/EventDetailModal";
@@ -525,23 +525,21 @@ export default function DashboardPage() {
             <div className="space-y-4">
               <Card className="h-[500px]">
                 <CardHeader>
-                  <CardTitle>
-                    {UI_TEXT.SECTION_TITLES.RECENT_PARTICIPANTS}
-                  </CardTitle>
+                  <CardTitle>Son Raporlar</CardTitle>
                   <CardDescription>
-                    {UI_TEXT.SECTION_DESCRIPTIONS.RECENT_PARTICIPANTS}
+                    Son eklenen 5 rapor listelenmektedir
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="h-[380px] overflow-y-auto">
-                  <RecentParticipants
-                    onUserSelect={(user) => openModal(MODAL_TYPES.USER, user)}
+                  <RecentReports
+                    onReportSelect={(report) => openModal(MODAL_TYPES.REPORT, report)}
                   />
                 </CardContent>
                 <CardFooter>
                   <Button variant="outline" className="w-full" asChild>
-                    <Link href="/dashboard/users">
-                      <Users className="mr-2 h-4 w-4" />
-                      {UI_TEXT.BUTTON_TEXT.MANAGE_ALL_USERS}
+                    <Link href="/dashboard/reports">
+                      <Flag className="mr-2 h-4 w-4" />
+                      Tüm Raporları Yönet
                     </Link>
                   </Button>
                 </CardFooter>
