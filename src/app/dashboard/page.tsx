@@ -75,6 +75,7 @@ import {
 } from "@/constants/dashboard";
 import { ReportPriority, ReportStatus, ModalType } from "@/types";
 import Link from "next/link";
+import { Event as DashboardEvent } from "@/types/dashboard";
 
 // Raporlar için demo verileri
 type Priority = "high" | "medium" | "low";
@@ -120,6 +121,25 @@ interface Report {
   priority: "high" | "medium" | "low";
   status: "pending" | "reviewing" | "resolved" | "rejected";
 }
+
+// Add this function to handle type conversion
+const adaptEventTypes = (event: DashboardEvent): Event => {
+  return {
+    id: typeof event.id === "number" ? event.id : parseInt(event.id.toString()),
+    title: event.title || "",
+    description: event.description || "",
+    date:
+      typeof event.date === "string" ? event.date : event.date.toISOString(),
+    time: event.time || "",
+    location: event.location || "",
+    category: event.category || "",
+    maxParticipants: event.maxParticipants || 0,
+    currentParticipants:
+      typeof event.participants === "number" ? event.participants : 0,
+    status: event.status || "",
+    organizer: event.organizer || "",
+  };
+};
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -532,7 +552,9 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="h-[380px] overflow-y-auto">
                   <RecentReports
-                    onReportSelect={(report) => openModal(MODAL_TYPES.REPORT, report)}
+                    onReportSelect={(report) =>
+                      openModal(MODAL_TYPES.REPORT, report)
+                    }
                   />
                 </CardContent>
                 <CardFooter>
@@ -637,14 +659,19 @@ export default function DashboardPage() {
 
       {/* Modallar */}
       <EventDetailModal
-        open={
-          activeModal === MODAL_TYPES.EVENT ||
-          activeModal === MODAL_TYPES.DAILY_EVENTS ||
-          activeModal === MODAL_TYPES.ORG_EVENTS
+        open={activeModal === MODAL_TYPES.EVENT}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeModal();
+          }
+        }}
+        event={
+          selectedEvent ? ({ id: selectedEvent.id?.toString() } as any) : null
         }
-        onOpenChange={closeModal}
-        event={selectedEvent as any}
-        onSuccess={closeModal}
+        onSuccess={() => {
+          closeModal();
+          // Refresh data if needed
+        }}
       />
 
       <UserDetailModal
