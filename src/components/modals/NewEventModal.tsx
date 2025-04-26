@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import {
@@ -32,6 +32,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Event, User } from "@/types/dashboard/eventDashboard";
+import { API } from "@/constants";
+import Cookies from "js-cookie";
 
 interface NewEventModalProps {
   open: boolean;
@@ -47,9 +49,55 @@ const EVENT_CATEGORIES = [
   "Yüzme",
   "Koşu",
   "Yoga",
-  "Fitness",
-  "Diğer",
+  "Bisiklet",
+  "Yürüyüş",
 ];
+
+// Sports category map to backend sport IDs
+const SPORT_CATEGORY_MAP: Record<string, number> = {
+  Futbol: 1,
+  Basketbol: 2,
+  Voleybol: 3,
+  Tenis: 4,
+  Yüzme: 5,
+  Koşu: 6,
+  Yoga: 7,
+  Bisiklet: 8,
+  Yürüyüş: 9,
+};
+
+// ID ve kategori adını birlikte tutan yapı
+interface SportCategory {
+  id: number;
+  name: string;
+}
+
+// Kategori listesi ID ile birlikte
+const SPORT_CATEGORIES: SportCategory[] = [
+  { id: 4, name: "Futbol" },
+  { id: 5, name: "Basketbol" },
+  { id: 14, name: "Voleybol" },
+  { id: 6, name: "Tenis" },
+  { id: 9, name: "Yüzme" },
+  { id: 10, name: "Koşu" },
+  { id: 11, name: "Yoga" },
+  { id: 13, name: "Bisiklet" },
+  { id: 15, name: "Yürüyüş" },
+];
+
+// Backend API beklediği istek formatı
+interface EventRequest {
+  title: string;
+  description: string;
+  sport_id: number;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  location_name: string;
+  location_lat: number;
+  location_long: number;
+  max_participants: number;
+}
 
 export function NewEventModal({
   open,
@@ -64,8 +112,20 @@ export function NewEventModal({
     time: "",
     location: "",
     category: "",
+    categoryId: 0, // Kategori ID'si için yeni alan
     maxParticipants: 20,
+    lat: 90, // Default değer olarak 90 ayarlandı
+    long: 180, // Default değer olarak 180 ayarlandı
   });
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const dateButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Bu useEffect, modal kapandığında formu sıfırlar
+  useEffect(() => {
+    if (!open) {
+      resetForm();
+    }
+  }, [open]);
 
   const resetForm = () => {
     setFormData({
@@ -75,7 +135,10 @@ export function NewEventModal({
       time: "",
       location: "",
       category: "",
+      categoryId: 0, // ID sıfırlama
       maxParticipants: 20,
+      lat: 90,
+      long: 180,
     });
   };
 
@@ -86,7 +149,7 @@ export function NewEventModal({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Form validasyonu
@@ -104,8 +167,7 @@ export function NewEventModal({
 
     setLoading(true);
 
-    // Simüle edilmiş API çağrısı
-    setTimeout(() => {
+    try {
       // Create a default user for the organizer
       const defaultUser: User = {
         id: "temp-user-id",
@@ -115,8 +177,100 @@ export function NewEventModal({
         email: "sistem@sportlink.com",
       };
 
+      // Format date and time for the API
+      const eventDate = formData.date
+        ? format(formData.date, "yyyy-MM-dd")
+        : "";
+
+      // Start time and end time handling
+      const [hours, minutes] = formData.time.split(":").map(Number);
+      const startTime = new Date(formData.date!);
+      startTime.setHours(hours, minutes, 0, 0);
+
+      const endTime = new Date(startTime);
+      endTime.setHours(endTime.getHours() + 2); // Default 2 hour duration
+
+      // API'nin beklediği formatta request body hazırla
+      // Tam olarak şema formatına uygun, ne eksik ne fazla
+      const requestBody: EventRequest = {
+        title: formData.title,
+        description: formData.description,
+        sport_id: formData.categoryId, // Doğrudan categoryId kullanılıyor
+        event_date: eventDate,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        location_name: formData.location,
+        location_lat: formData.lat,
+        location_long: formData.long,
+        max_participants: Number(formData.maxParticipants),
+      };
+
+      // Debug için sport_id'yi kontrol et
+      console.log("Seçilen kategori adı:", formData.category);
+      console.log("Seçilen kategori ID:", formData.categoryId);
+      console.log("Gönderilecek sport_id:", requestBody.sport_id);
+      console.log("Gönderilen veri:", requestBody);
+
+      // Kategori ID'sinin geçerli olup olmadığını kontrol et
+      if (!requestBody.sport_id || requestBody.sport_id <= 0) {
+        toast.error("Geçerli bir kategori seçmelisiniz!");
+        setLoading(false);
+        return;
+      }
+
+      // Token'ı Cookie'den al
+      const token = Cookies.get("accessToken");
+
+      // API'ye doğrudan bağlan ve gerçek yanıt al
+      const response = await fetch("http://localhost:3000/api/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "", // Token varsa Authorization header'ına ekle
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      // Yanıt başarılı değilse hata fırlat
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API hata yanıtı:", errorData);
+
+        // Daha detaylı hata mesajı
+        let errorMessage = "Etkinlik oluşturulurken bir hata oluştu";
+
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+
+        if (errorData.errors && Array.isArray(errorData.errors)) {
+          // Varsa validasyon hatalarını göster
+          errorMessage += ": " + errorData.errors.join(", ");
+        }
+
+        // API yanıtından sport_id ile ilgili spesifik hata var mı diye kontrol et
+        if (
+          errorMessage.includes("sport_id") ||
+          errorMessage.includes("ilişkisel")
+        ) {
+          errorMessage +=
+            " - Sport ID: " +
+            requestBody.sport_id +
+            " ile ilgili bir sorun olabilir.";
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      // Başarılı yanıtı al
+      const responseData = await response.json();
+      console.log("API yanıtı:", responseData);
+
+      // Frontend format için yanıtı dönüştür
       const newEvent: Partial<Event> = {
-        id: Math.random().toString(36).substr(2, 9),
+        id:
+          responseData?.data?.event?.id ||
+          Math.random().toString(36).substr(2, 9),
         title: formData.title,
         description: formData.description,
         date: formData.date || new Date(),
@@ -124,9 +278,9 @@ export function NewEventModal({
         location: formData.location,
         maxParticipants: formData.maxParticipants,
         participants: 0,
-        status: "pending",
+        status: "PENDING",
         category: formData.category,
-        organizer: defaultUser, // Use our default user
+        organizer: defaultUser,
       };
 
       setLoading(false);
@@ -134,7 +288,17 @@ export function NewEventModal({
       resetForm();
       onOpenChange(false);
       if (onSuccess) onSuccess(newEvent);
-    }, 1500);
+    } catch (error) {
+      setLoading(false);
+      console.error("Etkinlik oluşturma hatası:", error);
+
+      // Hata mesajlarını ele al
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Etkinlik oluşturulurken bir hata oluştu");
+      }
+    }
   };
 
   return (
@@ -192,38 +356,88 @@ export function NewEventModal({
               >
                 Tarih *
               </Label>
-              <Popover>
-                <PopoverTrigger asChild>
+              <div className="relative">
+                {/* Takvim için basit bir input grubu */}
+                <div className="flex">
+                  <div className="relative flex-grow">
+                    <Input
+                      id="date"
+                      name="date"
+                      value={
+                        formData.date ? format(formData.date, "dd.MM.yyyy") : ""
+                      }
+                      readOnly
+                      placeholder="Tarih seçin"
+                      className="pl-10 w-full cursor-pointer"
+                      onClick={() => setDatePickerOpen(true)}
+                    />
+                    <CalendarIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  </div>
                   <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.date && "text-muted-foreground"
-                    )}
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    ref={dateButtonRef}
+                    onClick={() => setDatePickerOpen(true)}
+                    className="ml-1"
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.date ? (
-                      format(formData.date, "PPP", { locale: tr })
-                    ) : (
-                      <span>Tarih seçin</span>
-                    )}
+                    <CalendarIcon className="h-4 w-4" />
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.date || undefined}
-                    onSelect={(date) => {
-                      // Handle both date and undefined (when unselected)
-                      setFormData((prev) => ({
-                        ...prev,
-                        date: date === undefined ? null : date,
-                      }));
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+                </div>
+
+                {/* Takvim Popup */}
+                {datePickerOpen && (
+                  <div className="absolute z-50 top-full left-0 mt-2 bg-white rounded-md border shadow-lg p-4 w-[300px]">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-medium">Tarih Seçin</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDatePickerOpen(false)}
+                        className="h-6 w-6 rounded-full"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                    <Calendar
+                      mode="single"
+                      selected={formData.date || undefined}
+                      onSelect={(date) => {
+                        console.log("Seçilen tarih:", date);
+                        if (date) {
+                          setFormData((prev) => ({ ...prev, date }));
+                        }
+                      }}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                    />
+                    <div className="flex justify-end gap-2 mt-4 pt-2 border-t">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDatePickerOpen(false)}
+                      >
+                        İptal
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          if (formData.date) {
+                            setDatePickerOpen(false);
+                          } else {
+                            toast.error("Lütfen bir tarih seçin");
+                          }
+                        }}
+                      >
+                        Seç
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -248,52 +462,68 @@ export function NewEventModal({
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 md:space-y-4">
             <Label
-              htmlFor="category"
+              htmlFor="location"
               className="text-sm md:text-base font-medium"
             >
-              Kategori *
+              Konum *
             </Label>
-            <Select
-              value={formData.category}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, category: value }))
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Kategori seçin" />
-              </SelectTrigger>
-              <SelectContent>
-                {EVENT_CATEGORIES.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center relative">
+              <MapPin className="absolute left-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                placeholder="Etkinlik konumu"
+                className="pl-10 w-full"
+                required
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label
-                htmlFor="location"
+                htmlFor="category"
                 className="text-sm md:text-base font-medium"
               >
-                Konum *
+                Kategori *
               </Label>
-              <div className="flex items-center relative">
-                <MapPin className="absolute left-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  placeholder="Örn: Şehir Parkı, Ana Giriş"
-                  className="pl-10 w-full"
-                  required
-                />
-              </div>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => {
+                  // ID ve kategori adını birlikte ayarla
+                  const selectedCategory = SPORT_CATEGORIES.find(
+                    (cat) => cat.name === value
+                  );
+                  console.log("Seçilen kategori:", value);
+                  console.log("Bulunan kategori objesi:", selectedCategory);
+
+                  const categoryId = selectedCategory?.id || 0;
+                  console.log("Ayarlanacak kategori ID:", categoryId);
+
+                  setFormData((prev) => ({
+                    ...prev,
+                    category: value,
+                    categoryId: categoryId,
+                  }));
+                  console.log("Form state güncellendi");
+                }}
+                required
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Kategori seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPORT_CATEGORIES.map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -301,7 +531,7 @@ export function NewEventModal({
                 htmlFor="maxParticipants"
                 className="text-sm md:text-base font-medium"
               >
-                Maksimum Katılımcı *
+                Maksimum Katılımcı Sayısı *
               </Label>
               <div className="flex items-center relative">
                 <Users className="absolute left-3 h-4 w-4 text-muted-foreground" />
@@ -320,22 +550,24 @@ export function NewEventModal({
             </div>
           </div>
 
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-6">
+          <DialogFooter className="mt-6 sm:mt-8">
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-              className="w-full sm:w-auto text-sm md:text-base"
+              onClick={() => {
+                resetForm();
+                onOpenChange(false);
+              }}
+              className="w-full sm:w-auto"
             >
               İptal
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="w-full sm:w-auto text-sm md:text-base"
+              className="w-full sm:w-auto"
             >
-              {loading ? "Oluşturuluyor..." : "Etkinlik Oluştur"}
+              {loading ? "Oluşturuluyor..." : "Oluştur"}
             </Button>
           </DialogFooter>
         </form>

@@ -21,8 +21,8 @@ export const EVENT_CATEGORIES = [
   "Yüzme",
   "Koşu",
   "Yoga",
-  "Fitness",
-  "Diğer",
+  "Bisiklet",
+  "Yürüyüş",
 ];
 
 // Event Status Constants
