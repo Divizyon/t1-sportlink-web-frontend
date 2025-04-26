@@ -49,17 +49,18 @@ const routes = [
     color: "text-emerald-500",
   },
   {
-    label: "Ayarlar",
-    icon: Settings,
-    href: "/dashboard/settings",
-    color: "text-gray-500",
-  },
-  {
     label: "Raporlar",
     icon: Flag,
     href: "/dashboard/reports",
     color: "text-red-500",
   },
+  {
+    label: "Ayarlar",
+    icon: Settings,
+    href: "/dashboard/settings",
+    color: "text-gray-500",
+  },
+  
 ]
 
 export function Sidebar() {
