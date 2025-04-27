@@ -798,6 +798,35 @@ export default function EventsPage() {
     eventId: string | number,
     newStatus: "ACTIVE" | "PENDING" | "REJECTED" | "COMPLETED"
   ) => {
+    // Find the event
+    const event = events.find((e) => e.id === eventId);
+
+    // Verify that the event exists and is in PENDING status
+    if (!event) {
+      console.error("Event not found:", eventId);
+      toast.error("Etkinlik bulunamadı.");
+      return;
+    }
+
+    // Only allow changes from PENDING to ACTIVE or REJECTED
+    if (event.status !== "PENDING") {
+      console.warn("Cannot change status of non-pending event:", event);
+      toast.error("Sadece bekleyen etkinliklerin durumu değiştirilebilir.");
+      return;
+    }
+
+    // Only allow changing to ACTIVE or REJECTED
+    if (newStatus !== "ACTIVE" && newStatus !== "REJECTED") {
+      console.warn(
+        "Can only change pending events to ACTIVE or REJECTED, not:",
+        newStatus
+      );
+      toast.error(
+        "Bekleyen etkinlikler sadece onaylanabilir veya reddedilebilir."
+      );
+      return;
+    }
+
     // API'ye durum değişikliği gönder
     console.log(
       `Etkinlik durumu güncelleniyor: ID=${eventId}, Yeni Durum=${newStatus}`
@@ -826,15 +855,10 @@ export default function EventsPage() {
     };
 
     // İlgili durumun başarılı mesajını hazırla
-    const successMessage = `Etkinlik durumu "${
-      newStatus === "COMPLETED"
-        ? "Tamamlandı"
-        : newStatus === "ACTIVE"
-        ? "Onaylandı"
-        : newStatus === "REJECTED"
-        ? "Reddedildi"
-        : "Beklemede"
-    }" olarak güncellendi.`;
+    const successMessage =
+      newStatus === "ACTIVE"
+        ? "Etkinlik başarıyla onaylandı."
+        : "Etkinlik reddedildi.";
 
     // İsteği gönder, ancak arayüzü hemen güncelle (iyimser güncelleme)
     setEvents((prevEvents) =>
@@ -845,12 +869,6 @@ export default function EventsPage() {
 
     // Kullanıcıya bilgi ver
     toast.success(successMessage);
-
-    if (newStatus === "REJECTED") {
-      toast.error(
-        "Etkinliğiniz yönetici tarafından reddedildi. Lütfen etkinlik kurallarını kontrol edin."
-      );
-    }
 
     // API çağrısı yap
     fetch(apiUrl, {
@@ -1239,52 +1257,44 @@ export default function EventsPage() {
                       </button>
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={event.status}
-                        onValueChange={(value) => {
-                          // Status değerini "ACTIVE" | "PENDING" | "REJECTED" | "COMPLETED" formatına çevir
-                          const normalizedStatus = value.toUpperCase() as
-                            | "ACTIVE"
-                            | "PENDING"
-                            | "REJECTED"
-                            | "COMPLETED";
-                          handleStatusChange(event.id, normalizedStatus);
-                        }}
-                      >
-                        <SelectTrigger
-                          className={`w-[140px] ${
+                      {event.status === "PENDING" ? (
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
+                            onClick={() =>
+                              handleStatusChange(event.id, "ACTIVE")
+                            }
+                          >
+                            Onayla
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
+                            onClick={() =>
+                              handleStatusChange(event.id, "REJECTED")
+                            }
+                          >
+                            Reddet
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          className={`px-3 py-1 rounded-full text-sm font-medium w-fit ${
                             STATUS_COLORS[event.status].bg
                           } ${STATUS_COLORS[event.status].text}`}
                         >
-                          <SelectValue placeholder="Durum seçin" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem
-                            value="PENDING"
-                            className="text-yellow-800 hover:bg-yellow-100"
-                          >
-                            Beklemede
-                          </SelectItem>
-                          <SelectItem
-                            value="ACTIVE"
-                            className="text-green-800 hover:bg-green-100"
-                          >
-                            Onaylandı
-                          </SelectItem>
-                          <SelectItem
-                            value="REJECTED"
-                            className="text-red-800 hover:bg-red-100"
-                          >
-                            Reddedildi
-                          </SelectItem>
-                          <SelectItem
-                            value="COMPLETED"
-                            className="text-gray-800 hover:bg-gray-100"
-                          >
-                            Tamamlandı
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                          {event.status === "ACTIVE"
+                            ? "Onaylandı"
+                            : event.status === "REJECTED"
+                            ? "Reddedildi"
+                            : event.status === "COMPLETED"
+                            ? "Tamamlandı"
+                            : "Beklemede"}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
