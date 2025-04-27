@@ -110,6 +110,7 @@ export function NewEventModal({
     description: "",
     date: null as Date | null,
     time: "",
+    endTime: "",
     location: "",
     category: "",
     categoryId: 0, // Kategori ID'si için yeni alan
@@ -133,6 +134,7 @@ export function NewEventModal({
       description: "",
       date: null,
       time: "",
+      endTime: "",
       location: "",
       category: "",
       categoryId: 0, // ID sıfırlama
@@ -158,10 +160,23 @@ export function NewEventModal({
       !formData.description ||
       !formData.date ||
       !formData.time ||
+      !formData.endTime ||
       !formData.location ||
       !formData.category
     ) {
       toast.error("Lütfen tüm gerekli alanları doldurun");
+      return;
+    }
+
+    // Check if end time is after start time
+    const [startHours, startMinutes] = formData.time.split(":").map(Number);
+    const [endHours, endMinutes] = formData.endTime.split(":").map(Number);
+
+    if (
+      startHours > endHours ||
+      (startHours === endHours && startMinutes >= endMinutes)
+    ) {
+      toast.error("Bitiş saati başlangıç saatinden sonra olmalıdır");
       return;
     }
 
@@ -182,13 +197,15 @@ export function NewEventModal({
         ? format(formData.date, "yyyy-MM-dd")
         : "";
 
-      // Start time and end time handling
+      // Start time handling
       const [hours, minutes] = formData.time.split(":").map(Number);
       const startTime = new Date(formData.date!);
       startTime.setHours(hours, minutes, 0, 0);
 
-      const endTime = new Date(startTime);
-      endTime.setHours(endTime.getHours() + 2); // Default 2 hour duration
+      // End time handling - use the actual end time provided by user
+      const [endHours, endMinutes] = formData.endTime.split(":").map(Number);
+      const endTime = new Date(formData.date!);
+      endTime.setHours(endHours, endMinutes, 0, 0);
 
       // API'nin beklediği formatta request body hazırla
       // Tam olarak şema formatına uygun, ne eksik ne fazla
@@ -409,7 +426,12 @@ export function NewEventModal({
                           setFormData((prev) => ({ ...prev, date }));
                         }
                       }}
-                      disabled={(date) => date < new Date()}
+                      disabled={(date) => {
+                        // Allow selecting today's date
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        return date < today;
+                      }}
                       initialFocus
                     />
                     <div className="flex justify-end gap-2 mt-4 pt-2 border-t">
@@ -445,7 +467,7 @@ export function NewEventModal({
                 htmlFor="time"
                 className="text-sm md:text-base font-medium"
               >
-                Saat *
+                Başlangıç Saati *
               </Label>
               <div className="flex items-center relative">
                 <Clock className="absolute left-3 h-4 w-4 text-muted-foreground" />
@@ -459,6 +481,27 @@ export function NewEventModal({
                   required
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-2 md:space-y-4">
+            <Label
+              htmlFor="endTime"
+              className="text-sm md:text-base font-medium"
+            >
+              Bitiş Saati *
+            </Label>
+            <div className="flex items-center relative">
+              <Clock className="absolute left-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="endTime"
+                name="endTime"
+                type="time"
+                value={formData.endTime}
+                onChange={handleChange}
+                className="pl-10 w-full"
+                required
+              />
             </div>
           </div>
 

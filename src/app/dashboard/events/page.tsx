@@ -35,6 +35,9 @@ import {
   Waves,
   Table,
   Trophy,
+  Bug,
+  Timer,
+  Plus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEventManagement, Event } from "@/hooks/useEventManagement";
@@ -81,6 +84,8 @@ import {
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/ui/pagination";
+import api from "@/services/api";
+import { useAuthStore } from "@/store/authStore";
 
 // Status mapping between UI tabs and backend status
 const TAB_TO_STATUS_MAP = {
@@ -88,6 +93,7 @@ const TAB_TO_STATUS_MAP = {
   today: "ACTIVE", // Special case, requires date filtering
   upcoming: "ACTIVE", // Special case, requires date filtering
   rejected: "REJECTED",
+  completed: "COMPLETED", // Add completed status mapping
   all: "ALL", // This will fetch all events
 };
 
@@ -141,6 +147,8 @@ const getEventStatusStyle = (status: string): string => {
       return "bg-green-100 text-green-800 border-green-200";
     case "REJECTED":
       return "bg-red-100 text-red-800 border-red-200";
+    case "COMPLETED":
+      return "bg-blue-100 text-blue-800 border-blue-200";
     default:
       return "bg-gray-100 text-gray-800 border-gray-200";
   }
@@ -154,6 +162,8 @@ const translateEventStatus = (status: string): string => {
       return "Aktif";
     case "REJECTED":
       return "Reddedildi";
+    case "COMPLETED":
+      return "Tamamlandı";
     default:
       return status;
   }
@@ -183,6 +193,7 @@ export default function EventsPage() {
     today: false,
     upcoming: false,
     rejected: false,
+    completed: false,
     all: false,
   });
   // Add state for the modal
@@ -219,6 +230,9 @@ export default function EventsPage() {
     autoFetch: false,
     cacheDuration: 300000, // 5 minutes cache
   });
+
+  // State for creating a test event
+  const [isCreatingTestEvent, setIsCreatingTestEvent] = useState(false);
 
   // Function to handle approving/rejecting events
   const handleStatusChange = async (eventId: string, status: string) => {
@@ -275,23 +289,11 @@ export default function EventsPage() {
           forceRefresh: true,
         });
       } else if (tabValue === "today") {
-        // For today's events, use the dateFilter parameter instead of client-side filtering
-        await fetchByStatus({
-          status: statusToFetch,
-          page,
-          pageSize,
-          forceRefresh: true,
-          dateFilter: "today",
-        });
+        // For today's events, pass TODAY directly to fetchByStatus
+        await fetchByStatus("TODAY");
       } else if (tabValue === "upcoming") {
-        // For upcoming events, use the dateFilter parameter instead of client-side filtering
-        await fetchByStatus({
-          status: statusToFetch,
-          page,
-          pageSize,
-          forceRefresh: true,
-          dateFilter: "upcoming",
-        });
+        // For upcoming events, pass UPCOMING directly to fetchByStatus
+        await fetchByStatus("UPCOMING");
       } else {
         // For other tabs, fetch the status directly
         await fetchByStatus({
@@ -344,6 +346,7 @@ export default function EventsPage() {
       today: activeTab === "today" ? totalItems : 0,
       upcoming: activeTab === "upcoming" ? totalItems : 0,
       rejected: activeTab === "rejected" ? totalItems : 0,
+      completed: activeTab === "completed" ? totalItems : 0,
     }),
     [activeTab, totalItems]
   );
@@ -449,6 +452,90 @@ export default function EventsPage() {
     }
   }, [totalCount, pageSize]);
 
+  // Create a test event 31 minutes from now
+  const createTestEvent = async () => {
+    try {
+      setIsCreatingTestEvent(true);
+
+      // Use directly the admin ID we know is logged in based on logs
+      const userId = "d11d962e-12b1-4ba3-ae8f-21300e9643db"; // Known admin user ID
+
+      console.log(
+        `Using hardcoded admin ID: ${userId} for test event creation`
+      );
+
+      // Calculate the time 31 minutes from now
+      const now = new Date();
+      const testEventTime = new Date(now.getTime() + 31 * 60 * 1000);
+
+      // Format the date and times correctly
+      // Instead of using toISOString which can cause timezone issues, use explicit formatting
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const eventDate = `${year}-${month}-${day}`; // Format: YYYY-MM-DD
+
+      // Log the date details for debugging
+      console.log(`Current time: ${now.toISOString()}`);
+      console.log(`Creating event with date: ${eventDate}`);
+
+      // Create full ISO timestamps
+      const startTimeISO = testEventTime.toISOString(); // Full ISO timestamp
+      const endTimeISO = new Date(
+        testEventTime.getTime() + 60 * 60 * 1000
+      ).toISOString(); // 1 hour after start
+
+      // Format the time for display
+      const hours = testEventTime.getHours().toString().padStart(2, "0");
+      const minutes = testEventTime.getMinutes().toString().padStart(2, "0");
+
+      console.log(
+        `Creating test event at ${eventDate} ${startTimeISO} (31 minutes from now)`
+      );
+
+      // Create the event with hardcoded sport_id 5
+      const response = await api.post("/events", {
+        title: `Test Event (${hours}:${minutes})`,
+        description: "This is an auto-generated test event for timeout testing",
+        event_date: eventDate, // Use the correctly formatted date
+        start_time: startTimeISO,
+        end_time: endTimeISO,
+        location_name: "Test Location",
+        sport_id: 5, // Using hardcoded sport_id 5
+        max_participants: 5,
+        creator_id: userId, // Use the admin user's ID
+        location_latitude: 39.925533,
+        location_longitude: 32.866287,
+      });
+
+      toast.success(
+        `Test event created for today at ${hours}:${minutes} (31 minutes from now)`
+      );
+
+      // Refresh the events list
+      await fetchByStatus("PENDING");
+    } catch (error: any) {
+      console.error("Error creating test event:", error);
+
+      // Show more detailed error information
+      if (error.response) {
+        console.error("Response error data:", error.response.data);
+        toast.error(
+          "Failed to create test event: " +
+            (error.response.data?.message || error.response.statusText)
+        );
+      } else if (error.request) {
+        toast.error("Network error - server not responding");
+      } else {
+        toast.error(
+          "Error creating test event: " + (error.message || "Unknown error")
+        );
+      }
+    } finally {
+      setIsCreatingTestEvent(false);
+    }
+  };
+
   // Render the event list
   const renderEventList = useCallback(
     (eventList: Event[], showApproveReject = false) => {
@@ -544,13 +631,37 @@ export default function EventsPage() {
                         event.status === "ACTIVE" &&
                           "bg-green-100 text-green-800 hover:bg-green-200",
                         event.status === "REJECTED" &&
-                          "bg-red-100 text-red-800 hover:bg-red-200"
+                          "bg-red-100 text-red-800 hover:bg-red-200",
+                        event.status === "COMPLETED" &&
+                          "bg-blue-100 text-blue-800 hover:bg-blue-200"
                       )}
                     >
                       {event.status === "PENDING" && "Onay Bekliyor"}
                       {event.status === "ACTIVE" && "Aktif"}
                       {event.status === "REJECTED" && "Reddedildi"}
+                      {event.status === "COMPLETED" && "Tamamlandı"}
                     </Badge>
+
+                    {/* Add warning for expiring events or timed out rejected events */}
+                    {(event.isExpiringSoon ||
+                      (event.status === "REJECTED" &&
+                        event.timeUntilStart === "Süresi doldu")) && (
+                      <div className="absolute top-12 right-4 mt-1">
+                        <Badge
+                          className={cn(
+                            "border animate-pulse",
+                            event.timeUntilStart === "Süresi doldu" ||
+                              event.status === "REJECTED"
+                              ? "bg-red-100 text-red-800 hover:bg-red-200 border-red-300"
+                              : event.timeUntilStart === "Çok az kaldı!"
+                              ? "bg-orange-100 text-orange-800 hover:bg-orange-200 border-orange-300"
+                              : "bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300"
+                          )}
+                        >
+                          {event.timeUntilStart || "Süresi doldu"}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
 
                   {/* Event description section */}
@@ -629,7 +740,11 @@ export default function EventsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-medium"
+                          className={cn(
+                            "border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-medium",
+                            event.isExpiringSoon &&
+                              "animate-pulse border-red-400"
+                          )}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleStatusChange(event.id, "REJECTED");
@@ -641,7 +756,11 @@ export default function EventsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700 font-medium"
+                          className={cn(
+                            "border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700 font-medium",
+                            event.isExpiringSoon &&
+                              "animate-pulse border-green-400"
+                          )}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleStatusChange(event.id, "ACTIVE");
@@ -1042,28 +1161,32 @@ export default function EventsPage() {
   ]);
 
   return (
-    <div className="container mx-auto py-4">
+    <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold mb-4">Etkinlik Yönetimi</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Etkinlik Yönetimi</h1>
+        <div className="flex gap-2">
+          {/* Button to quickly create test event */}
+          <Button
+            onClick={createTestEvent}
+            variant="outline"
+            size="sm"
+            className="bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 flex items-center gap-1"
+            disabled={isCreatingTestEvent}
+          >
+            <Bug className="h-4 w-4" />
+            <Timer className="h-4 w-4" />
+            {isCreatingTestEvent ? "Oluşturuluyor..." : "Test Etkinliği (31dk)"}
+          </Button>
 
-        {/* Add CreateEventButton */}
-        <CreateEventButton
-          onSuccess={() => {
-            // Refresh pending events when a new event is created
-            console.log("New event created, refreshing pending events list");
-
-            // Clear cache to ensure we get fresh data
-            fetchEvents(true); // Force refresh of all events
-
-            // Then fetch pending events specifically
-            fetchByStatus("PENDING");
-
-            // Update the tab to pending to show the new event
-            setActiveTab("pending");
-          }}
-          variant="outline"
-          size="sm"
-        />
+          <Button
+            onClick={() => router.push("/dashboard/events/create")}
+            size="sm"
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            Yeni Etkinlik
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -1100,11 +1223,13 @@ export default function EventsPage() {
               "Gelecekte gerçekleşecek planlanan tüm etkinlikler. Bugünden sonraki tarihler gösteriliyor."}
             {activeTab === "rejected" &&
               "Reddedilen ve daha fazla işlem gerektirmeyen etkinlikler."}
+            {activeTab === "completed" &&
+              "Tamamlanmış etkinlikler. Süresi dolduğu için otomatik olarak tamamlandı olarak işaretlenen etkinlikler burada görüntülenir."}
             {activeTab === "all" &&
               "Tüm etkinlikler yükleniyor. Bu işlem büyük sistemlerde performans sorunlarına neden olabilir."}
           </div>
 
-          <TabsList className="grid w-auto grid-cols-5 mb-1 ml-auto">
+          <TabsList className="grid w-auto grid-cols-6 mb-1 ml-auto">
             <TabsTrigger
               value="pending"
               className="relative font-medium bg-amber-50 text-amber-800 hover:bg-amber-100 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-900 border-b-2 border-amber-300"
@@ -1143,6 +1268,16 @@ export default function EventsPage() {
               Reddedilen
               {tabLoadingStates.rejected && (
                 <span className="absolute right-1 top-1 w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger
+              value="completed"
+              className="relative bg-blue-50 text-blue-800 hover:bg-blue-100 data-[state=active]:bg-blue-200 data-[state=active]:text-blue-900"
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Tamamlanan
+              {tabLoadingStates.completed && (
+                <span className="absolute right-1 top-1 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
               )}
             </TabsTrigger>
             <TabsTrigger
@@ -1232,6 +1367,23 @@ export default function EventsPage() {
           {tabLoadingStates.rejected ? (
             <div className="text-center py-4 text-gray-500">
               <p>Reddedilen etkinlikler yükleniyor...</p>
+            </div>
+          ) : (
+            renderEventList(events)
+          )}
+        </TabsContent>
+
+        <TabsContent
+          value="completed"
+          className="pt-4 border-blue-200 border rounded-md p-4"
+        >
+          <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <CheckCircle className="h-5 w-5 mr-2 text-blue-500" />
+            Tamamlanan Etkinlikler
+          </h2>
+          {tabLoadingStates.completed ? (
+            <div className="text-center py-4 text-gray-500">
+              <p>Tamamlanan etkinlikler yükleniyor...</p>
             </div>
           ) : (
             renderEventList(events)
