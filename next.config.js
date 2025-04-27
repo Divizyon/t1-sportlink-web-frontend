@@ -3,23 +3,31 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '**',
-        pathname: '**',
+        protocol: "https",
+        hostname: "**",
+        pathname: "**",
       },
     ],
     domains: [
-      'static.hurriyet.com.tr',
-      'i.hurimg.com',
-      'img.fanatik.com.tr',
-      'iasbh.tmgrup.com.tr',
-      'img.internethaber.com',
-      'img.superhaber.tv',
-      'cdn.sporx.com',
-      'assets.goal.com',
-      'img.trtspor.com.tr'
-    ]
-  }
-}
+      "static.hurriyet.com.tr",
+      "i.hurimg.com",
+      "img.fanatik.com.tr",
+      "iasbh.tmgrup.com.tr",
+      "img.internethaber.com",
+      "img.superhaber.tv",
+      "cdn.sporx.com",
+      "assets.goal.com",
+      "img.trtspor.com.tr",
+    ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://localhost:3000/:path*",
+      },
+    ];
+  },
+};
 
-module.exports = nextConfig 
+module.exports = nextConfig;

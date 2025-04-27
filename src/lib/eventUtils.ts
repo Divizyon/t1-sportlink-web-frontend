@@ -168,3 +168,47 @@ export function filterEvents(
 export function formatEventLocation(location: string): string {
   return location;
 }
+
+/**
+ * Generates a valid future date and time for event creation
+ * This ensures the event time will be in the future and won't be rejected by the backend
+ * and handles timezone issues correctly
+ */
+export function generateFutureEventTime(hoursInFuture: number = 1): {
+  date: string;
+  startTime: string;
+  endTime: string;
+} {
+  // Get current date
+  const now = new Date();
+
+  // Create future date (default 1 hour from now)
+  const futureDate = new Date(now.getTime() + hoursInFuture * 60 * 60 * 1000);
+
+  // Ensure timezone consistency by working with ISO strings
+  // Format date as YYYY-MM-DD (local date)
+  const year = futureDate.getFullYear();
+  const month = String(futureDate.getMonth() + 1).padStart(2, "0");
+  const day = String(futureDate.getDate()).padStart(2, "0");
+  const date = `${year}-${month}-${day}`;
+
+  // Full ISO strings for start and end times
+  // Ensure seconds are set to 0 to avoid validation issues
+  futureDate.setSeconds(0, 0);
+  const startTime = futureDate.toISOString();
+
+  // End time is 1 hour after start time
+  const endDate = new Date(futureDate.getTime() + 1 * 60 * 60 * 1000);
+  endDate.setSeconds(0, 0);
+  const endTime = endDate.toISOString();
+
+  console.log(
+    `Generated future event times: date=${date}, start=${startTime}, end=${endTime}`
+  );
+
+  return {
+    date,
+    startTime,
+    endTime,
+  };
+}
