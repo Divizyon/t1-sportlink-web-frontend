@@ -43,7 +43,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Event, User } from "@/types/dashboard/eventDashboard";
-import { useSingleFetch } from "@/hooks";
 import { toast } from "sonner";
 
 // Kategori renkleri
@@ -116,6 +115,19 @@ export default function EventsPage() {
   // Track if we've already fetched data to avoid double fetching
   const hasFetched = useRef(false);
 
+  // Add a loading reference to prevent simultaneous calls
+  const isFetchingRef = useRef(false);
+
+  // Add state for active tab
+  const [activeTab, setActiveTab] = useState<
+    "all" | "pending" | "active" | "completed"
+  >("pending");
+
+  // Add a tab-specific loading indicator
+  const [tabLoading, setTabLoading] = useState<
+    "all" | "pending" | "active" | "completed" | null
+  >(null);
+
   // Helper function to map backend category to frontend category
   const mapBackendCategory = (backendCategory?: string | number): string => {
     // Eğer bir sport_id (number) geldiyse, direkt olarak dönüştür
@@ -153,18 +165,54 @@ export default function EventsPage() {
 
   // Function to fetch events - defined as useCallback for reuse
   const fetchEvents = useCallback(async () => {
+    // Prevent duplicate API calls
+    if (isFetchingRef.current) {
+      console.log("Already fetching events, skipping...");
+      return;
+    }
+
     try {
       setLoading(true);
+      setTabLoading(activeTab);
       setError(null);
+      isFetchingRef.current = true;
+
+      // Clear events array before fetching new data
+      setEvents([]);
+
+      // Build query parameters based on active tab
+      let queryParams = "";
+      if (activeTab !== "all") {
+        const statusParams = [];
+        if (activeTab === "pending") {
+          statusParams.push("status=PENDING");
+        } else if (activeTab === "active") {
+          statusParams.push("status=ACTIVE");
+          statusParams.push("status=REJECTED");
+        } else if (activeTab === "completed") {
+          statusParams.push("status=COMPLETED");
+        }
+
+        if (statusParams.length) {
+          queryParams = "?" + statusParams.join("&");
+        }
+      }
+
+      console.log(
+        `Fetching events for tab: ${activeTab} with query: ${queryParams}`
+      );
 
       // First try with the normal endpoint
-      const response = await fetch("http://localhost:3000/api/events", {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Include cookies for session-based auth
-      });
+      const response = await fetch(
+        `http://localhost:3000/api/events${queryParams}`,
+        {
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("token"),
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Include cookies for session-based auth
+        }
+      );
 
       if (response.status === 401) {
         setError(
@@ -172,6 +220,7 @@ export default function EventsPage() {
         );
         setEvents([]);
         setLoading(false);
+        setTabLoading(null);
         return;
       }
 
@@ -267,6 +316,7 @@ export default function EventsPage() {
         }
         setEvents([]);
         setLoading(false);
+        setTabLoading(null);
         return;
       }
 
@@ -351,7 +401,22 @@ export default function EventsPage() {
           });
 
           console.log("Successfully mapped events:", mappedEvents.length);
-          setEvents(mappedEvents);
+
+          // Additional filter for active tab to ensure no COMPLETED events are shown
+          if (activeTab === "active") {
+            const filteredMappedEvents = mappedEvents.filter(
+              (event: Event) =>
+                event.status === "ACTIVE" || event.status === "REJECTED"
+            );
+            console.log(
+              `Filtered out ${
+                mappedEvents.length - filteredMappedEvents.length
+              } COMPLETED events from active tab`
+            );
+            setEvents(filteredMappedEvents);
+          } else {
+            setEvents(mappedEvents);
+          }
         } catch (mappingError) {
           console.error("Error mapping events:", mappingError);
           setError(
@@ -417,12 +482,23 @@ export default function EventsPage() {
       setEvents([]);
     } finally {
       setLoading(false);
+      setTabLoading(null);
+      isFetchingRef.current = false;
     }
-  }, []);
+  }, [activeTab]);
 
   // Use our single fetch hook for the initial data load
   // Providing a specific cache key to ensure uniqueness
-  useSingleFetch(fetchEvents, "events-page-initial-fetch");
+  useEffect(() => {
+    // Only fetch when component mounts or when activeTab changes
+    fetchEvents();
+
+    // Cleanup function that runs when component unmounts or before next effect run
+    return () => {
+      // Cancel any pending requests or state updates
+      console.log("Cleaning up event fetching for tab:", activeTab);
+    };
+  }, [activeTab, fetchEvents]);
 
   // Map backend status to frontend status
   const mapBackendStatus = (
@@ -469,18 +545,12 @@ export default function EventsPage() {
   });
 
   useEffect(() => {
-    // Skip the first render as useSingleFetch handles that
+    // Skip if no search filters are applied
     if (
-      prevFiltersRef.current.searchQuery === "" &&
-      prevFiltersRef.current.statusFilter === "all" &&
-      prevFiltersRef.current.selectedCategories.length === 0
+      searchQuery === "" &&
+      statusFilter === "all" &&
+      selectedCategories.length === 0
     ) {
-      // Update ref with initial values
-      prevFiltersRef.current = {
-        searchQuery,
-        statusFilter,
-        selectedCategories,
-      };
       return;
     }
 
@@ -560,24 +630,60 @@ export default function EventsPage() {
         event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.location.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // Status filter için büyük/küçük harf uyumlu hale getirelim
+      // If tab filter is active, don't apply status filter
       const matchesStatus =
-        statusFilter === "all" ||
-        event.status === statusFilter ||
-        (statusFilter === "pending" && event.status === "PENDING") ||
-        (statusFilter === "approved" && event.status === "ACTIVE") ||
-        (statusFilter === "rejected" && event.status === "REJECTED") ||
-        (statusFilter === "completed" && event.status === "COMPLETED");
+        activeTab !== "all"
+          ? true
+          : statusFilter === "all" ||
+            event.status === statusFilter ||
+            (statusFilter === "pending" && event.status === "PENDING") ||
+            (statusFilter === "approved" && event.status === "ACTIVE") ||
+            (statusFilter === "rejected" && event.status === "REJECTED") ||
+            (statusFilter === "completed" && event.status === "COMPLETED");
 
       const matchesCategories =
         selectedCategories.length === 0 ||
         selectedCategories.includes(event.category);
 
       return matchesSearch && matchesStatus && matchesCategories;
+    })
+    // Sort by status priority (PENDING first)
+    .sort((a, b) => {
+      // If we're on the pending tab, keep the default order
+      if (activeTab === "pending") return 0;
+
+      const statusPriority: Record<string, number> = {
+        PENDING: 1,
+        ACTIVE: 2,
+        REJECTED: 3,
+        COMPLETED: 4,
+      };
+      return (
+        (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99)
+      );
     });
 
   // Add log to inspect filteredEvents before render
   console.log("Filtered events before rendering:", filteredEvents);
+
+  // Count events by status for the tab badges
+  const eventCounts = {
+    all: events.length,
+    pending:
+      activeTab === "pending" || activeTab === "all"
+        ? events.filter((event) => event.status === "PENDING").length
+        : null,
+    active:
+      activeTab === "active" || activeTab === "all"
+        ? events.filter(
+            (event) => event.status === "ACTIVE" || event.status === "REJECTED"
+          ).length
+        : null,
+    completed:
+      activeTab === "completed" || activeTab === "all"
+        ? events.filter((event) => event.status === "COMPLETED").length
+        : null,
+  };
 
   const handleEditEvent = (
     id: string | number,
@@ -932,6 +1038,108 @@ export default function EventsPage() {
         }}
       />
 
+      {/* Status filter tabs */}
+      <div className="mb-4">
+        <div className="border-b flex">
+          <button
+            onClick={() => {
+              if (activeTab !== "all" && !tabLoading) {
+                setActiveTab("all");
+              }
+            }}
+            disabled={tabLoading !== null}
+            className={`px-4 py-2 font-medium text-sm ${
+              activeTab === "all"
+                ? "border-b-2 border-primary text-primary"
+                : "text-gray-500 hover:text-gray-700"
+            } ${tabLoading !== null ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            Tüm Etkinlikler
+            {activeTab === "all" && (
+              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100">
+                {tabLoading === "all" ? (
+                  <span className="inline-block w-4 h-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent"></span>
+                ) : (
+                  eventCounts.all
+                )}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              if (activeTab !== "pending" && !tabLoading) {
+                setActiveTab("pending");
+              }
+            }}
+            disabled={tabLoading !== null}
+            className={`px-4 py-2 font-medium text-sm ${
+              activeTab === "pending"
+                ? "border-b-2 border-primary text-primary"
+                : "text-gray-500 hover:text-gray-700"
+            } ${tabLoading !== null ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            Bekleyen Etkinlikler
+            {eventCounts.pending !== null && (
+              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                {tabLoading === "pending" ? (
+                  <span className="inline-block w-4 h-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent"></span>
+                ) : (
+                  eventCounts.pending
+                )}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              if (activeTab !== "active" && !tabLoading) {
+                setActiveTab("active");
+              }
+            }}
+            disabled={tabLoading !== null}
+            className={`px-4 py-2 font-medium text-sm ${
+              activeTab === "active"
+                ? "border-b-2 border-primary text-primary"
+                : "text-gray-500 hover:text-gray-700"
+            } ${tabLoading !== null ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            Onaylanmış/Reddedilmiş
+            {eventCounts.active !== null && (
+              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">
+                {tabLoading === "active" ? (
+                  <span className="inline-block w-4 h-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent"></span>
+                ) : (
+                  eventCounts.active
+                )}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              if (activeTab !== "completed" && !tabLoading) {
+                setActiveTab("completed");
+              }
+            }}
+            disabled={tabLoading !== null}
+            className={`px-4 py-2 font-medium text-sm ${
+              activeTab === "completed"
+                ? "border-b-2 border-primary text-primary"
+                : "text-gray-500 hover:text-gray-700"
+            } ${tabLoading !== null ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            Tamamlanmış Etkinlikler
+            {eventCounts.completed !== null && (
+              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800">
+                {tabLoading === "completed" ? (
+                  <span className="inline-block w-4 h-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent"></span>
+                ) : (
+                  eventCounts.completed
+                )}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
       <Card className="p-4">
         {loading && (
           <div className="flex justify-center items-center py-8">
@@ -1000,18 +1208,20 @@ export default function EventsPage() {
                 selectedCategories={selectedCategories}
                 onSelectCategories={setSelectedCategories}
               />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Durum" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tüm Durumlar</SelectItem>
-                  <SelectItem value="pending">Beklemede</SelectItem>
-                  <SelectItem value="approved">Onaylandı</SelectItem>
-                  <SelectItem value="rejected">Reddedildi</SelectItem>
-                  <SelectItem value="completed">Tamamlandı</SelectItem>
-                </SelectContent>
-              </Select>
+              {activeTab === "all" && (
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Durum" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Durumlar</SelectItem>
+                    <SelectItem value="pending">Beklemede</SelectItem>
+                    <SelectItem value="approved">Onaylandı</SelectItem>
+                    <SelectItem value="rejected">Reddedildi</SelectItem>
+                    <SelectItem value="completed">Tamamlandı</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
         )}
@@ -1031,106 +1241,89 @@ export default function EventsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredEvents.map((event) => {
-                // Log the event object being rendered for this row
-                console.log(`Rendering row for event: ${event.title}`, event);
-                return (
-                  <TableRow key={event.id}>
-                    <TableCell>
-                      <TooltipProvider delayDuration={0}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => setSelectedEventForPreview(event)}
-                              className={`font-medium text-gray-900 hover:underline cursor-pointer text-left`}
-                            >
-                              {event.title}
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-[300px] p-4 bg-white shadow-lg rounded-lg border border-gray-200">
-                            <p className="text-gray-700 text-sm whitespace-pre-wrap">
-                              {event.description}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={`${CATEGORY_COLORS[event.category].bg} ${
-                          CATEGORY_COLORS[event.category].text
-                        } hover:${CATEGORY_COLORS[event.category].bg}`}
-                      >
-                        {event.category}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{format(event.date, "dd.MM.yyyy")}</TableCell>
-                    <TableCell>{event.location}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-gray-900">
-                          {event.organizer.name} {event.organizer.surname}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {ROLE_LABELS[event.organizer.role]}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <button
-                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                        onClick={() => {
-                          console.log(
-                            "Participant count clicked for event:",
-                            event.title
-                          );
-                          // Katılımcı listesini API'den çek
-                          const fetchParticipants = async () => {
-                            try {
-                              setLoading(true);
-                              const token = localStorage.getItem("token") || "";
-                              const tokenFromSportlinkStorage =
-                                localStorage.getItem("sportlink_token");
-                              const authToken =
-                                token || tokenFromSportlinkStorage || "";
-
-                              // Alternatif endpoint'leri dene
-                              let response;
-                              let apiUrl =
-                                process.env.NEXT_PUBLIC_API_URL ||
-                                "http://localhost:3000/api";
-
-                              try {
-                                // İlk deneme - standart /events/{id}/participants endpoint
-                                response = await fetch(
-                                  `${apiUrl}/events/${event.id}/participants`,
-                                  {
-                                    headers: {
-                                      Authorization: `Bearer ${authToken}`,
-                                      "Content-Type": "application/json",
-                                    },
-                                    credentials: "include",
+              {filteredEvents.length > 0
+                ? filteredEvents.map((event) => {
+                    // Log the event object being rendered for this row
+                    console.log(
+                      `Rendering row for event: ${event.title}`,
+                      event
+                    );
+                    return (
+                      <TableRow key={event.id}>
+                        <TableCell>
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() =>
+                                    setSelectedEventForPreview(event)
                                   }
-                                );
+                                  className={`font-medium text-gray-900 hover:underline cursor-pointer text-left`}
+                                >
+                                  {event.title}
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-[300px] p-4 bg-white shadow-lg rounded-lg border border-gray-200">
+                                <p className="text-gray-700 text-sm whitespace-pre-wrap">
+                                  {event.description}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={`${CATEGORY_COLORS[event.category].bg} ${
+                              CATEGORY_COLORS[event.category].text
+                            } hover:${CATEGORY_COLORS[event.category].bg}`}
+                          >
+                            {event.category}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {format(event.date, "dd.MM.yyyy")}
+                        </TableCell>
+                        <TableCell>{event.location}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-900">
+                              {event.organizer.name} {event.organizer.surname}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {ROLE_LABELS[event.organizer.role]}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <button
+                            className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                            onClick={() => {
+                              console.log(
+                                "Participant count clicked for event:",
+                                event.title
+                              );
+                              // Katılımcı listesini API'den çek
+                              const fetchParticipants = async () => {
+                                try {
+                                  setLoading(true);
+                                  const token =
+                                    localStorage.getItem("token") || "";
+                                  const tokenFromSportlinkStorage =
+                                    localStorage.getItem("sportlink_token");
+                                  const authToken =
+                                    token || tokenFromSportlinkStorage || "";
 
-                                if (response.status === 404) {
-                                  // İkinci deneme - event_participants endpoint
-                                  response = await fetch(
-                                    `${apiUrl}/event_participants?event_id=${event.id}`,
-                                    {
-                                      headers: {
-                                        Authorization: `Bearer ${authToken}`,
-                                        "Content-Type": "application/json",
-                                      },
-                                      credentials: "include",
-                                    }
-                                  );
+                                  // Alternatif endpoint'leri dene
+                                  let response;
+                                  let apiUrl =
+                                    process.env.NEXT_PUBLIC_API_URL ||
+                                    "http://localhost:3000/api";
 
-                                  if (response.status === 404) {
-                                    // Üçüncü deneme - event detayları ile birlikte tüm katılımcıları getir
+                                  try {
+                                    // İlk deneme - standart /events/{id}/participants endpoint
                                     response = await fetch(
-                                      `${apiUrl}/events/${event.id}?include=participants`,
+                                      `${apiUrl}/events/${event.id}/participants`,
                                       {
                                         headers: {
                                           Authorization: `Bearer ${authToken}`,
@@ -1139,184 +1332,268 @@ export default function EventsPage() {
                                         credentials: "include",
                                       }
                                     );
+
+                                    if (response.status === 404) {
+                                      // İkinci deneme - event_participants endpoint
+                                      response = await fetch(
+                                        `${apiUrl}/event_participants?event_id=${event.id}`,
+                                        {
+                                          headers: {
+                                            Authorization: `Bearer ${authToken}`,
+                                            "Content-Type": "application/json",
+                                          },
+                                          credentials: "include",
+                                        }
+                                      );
+
+                                      if (response.status === 404) {
+                                        // Üçüncü deneme - event detayları ile birlikte tüm katılımcıları getir
+                                        response = await fetch(
+                                          `${apiUrl}/events/${event.id}?include=participants`,
+                                          {
+                                            headers: {
+                                              Authorization: `Bearer ${authToken}`,
+                                              "Content-Type":
+                                                "application/json",
+                                            },
+                                            credentials: "include",
+                                          }
+                                        );
+                                      }
+                                    }
+                                  } catch (fetchError) {
+                                    console.error(
+                                      "Endpoint hatası:",
+                                      fetchError
+                                    );
+
+                                    // Eğer gerçek API'ler bulunamazsa, mevcut participantList kullan (fallback)
+                                    if (
+                                      event.participantList &&
+                                      event.participantList.length > 0
+                                    ) {
+                                      setParticipantsToPreview(
+                                        event.participantList
+                                      );
+                                      setIsParticipantPreviewOpen(true);
+                                      setLoading(false);
+                                      return;
+                                    } else {
+                                      toast.info(
+                                        "Katılımcı bilgilerine şu anda erişilemiyor."
+                                      );
+                                      setLoading(false);
+                                      return;
+                                    }
                                   }
-                                }
-                              } catch (fetchError) {
-                                console.error("Endpoint hatası:", fetchError);
 
-                                // Eğer gerçek API'ler bulunamazsa, mevcut participantList kullan (fallback)
-                                if (
-                                  event.participantList &&
-                                  event.participantList.length > 0
-                                ) {
-                                  setParticipantsToPreview(
-                                    event.participantList
+                                  if (!response.ok) {
+                                    // Eğer tüm API çağrıları başarısız olursa, mevcut participantList'e geri dön
+                                    if (
+                                      event.participantList &&
+                                      event.participantList.length > 0
+                                    ) {
+                                      setParticipantsToPreview(
+                                        event.participantList
+                                      );
+                                      setIsParticipantPreviewOpen(true);
+                                      setLoading(false);
+                                      return;
+                                    }
+                                    throw new Error(
+                                      `API error: ${response.status}`
+                                    );
+                                  }
+
+                                  const data = await response.json();
+                                  console.log("Katılımcı verisi:", data);
+
+                                  // Katılımcı verisini doğru formata dönüştür
+                                  let participantList = [];
+
+                                  // Farklı API yanıt formatlarını kontrol et
+                                  if (data.participants) {
+                                    participantList = Array.isArray(
+                                      data.participants
+                                    )
+                                      ? data.participants
+                                      : [];
+                                  } else if (data.data?.participants) {
+                                    participantList = Array.isArray(
+                                      data.data.participants
+                                    )
+                                      ? data.data.participants
+                                      : [];
+                                  } else if (Array.isArray(data)) {
+                                    participantList = data;
+                                  } else if (
+                                    data.data &&
+                                    Array.isArray(data.data)
+                                  ) {
+                                    participantList = data.data;
+                                  } else if (
+                                    data.event_participants &&
+                                    Array.isArray(data.event_participants)
+                                  ) {
+                                    participantList = data.event_participants;
+                                  }
+
+                                  // Veriyi User tipine dönüştür
+                                  const mappedParticipants =
+                                    participantList.map((p: any) => ({
+                                      id: p.id || p.user_id || "unknown",
+                                      name: p.name || p.first_name || "Unknown",
+                                      surname: p.surname || p.last_name || "",
+                                      email: p.email || "unknown@example.com",
+                                      role: p.role || "bireysel_kullanici",
+                                    }));
+
+                                  if (mappedParticipants.length > 0) {
+                                    setParticipantsToPreview(
+                                      mappedParticipants
+                                    );
+                                    setIsParticipantPreviewOpen(true);
+                                  } else {
+                                    toast.info(
+                                      "Bu etkinlik için gösterilecek katılımcı bulunmamaktadır."
+                                    );
+                                  }
+                                } catch (error) {
+                                  console.error(
+                                    "Katılımcılar çekilirken hata:",
+                                    error
                                   );
-                                  setIsParticipantPreviewOpen(true);
-                                  setLoading(false);
-                                  return;
-                                } else {
-                                  toast.info(
-                                    "Katılımcı bilgilerine şu anda erişilemiyor."
+                                  toast.error(
+                                    "Katılımcı listesi alınamadı. Lütfen daha sonra tekrar deneyin."
                                   );
+                                } finally {
                                   setLoading(false);
-                                  return;
                                 }
-                              }
+                              };
 
-                              if (!response.ok) {
-                                // Eğer tüm API çağrıları başarısız olursa, mevcut participantList'e geri dön
-                                if (
-                                  event.participantList &&
-                                  event.participantList.length > 0
-                                ) {
-                                  setParticipantsToPreview(
-                                    event.participantList
-                                  );
-                                  setIsParticipantPreviewOpen(true);
-                                  setLoading(false);
-                                  return;
-                                }
-                                throw new Error(
-                                  `API error: ${response.status}`
-                                );
-                              }
-
-                              const data = await response.json();
-                              console.log("Katılımcı verisi:", data);
-
-                              // Katılımcı verisini doğru formata dönüştür
-                              let participantList = [];
-
-                              // Farklı API yanıt formatlarını kontrol et
-                              if (data.participants) {
-                                participantList = Array.isArray(
-                                  data.participants
-                                )
-                                  ? data.participants
-                                  : [];
-                              } else if (data.data?.participants) {
-                                participantList = Array.isArray(
-                                  data.data.participants
-                                )
-                                  ? data.data.participants
-                                  : [];
-                              } else if (Array.isArray(data)) {
-                                participantList = data;
-                              } else if (
-                                data.data &&
-                                Array.isArray(data.data)
-                              ) {
-                                participantList = data.data;
-                              } else if (
-                                data.event_participants &&
-                                Array.isArray(data.event_participants)
-                              ) {
-                                participantList = data.event_participants;
-                              }
-
-                              // Veriyi User tipine dönüştür
-                              const mappedParticipants = participantList.map(
-                                (p: any) => ({
-                                  id: p.id || p.user_id || "unknown",
-                                  name: p.name || p.first_name || "Unknown",
-                                  surname: p.surname || p.last_name || "",
-                                  email: p.email || "unknown@example.com",
-                                  role: p.role || "bireysel_kullanici",
-                                })
-                              );
-
-                              if (mappedParticipants.length > 0) {
-                                setParticipantsToPreview(mappedParticipants);
-                                setIsParticipantPreviewOpen(true);
-                              } else {
-                                toast.info(
-                                  "Bu etkinlik için gösterilecek katılımcı bulunmamaktadır."
-                                );
-                              }
-                            } catch (error) {
-                              console.error(
-                                "Katılımcılar çekilirken hata:",
-                                error
-                              );
-                              toast.error(
-                                "Katılımcı listesi alınamadı. Lütfen daha sonra tekrar deneyin."
-                              );
-                            } finally {
-                              setLoading(false);
-                            }
-                          };
-
-                          fetchParticipants();
-                        }}
-                        aria-label="Katılımcıları Görüntüle"
-                      >
-                        {/* Katılımcı sayısını göster - API'den gelen veriyi tercih et */}
-                        {event.current_participants || event.participants || 0}/
-                        {event.maxParticipants}
-                      </button>
-                    </TableCell>
-                    <TableCell>
-                      {event.status === "PENDING" ? (
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
-                            onClick={() =>
-                              handleStatusChange(event.id, "ACTIVE")
-                            }
+                              fetchParticipants();
+                            }}
+                            aria-label="Katılımcıları Görüntüle"
                           >
-                            Onayla
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
-                            onClick={() =>
-                              handleStatusChange(event.id, "REJECTED")
-                            }
-                          >
-                            Reddet
-                          </Button>
+                            {/* Katılımcı sayısını göster - API'den gelen veriyi tercih et */}
+                            {(event.current_participants !== undefined
+                              ? event.current_participants
+                              : event.participants) || 0}
+                            /{event.maxParticipants}
+                          </button>
+                        </TableCell>
+                        <TableCell>
+                          {event.status === "PENDING" ? (
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
+                                onClick={() =>
+                                  handleStatusChange(event.id, "ACTIVE")
+                                }
+                              >
+                                Onayla
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
+                                onClick={() =>
+                                  handleStatusChange(event.id, "REJECTED")
+                                }
+                              >
+                                Reddet
+                              </Button>
+                            </div>
+                          ) : (
+                            <div
+                              className={`px-3 py-1 rounded-full text-sm font-medium w-fit ${
+                                STATUS_COLORS[event.status].bg
+                              } ${STATUS_COLORS[event.status].text}`}
+                            >
+                              {event.status === "ACTIVE"
+                                ? "Onaylandı"
+                                : event.status === "REJECTED"
+                                ? "Reddedildi"
+                                : event.status === "COMPLETED"
+                                ? "Tamamlandı"
+                                : "Beklemede"}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedEvent(event);
+                                setIsEditModalOpen(true);
+                              }}
+                            >
+                              Düzenle
+                            </Button>
+                            <DeleteEventModal
+                              eventName={event.title}
+                              onDelete={() => handleDeleteEvent(event.id)}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                : !loading && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center">
+                        <div className="flex flex-col items-center justify-center">
+                          {activeTab === "pending" && (
+                            <>
+                              <p className="text-muted-foreground">
+                                Bekleyen etkinlik bulunmamaktadır.
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Tüm etkinlikler incelenmiş görünüyor.
+                              </p>
+                            </>
+                          )}
+                          {activeTab === "active" && (
+                            <>
+                              <p className="text-muted-foreground">
+                                Onaylanmış veya reddedilmiş etkinlik
+                                bulunmamaktadır.
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Henüz etkinlik onaylanmamış veya reddedilmemiş
+                                olabilir.
+                              </p>
+                            </>
+                          )}
+                          {activeTab === "completed" && (
+                            <>
+                              <p className="text-muted-foreground">
+                                Tamamlanmış etkinlik bulunmamaktadır.
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Henüz tamamlanmış etkinlik yoktur.
+                              </p>
+                            </>
+                          )}
+                          {activeTab === "all" && (
+                            <>
+                              <p className="text-muted-foreground">
+                                Hiç etkinlik bulunmamaktadır.
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Yeni bir etkinlik oluşturmak için "Yeni
+                                Etkinlik" butonuna tıklayın.
+                              </p>
+                            </>
+                          )}
                         </div>
-                      ) : (
-                        <div
-                          className={`px-3 py-1 rounded-full text-sm font-medium w-fit ${
-                            STATUS_COLORS[event.status].bg
-                          } ${STATUS_COLORS[event.status].text}`}
-                        >
-                          {event.status === "ACTIVE"
-                            ? "Onaylandı"
-                            : event.status === "REJECTED"
-                            ? "Reddedildi"
-                            : event.status === "COMPLETED"
-                            ? "Tamamlandı"
-                            : "Beklemede"}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedEvent(event);
-                            setIsEditModalOpen(true);
-                          }}
-                        >
-                          Düzenle
-                        </Button>
-                        <DeleteEventModal
-                          eventName={event.title}
-                          onDelete={() => handleDeleteEvent(event.id)}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                      </TableCell>
+                    </TableRow>
+                  )}
             </TableBody>
           </Table>
         </div>
