@@ -66,6 +66,7 @@ export interface Event {
   description?: string;
   date: string;
   time: string;
+  endTime?: string;
   location: string;
   sport: string;
   category: string;
@@ -560,6 +561,7 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
             description: event.description || "",
             date: eventDate,
             time: formatTime(event.start_time || event.time),
+            endTime: event.end_time ? formatTime(event.end_time) : undefined,
             location: event.location_name || event.location || "",
             sport:
               event.sport_category ||
@@ -649,8 +651,10 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
         // Clear the cache to force a refresh on next fetch
         eventsCache = {};
 
-        // Trigger refresh
-        triggerRefresh();
+        // Set last updated time
+        setLastUpdated(new Date());
+
+        // Don't call triggerRefresh() here - it causes a double refresh cycle
 
         toast.success(
           `Etkinlik durumu başarıyla güncellendi: ${
@@ -666,39 +670,7 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
         return false;
       }
     },
-    [triggerRefresh]
-  );
-
-  // Delete an event
-  const deleteEvent = useCallback(
-    async (eventId: string): Promise<boolean> => {
-      try {
-        console.log(`Deleting event ${eventId}`);
-
-        // Make the API request
-        await api.delete(`/events/${eventId}`);
-
-        // Update the local state by removing the event
-        setEvents((prevEvents) =>
-          prevEvents.filter((event) => event.id !== eventId)
-        );
-
-        // Clear the cache to force a refresh on next fetch
-        eventsCache = {};
-
-        // Trigger refresh
-        triggerRefresh();
-
-        toast.success("Etkinlik başarıyla silindi");
-        return true;
-      } catch (error) {
-        console.error("Error deleting event:", error);
-        setError(error as Error);
-        toast.error("Etkinlik silinirken bir hata oluştu");
-        return false;
-      }
-    },
-    [triggerRefresh]
+    []
   );
 
   // Update event details
@@ -750,10 +722,11 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
         // Clear the cache to force a refresh on next fetch
         eventsCache = {};
 
-        // Trigger refresh
-        triggerRefresh();
+        // Set last updated time
+        setLastUpdated(new Date());
 
-        toast.success("Etkinlik başarıyla güncellendi");
+        // Don't call triggerRefresh() here - it causes a double refresh cycle
+
         return true;
       } catch (error) {
         console.error("Error updating event:", error);
@@ -762,8 +735,38 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
         return false;
       }
     },
-    [triggerRefresh]
+    []
   );
+
+  // Delete event
+  const deleteEvent = useCallback(async (eventId: string): Promise<boolean> => {
+    try {
+      console.log(`Deleting event ${eventId}`);
+
+      // Make the API request
+      await api.delete(`/events/${eventId}`);
+
+      // Update the local state
+      setEvents((prevEvents) =>
+        prevEvents.filter((event) => event.id !== eventId)
+      );
+
+      // Clear the cache to force a refresh on next fetch
+      eventsCache = {};
+
+      // Set last updated time
+      setLastUpdated(new Date());
+
+      // Don't call triggerRefresh() here - it causes a double refresh cycle
+
+      return true;
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      setError(error as Error);
+      toast.error("Etkinlik silinirken bir hata oluştu");
+      return false;
+    }
+  }, []);
 
   // Auto fetch on mount if enabled
   useEffect(() => {

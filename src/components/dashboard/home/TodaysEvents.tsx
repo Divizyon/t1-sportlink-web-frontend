@@ -56,6 +56,7 @@ interface ApiEvent {
   creator_name?: string;
   isAttending?: boolean;
   created_at?: string;
+  end_time?: string;
 }
 
 // Map backend status to frontend status
@@ -78,14 +79,20 @@ const mapEventStatus = (
 
 // Map backend event to frontend Event type
 const mapApiEventToEvent = (apiEvent: ApiEvent): Event => {
+  console.log("Mapping API event to frontend format:", apiEvent);
   return {
     id: apiEvent.id,
     title: apiEvent.title,
-    description: apiEvent.description || "",
-    date: new Date(apiEvent.event_date || apiEvent.date || new Date()),
-    time: apiEvent.start_time || apiEvent.time || "00:00",
-    location: apiEvent.location_name || apiEvent.location || "",
-    category: apiEvent.sport_category || apiEvent.category || "Diğer",
+    description: apiEvent.description,
+    date:
+      apiEvent.event_date ||
+      apiEvent.date ||
+      new Date().toISOString().split("T")[0],
+    time: apiEvent.start_time || apiEvent.time || "",
+    endTime: apiEvent.end_time || apiEvent.endTime || "",
+    location: apiEvent.location_name || apiEvent.location || "Belirtilmemiş",
+    sport: apiEvent.sport_category || "",
+    category: apiEvent.sport_category || apiEvent.category || "Genel",
     participants: apiEvent.participant_count || apiEvent.participants || 0,
     maxParticipants:
       apiEvent.max_participants || apiEvent.maxParticipants || 10,
@@ -345,7 +352,12 @@ export function TodaysEvents({
               <div className="grid grid-cols-2 gap-1 text-sm text-muted-foreground">
                 <div className="flex items-center">
                   <Clock className="mr-1 h-3 w-3" />
-                  {formatEventTime(event.time)}
+                  <div>
+                    <div>Başlangıç: {event.time || "N/A"}</div>
+                    {event.endTime && (
+                      <div className="text-xs">Bitiş: {event.endTime}</div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center">
                   <Users className="mr-1 h-3 w-3" />

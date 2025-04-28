@@ -29,16 +29,21 @@ export interface Event {
   id: string | number;
   title: string;
   description?: string;
-  date: Date;
-  time: string;
-  location: string;
-  category: string;
-  participants: number;
-  maxParticipants: number;
+  date?: string;
+  time?: string;
+  endTime?: string;
+  location?: string;
+  participants?: number;
+  maxParticipants?: number;
+  sport?: string;
+  category?: string;
   status: EventStatus;
+  creator_id?: string;
   organizer?: string;
-  image?: string;
-  createdAt?: string;
+  isAttending?: boolean;
+  isCreator?: boolean;
+  isExpiringSoon?: boolean;
+  timeUntilStart?: string;
 }
 
 export type EventStatus = "pending" | "approved" | "rejected" | "completed";
@@ -85,7 +90,12 @@ export interface Report {
 }
 
 export type ReportPriority = "high" | "medium" | "low";
-export type ReportStatus = "pending" | "reviewing" | "resolved" | "rejected" | "dismissed";
+export type ReportStatus =
+  | "pending"
+  | "reviewing"
+  | "resolved"
+  | "rejected"
+  | "dismissed";
 
 // Component Props Types
 export interface EventParticipationChartProps {

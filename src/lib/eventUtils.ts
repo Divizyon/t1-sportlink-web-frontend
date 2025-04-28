@@ -27,7 +27,8 @@ export function formatEventDate(
 /**
  * Formats an event time
  */
-export function formatEventTime(time: string): string {
+export function formatEventTime(time: string | undefined): string {
+  if (!time) return "N/A";
   return time;
 }
 

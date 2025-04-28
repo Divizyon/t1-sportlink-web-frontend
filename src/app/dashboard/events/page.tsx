@@ -46,6 +46,7 @@ import {
   Event,
   ApiEvent,
 } from "@/hooks/useEventManagement";
+import { useEventCreation } from "@/hooks/useEventCreation";
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { PaginatedList } from "@/components/common/PaginatedList";
 import { Input } from "@/components/ui/input";
@@ -278,9 +279,26 @@ const getNextStatus = (currentStatus: EventStatus): EventStatus => {
   }
 };
 
+// Add a utility function to avoid repeated direct fetch calls for today's events
+const fetchTodayEventsCount = async () => {
+  try {
+    console.log("Direct fetch of today's events count");
+    const todayResponse = await api.get(
+      "/events?page=1&limit=1&status=ACTIVE&date_filter=today&includeAll=true"
+    );
+    return todayResponse.data?.data?.total || 0;
+  } catch (err) {
+    console.error("Error fetching today's count:", err);
+    return 0;
+  }
+};
+
 export default function EventsPage() {
   const router = useRouter();
   console.log("EventsPage rendered");
+
+  // Event creation hook
+  const { createEvent, loading: createEventLoading } = useEventCreation();
 
   // State to track if data is from cache
   const [isFromCache, setIsFromCache] = useState(false);
@@ -359,74 +377,133 @@ export default function EventsPage() {
     all: 0,
   });
 
-  // Fallback function to get counts by querying each status
-  const fetchIndividualCounts = useCallback(async () => {
-    try {
-      console.log("Fetching individual event counts");
+  // Add necessary state
+  const lastFetchParamsRef = React.useRef<{
+    tab: string;
+    page: number;
+    time: number;
+  } | null>(null);
 
-      // These requests are just to get the counts, not the actual events
-      // We use limit=1 to minimize data transfer
-      const [
-        pendingResponse,
-        todayResponse,
-        upcomingResponse,
-        rejectedResponse,
-        completedResponse,
-        allResponse,
-      ] = await Promise.all([
-        api.get("/events?page=1&limit=1&status=PENDING"),
-        api.get("/events?page=1&limit=1&status=ACTIVE&date_filter=today"),
-        api.get("/events?page=1&limit=1&status=ACTIVE&date_filter=upcoming"),
-        api.get("/events?page=1&limit=1&status=REJECTED"),
-        api.get("/events?page=1&limit=1&status=COMPLETED"),
-        api.get("/events?page=1&limit=1"),
-      ]);
+  // Update fetchIndividualCounts to also respect the verifyTodayCount flag
+  const fetchIndividualCounts = useCallback(
+    async (verifyTodayCount = false) => {
+      try {
+        console.log("Fetching individual event counts");
 
-      // Get the total count from each response
-      const counts = {
-        pending: pendingResponse.data?.data?.total || 0,
-        today: todayResponse.data?.data?.total || 0,
-        upcoming: upcomingResponse.data?.data?.total || 0,
-        rejected: rejectedResponse.data?.data?.total || 0,
-        completed: completedResponse.data?.data?.total || 0,
-        all: allResponse.data?.data?.total || 0,
-      };
+        // Create an array of promises for the API calls
+        const promises = [
+          api.get("/events?page=1&limit=1&status=PENDING"),
+          api.get("/events?page=1&limit=1&status=ACTIVE&date_filter=upcoming"),
+          api.get("/events?page=1&limit=1&status=REJECTED"),
+          api.get("/events?page=1&limit=1&status=COMPLETED"),
+          api.get("/events?page=1&limit=1"),
+        ];
 
-      console.log("Event counts:", counts);
-      setEventCountsByStatus(counts);
-    } catch (error) {
-      console.error("Error fetching individual counts:", error);
-    }
-  }, []);
+        // Only add the today request if needed
+        let todayResponse = null;
+        if (verifyTodayCount || activeTab === "today") {
+          todayResponse = await api.get(
+            "/events?page=1&limit=1&status=ACTIVE&date_filter=today&includeAll=true"
+          );
+        }
 
-  // Function to fetch all event counts at once
-  const fetchAllEventCounts = useCallback(async () => {
-    try {
+        // Execute all the promises
+        const [
+          pendingResponse,
+          upcomingResponse,
+          rejectedResponse,
+          completedResponse,
+          allResponse,
+        ] = await Promise.all(promises);
+
+        // Get the total count from each response
+        const counts = {
+          pending: pendingResponse.data?.data?.total || 0,
+          today: todayResponse ? todayResponse.data?.data?.total || 0 : 0,
+          upcoming: upcomingResponse.data?.data?.total || 0,
+          rejected: rejectedResponse.data?.data?.total || 0,
+          completed: completedResponse.data?.data?.total || 0,
+          all: allResponse.data?.data?.total || 0,
+        };
+
+        console.log("Individual event counts:", counts);
+        setEventCountsByStatus(counts);
+      } catch (error) {
+        console.error("Error fetching individual counts:", error);
+      }
+    },
+    [activeTab]
+  );
+
+  // Modify fetchAllEventCounts to use the utility function
+  const fetchAllEventCounts = useCallback(
+    async (options = { verifyTodayCount: false }) => {
+      // Add a timestamp to prevent redundant calls within a short timeframe
+      const now = Date.now();
+      if (now - lastRefreshTimeRef.current < 1000) {
+        console.log("Skipping fetchAllEventCounts, called too soon");
+        return;
+      }
+
+      lastRefreshTimeRef.current = now;
       console.log("Fetching all event counts");
 
-      // Currently the /events/counts endpoint doesn't exist
-      // Use the fallback method instead
-      fetchIndividualCounts();
-    } catch (error) {
-      console.error("Error fetching event counts:", error);
-    }
-  }, [fetchIndividualCounts]);
+      try {
+        // Use the new /events/counts endpoint
+        const response = await api.get("/events/counts");
+
+        if (response.data?.status === "success") {
+          const counts = response.data.data;
+          console.log("Event counts from unified endpoint:", counts);
+
+          // Only verify today count if explicitly requested or on today tab
+          const shouldVerifyTodayCount =
+            options.verifyTodayCount || activeTab === "today";
+
+          // If today count is 0 and verification is needed, double-check
+          if (counts.today === 0 && shouldVerifyTodayCount) {
+            console.log(
+              "Verifying today's events count (active tab or requested)"
+            );
+            const todayCount = await fetchTodayEventsCount();
+
+            if (todayCount > 0) {
+              console.log(
+                `Found discrepancy: counts endpoint reports 0 today events but direct fetch shows ${todayCount}`
+              );
+              counts.today = todayCount;
+            }
+          }
+
+          setEventCountsByStatus(counts);
+        } else {
+          // Fallback to individual requests if the endpoint fails
+          console.warn(
+            "Counts endpoint failed, falling back to individual requests"
+          );
+          fetchIndividualCounts(options.verifyTodayCount);
+        }
+      } catch (error) {
+        console.error("Error fetching event counts:", error);
+        // Fallback to individual requests
+        fetchIndividualCounts(options.verifyTodayCount);
+      }
+    },
+    [fetchIndividualCounts, activeTab]
+  );
 
   // Function to handle approving/rejecting events
   const handleStatusChange = async (eventId: string, status: string) => {
     try {
-      await updateEventStatus(eventId, status);
-      toast.success(
-        `Etkinlik durumu "${
-          status === "ACTIVE" ? "Onaylandı" : "Reddedildi"
-        }" olarak güncellendi`
-      );
+      console.log(`Changing event ${eventId} status to ${status}`);
+      const success = await updateEventStatus(eventId, status);
+      if (success) {
+        // Update counts immediately but only fetch once
+        console.log("Event status updated, refreshing counts");
+        fetchAllEventCounts({ verifyTodayCount: false });
 
-      // After status change, refresh the current tab data
-      handleStatusChangeWithPagination(activeTab, currentPage);
-
-      // Also refresh counts when status changes
-      fetchAllEventCounts();
+        // Don't need to refetch events as updateEventStatus already updates the UI
+      }
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Status güncelleme hatası");
@@ -441,11 +518,20 @@ export default function EventsPage() {
       }`
     );
 
+    // Prevent redundant calls if tab hasn't changed
+    if (tabValue === activeTab) {
+      console.log("Tab hasn't changed, skipping redundant API calls");
+      return;
+    }
+
     // Reset pagination state
     setCurrentPage(1);
 
     // Update the active tab
     setActiveTab(tabValue);
+
+    // Only verify today's count if switching to today tab
+    const verifyTodayCount = tabValue === "today";
 
     // Fetch data for the first page with the new status
     handleStatusChangeWithPagination(tabValue, 1);
@@ -459,6 +545,24 @@ export default function EventsPage() {
     console.log(`Fetching events with status: ${tabValue}, page: ${page}`);
 
     try {
+      // Prevent redundant API calls with same parameters
+      if (
+        lastFetchParamsRef.current &&
+        lastFetchParamsRef.current.tab === tabValue &&
+        lastFetchParamsRef.current.page === page &&
+        Date.now() - lastFetchParamsRef.current.time < 500
+      ) {
+        console.log("Skipping redundant fetch with same parameters");
+        return;
+      }
+
+      // Store current fetch parameters to prevent duplicates
+      lastFetchParamsRef.current = {
+        tab: tabValue,
+        page,
+        time: Date.now(),
+      };
+
       const statusToFetch =
         TAB_TO_STATUS_MAP[tabValue as keyof typeof TAB_TO_STATUS_MAP];
 
@@ -474,7 +578,7 @@ export default function EventsPage() {
           forceRefresh: true,
         });
       } else if (tabValue === "today") {
-        // For today's events, use fetchByStatus with the today filter
+        // For today's events, use fetchByStatus with the today filter and includeAll
         await fetchByStatus({
           status: "ACTIVE",
           dateFilter: "today",
@@ -483,6 +587,18 @@ export default function EventsPage() {
           forceRefresh: true,
           includeAll: true,
         });
+
+        // After a successful fetch of today's events, update the count in the state
+        // to ensure counts match the actual displayed events
+        if (totalCount > 0) {
+          console.log(
+            `Updating today count to match fetched events: ${totalCount}`
+          );
+          setEventCountsByStatus((prev) => ({
+            ...prev,
+            today: totalCount,
+          }));
+        }
       } else if (tabValue === "upcoming") {
         // For upcoming events, use fetchByStatus with the upcoming filter
         await fetchByStatus({
@@ -526,41 +642,9 @@ export default function EventsPage() {
     handleStatusChangeWithPagination(activeTab, page);
   };
 
-  // Add effect to refresh data periodically
-  useEffect(() => {
-    if (!initialLoadComplete) return;
-
-    console.log("Setting up periodic refresh interval");
-    const intervalId = setInterval(() => {
-      console.log(
-        "Periodic refresh triggered, active tab:",
-        activeTab,
-        "currentPage:",
-        currentPage
-      );
-
-      // Refresh the current tab's data
-      handleStatusChangeWithPagination(activeTab, currentPage);
-
-      // Also refresh counts
-      fetchAllEventCounts();
-    }, 30000); // 30 seconds
-
-    return () => {
-      console.log("Clearing periodic refresh interval");
-      clearInterval(intervalId);
-    };
-  }, [
-    initialLoadComplete,
-    activeTab,
-    currentPage,
-    handleStatusChangeWithPagination,
-    fetchAllEventCounts,
-  ]);
-
   // Initial fetch ensures consistent pagination parameters with updates
   useEffect(() => {
-    console.log("Events page mounted");
+    console.log("Events page mounted - initializing with single API call");
 
     // Check URL parameters for status and page
     const searchParams = new URLSearchParams(window.location.search);
@@ -578,33 +662,53 @@ export default function EventsPage() {
       setCurrentPage(parseInt(pageParam, 10));
     }
 
-    // Start with fetching counts
-    fetchAllEventCounts();
+    // Initialize with a single set of API calls
+    const initializePage = async () => {
+      const activeTabValue = statusParam || activeTab;
+      // Only verify today's count if on today tab
+      const verifyTodayCount = activeTabValue === "today";
 
-    // Then fetch the active tab data
-    console.log(
-      "Initial fetch for tab:",
-      statusParam || activeTab,
-      "page:",
-      pageParam || currentPage
-    );
-    handleStatusChangeWithPagination(
-      statusParam || activeTab,
-      pageParam ? parseInt(pageParam, 10) : currentPage
-    );
+      // First fetch all event counts
+      await fetchAllEventCounts({ verifyTodayCount });
 
-    setInitialLoadComplete(true);
+      // Then fetch the events for the active tab only once
+      console.log(
+        `Initial fetch for tab: ${activeTabValue}, page: ${
+          pageParam || currentPage
+        }`
+      );
+
+      await handleStatusChangeWithPagination(
+        activeTabValue,
+        pageParam ? parseInt(pageParam, 10) : currentPage
+      );
+
+      setInitialLoadComplete(true);
+    };
+
+    initializePage();
 
     return () => {
       console.log("Events page unmounted");
     };
   }, []);
 
-  // Add effect to update tabs to show counts
+  // Remove the additional useEffect that was causing duplicate calls
+  // Add effect to update event counts only when specific actions are taken
   useEffect(() => {
-    // This will be triggered whenever event counts are updated
-    console.log("Updated event counts:", eventCountsByStatus);
-  }, [eventCountsByStatus]);
+    // Skip on initial load since fetchAllEventCounts is already called
+    if (initialLoadComplete) {
+      // Avoid redundant API calls by adding a debounce
+      const timeoutId = setTimeout(() => {
+        console.log("Updating event counts after state change");
+        // Only verify today count if on the today tab
+        const verifyTodayCount = activeTab === "today";
+        fetchAllEventCounts({ verifyTodayCount });
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [initialLoadComplete, fetchAllEventCounts, activeTab]);
 
   // Update cache status whenever lastUpdated changes
   React.useEffect(() => {
@@ -649,8 +753,13 @@ export default function EventsPage() {
   // Function to check if an event is editable
   const isEventEditable = (event: any) => {
     // Events can be edited if they are in PENDING, ACTIVE status and have appropriate date conditions
-    // Also allow editing for today's events that haven't started yet
+    // Also allow editing for today's events
+    console.log(
+      `Checking editability for event ${event.id} with status ${event.status}`
+    );
+
     if (event.status === "PENDING") {
+      console.log(`Event ${event.id} is PENDING, allowing edit`);
       return true;
     }
 
@@ -659,10 +768,24 @@ export default function EventsPage() {
       const eventDate = new Date(`${event.date}T${event.time}`);
       const now = new Date();
 
+      // For Today's tab, ensure events are editable
+      if (activeTab === "today") {
+        const isEditable = eventDate > now;
+        console.log(
+          `Today tab - Event ${event.id} date/time: ${eventDate}, now: ${now}, editable: ${isEditable}`
+        );
+        return isEditable;
+      }
+
       // Allow editing if event hasn't started yet
-      return eventDate > now;
+      const isEditable = eventDate > now;
+      console.log(
+        `Event ${event.id} is ACTIVE, date/time: ${eventDate}, now: ${now}, editable: ${isEditable}`
+      );
+      return isEditable;
     }
 
+    console.log(`Event ${event.id} not editable, status: ${event.status}`);
     return false;
   };
 
@@ -741,8 +864,11 @@ export default function EventsPage() {
 
       if (success) {
         setIsEditModalOpen(false);
-        // Refresh the current view
-        handleStatusChangeWithPagination(activeTab, currentPage);
+
+        // Update counts immediately
+        fetchAllEventCounts({ verifyTodayCount: activeTab === "today" });
+
+        toast.success("Etkinlik başarıyla güncellendi");
       }
     } catch (error) {
       console.error("Error updating event:", error);
@@ -762,8 +888,8 @@ export default function EventsPage() {
       setIsDeleteDialogOpen(false);
       setEventToDelete(null);
 
-      // Refresh the current view
-      handleStatusChangeWithPagination(activeTab, currentPage);
+      // Update counts immediately
+      fetchAllEventCounts({ verifyTodayCount: activeTab === "today" });
 
       toast.success("Event successfully deleted");
     } catch (error) {
@@ -774,12 +900,29 @@ export default function EventsPage() {
 
   // Handle successful creation of a new event
   const handleNewEventSuccess = () => {
-    // Refresh the events list
-    handleStatusChangeWithPagination("pending", 1);
-    // Also refresh the counts
-    fetchAllEventCounts();
+    // Update counts immediately but avoid redundant API calls
+    console.log("New event created, updating counts");
+    fetchAllEventCounts({ verifyTodayCount: false });
 
-    toast.success("New event created successfully");
+    // Change to pending tab if we're not already there
+    if (activeTab !== "pending") {
+      setActiveTab("pending");
+
+      // Only fetch events if changing tabs
+      handleStatusChangeWithPagination("pending", 1);
+    } else {
+      // Just refresh the current page if already on pending tab
+      handleStatusChangeWithPagination("pending", currentPage);
+    }
+
+    toast.success("Etkinlik başarıyla oluşturuldu");
+
+    // Update URL to show pending tab
+    const params = new URLSearchParams(window.location.search);
+    params.set("status", "pending");
+    params.set("page", "1");
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.pushState({ path: newUrl }, "", newUrl);
   };
 
   // Render the event list
@@ -794,6 +937,19 @@ export default function EventsPage() {
       console.log(
         `After filtering: ${filteredEvents.length} events to display`
       );
+
+      // For today's tab, log extra information about editability
+      if (activeTab === "today") {
+        console.log(
+          "Today's events tab is active, checking editability of events"
+        );
+        filteredEvents.forEach((event) => {
+          console.log(
+            `Today event: ${event.id}, title: ${event.title}, status: ${event.status}, time: ${event.time}`
+          );
+          console.log(`Is editable: ${isEventEditable(event)}`);
+        });
+      }
 
       if (filteredEvents.length === 0) {
         // Show custom messages based on tab
@@ -943,7 +1099,18 @@ export default function EventsPage() {
                       <div className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-purple-50 text-purple-600 mr-3">
                         <Clock className="h-4 w-4" />
                       </div>
-                      <span className="text-sm font-medium">{event.time}</span>
+                      <div>
+                        <span className="text-sm font-medium">
+                          Başlangıç: {event.time}
+                        </span>
+                        {event.endTime && (
+                          <div className="text-sm">
+                            <span className="text-sm text-gray-600">
+                              Bitiş: {event.endTime}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center">
@@ -983,7 +1150,7 @@ export default function EventsPage() {
                 <div className="p-4 pt-0 flex flex-wrap justify-between gap-3 mt-auto">
                   {/* Action buttons for pending events */}
                   {showApproveReject && event.status === "PENDING" && (
-                    <div className="flex flex-wrap space-x-2 sm:ml-auto">
+                    <div className="flex flex-wrap space-x-2 ml-auto">
                       <Button
                         variant="outline"
                         size="sm"
@@ -1018,70 +1185,83 @@ export default function EventsPage() {
                     </div>
                   )}
 
-                  {/* Edit and Delete buttons for all events */}
-                  <div
-                    className={cn(
-                      "flex space-x-2",
-                      showApproveReject && event.status === "PENDING"
-                        ? "sm:mr-auto"
-                        : "ml-auto"
-                    )}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className={cn(
-                              "h-8 w-8",
-                              isEventEditable(event)
-                                ? "border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                                : "border-gray-200 text-gray-400 hover:bg-gray-50 cursor-not-allowed"
-                            )}
-                            onClick={() => {
-                              if (isEventEditable(event)) {
-                                setEditingEvent(event);
-                                setIsEditModalOpen(true);
-                              } else {
-                                toast.error("Bu etkinlik artık düzenlenemez");
+                  {/* Edit and Delete buttons for non-pending events */}
+                  {event.status !== "PENDING" && (
+                    <div
+                      className="flex space-x-2 ml-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className={cn(
+                                "h-8 w-8",
+                                isEventEditable(event) ||
+                                  (activeTab === "today" &&
+                                    event.status === "ACTIVE")
+                                  ? "border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                                  : "border-gray-200 text-gray-400 hover:bg-gray-50 cursor-not-allowed"
+                              )}
+                              onClick={() => {
+                                if (
+                                  isEventEditable(event) ||
+                                  (activeTab === "today" &&
+                                    event.status === "ACTIVE")
+                                ) {
+                                  console.log(
+                                    `Opening edit modal for event ${event.id} in ${activeTab} tab`
+                                  );
+                                  setEditingEvent(event);
+                                  setIsEditModalOpen(true);
+                                } else {
+                                  toast.error("Bu etkinlik artık düzenlenemez");
+                                }
+                              }}
+                              disabled={
+                                !(
+                                  isEventEditable(event) ||
+                                  (activeTab === "today" &&
+                                    event.status === "ACTIVE")
+                                )
                               }
-                            }}
-                            disabled={!isEventEditable(event)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {isEventEditable(event)
-                            ? "Etkinliği Düzenle"
-                            : "Bu etkinlik artık düzenlenemez"}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {isEventEditable(event) ||
+                            (activeTab === "today" && event.status === "ACTIVE")
+                              ? "Etkinliği Düzenle"
+                              : "Bu etkinlik artık düzenlenemez"}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
 
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                            onClick={() => {
-                              setEventToDelete(event.id);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Etkinliği Sil</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                              onClick={() => {
+                                setEventToDelete(event.id);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Etkinliği Sil</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
@@ -1132,22 +1312,6 @@ export default function EventsPage() {
             Tüm spor etkinliklerini yönetin ve organize edin
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {/* Button to quickly create test event */}
-          <Button
-            onClick={() => {
-              // Implementation of createTestEvent function
-            }}
-            variant="outline"
-            size="sm"
-            className="bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 flex items-center gap-1"
-            disabled={false}
-          >
-            <Bug className="h-4 w-4" />
-            <Timer className="h-4 w-4" />
-            Test Etkinliği (31dk)
-          </Button>
-        </div>
       </div>
 
       {error && (
@@ -1185,131 +1349,154 @@ export default function EventsPage() {
               Yeni Etkinlik Oluştur
             </Button>
 
-            <TabsList className="flex">
-              <TabsTrigger
-                value="pending"
-                className="relative font-medium bg-amber-50 text-amber-800 hover:bg-amber-100 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-900 data-[state=active]:border-b-2 data-[state=active]:border-amber-500 data-[state=active]:shadow-sm"
-              >
-                <span className="flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  <span>Bekleyen</span>
-                  <Badge className="ml-1.5 px-1 min-w-[20px] h-5 text-xs bg-amber-100 text-amber-800 border border-amber-300">
-                    {eventCountsByStatus.pending}
-                  </Badge>
-                </span>
-                {tabLoadingStates.pending && (
-                  <span className="absolute right-1 top-1 w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
-                )}
-                {activeTab === "pending" && (
-                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-amber-600"></span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="today"
-                className="relative bg-blue-50 text-blue-800 hover:bg-blue-100 data-[state=active]:bg-blue-200 data-[state=active]:text-blue-900 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:shadow-sm"
-              >
-                <span className="flex items-center">
-                  <CalendarClock className="h-4 w-4 mr-1" />
-                  <span>Bugünkü</span>
-                  <Badge className="ml-1.5 px-1 min-w-[20px] h-5 text-xs bg-blue-100 text-blue-800 border border-blue-300">
-                    {eventCountsByStatus.today}
-                  </Badge>
-                </span>
-                {tabLoadingStates.today && (
-                  <span className="absolute right-1 top-1 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-                )}
-                {activeTab === "today" && (
-                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-blue-600"></span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="upcoming"
-                className="relative bg-green-50 text-green-800 hover:bg-green-100 data-[state=active]:bg-green-200 data-[state=active]:text-green-900 data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:shadow-sm"
-              >
-                <span className="flex items-center">
-                  <CalendarDays className="h-4 w-4 mr-1" />
-                  <span>Gelecek</span>
-                  <Badge className="ml-1.5 px-1 min-w-[20px] h-5 text-xs bg-green-100 text-green-800 border border-green-300">
-                    {eventCountsByStatus.upcoming}
-                  </Badge>
-                </span>
-                {tabLoadingStates.upcoming && (
-                  <span className="absolute right-1 top-1 w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                )}
-                {activeTab === "upcoming" && (
-                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-green-600"></span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="rejected"
-                className="relative bg-red-50 text-red-800 hover:bg-red-100 data-[state=active]:bg-red-200 data-[state=active]:text-red-900 data-[state=active]:border-b-2 data-[state=active]:border-red-500 data-[state=active]:shadow-sm"
-              >
-                <span className="flex items-center">
-                  <XCircle className="h-4 w-4 mr-1" />
-                  <span>Reddedilen</span>
-                  <Badge className="ml-1.5 px-1 min-w-[20px] h-5 text-xs bg-red-100 text-red-800 border border-red-300">
-                    {eventCountsByStatus.rejected}
-                  </Badge>
-                </span>
-                {tabLoadingStates.rejected && (
-                  <span className="absolute right-1 top-1 w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
-                )}
-                {activeTab === "rejected" && (
-                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-red-600"></span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="completed"
-                className="relative bg-blue-50 text-blue-800 hover:bg-blue-100 data-[state=active]:bg-blue-200 data-[state=active]:text-blue-900 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:shadow-sm"
-              >
-                <span className="flex items-center">
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  <span>Tamamlanan</span>
-                  <Badge className="ml-1.5 px-1 min-w-[20px] h-5 text-xs bg-blue-100 text-blue-800 border border-blue-300">
-                    {eventCountsByStatus.completed}
-                  </Badge>
-                </span>
-                {tabLoadingStates.completed && (
-                  <span className="absolute right-1 top-1 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-                )}
-                {activeTab === "completed" && (
-                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-blue-600"></span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="all"
-                className="relative bg-gray-50 text-gray-600 hover:bg-gray-100 data-[state=active]:bg-gray-200 data-[state=active]:text-gray-900 data-[state=active]:border-b-2 data-[state=active]:border-gray-500 data-[state=active]:shadow-sm"
-              >
-                <span className="flex items-center">
-                  <Database className="h-4 w-4 mr-1" />
-                  <span>Tümü</span>
-                  <Badge className="ml-1.5 px-1 min-w-[20px] h-5 text-xs bg-gray-100 text-gray-800 border border-gray-300">
-                    {eventCountsByStatus.all}
-                  </Badge>
-                </span>
-                {tabLoadingStates.all && (
-                  <span className="absolute right-1 top-1 w-2 h-2 bg-gray-400 rounded-full animate-pulse"></span>
-                )}
-                {activeTab === "all" && (
-                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-gray-600"></span>
-                )}
-              </TabsTrigger>
-            </TabsList>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  toast.loading("Test etkinliği oluşturuluyor...");
+
+                  // Create a test event with predefined data
+                  const testEvent = await createEvent({
+                    title: `Test Etkinlik - ${new Date().toLocaleDateString(
+                      "tr-TR"
+                    )}`,
+                    description:
+                      "Bu bir test etkinliğidir. Otomatik olarak oluşturulmuştur.",
+                    sport_id: 6, // Koşu
+                    location_name: "Test Lokasyon",
+                    location_lat: 41.0082,
+                    location_long: 28.9784,
+                    max_participants: 20,
+                    hoursInFuture: 0.515,
+                  });
+
+                  toast.dismiss();
+
+                  if (testEvent) {
+                    // Navigate to pending tab and refresh
+                    handleNewEventSuccess();
+                  }
+                } catch (error) {
+                  toast.dismiss();
+                  toast.error("Test etkinliği oluşturulurken hata oluştu.");
+                }
+              }}
+              className="flex items-center bg-amber-50 text-amber-800 hover:bg-amber-100"
+              style={{ borderColor: "#fcd34d" }}
+              disabled={createEventLoading}
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Test Etkinliği (31dk sonrasına)
+            </Button>
           </div>
 
-          <div className="text-sm text-gray-500 italic flex-1 ml-4">
-            {activeTab === "pending" &&
-              "Onayınızı bekleyen etkinlikler. Onaylayın veya reddedin."}
-            {activeTab === "today" &&
-              "Bugün gerçekleşecek onaylanmış etkinlikler."}
-            {activeTab === "upcoming" &&
-              "Gelecekte gerçekleşecek planlanan tüm etkinlikler."}
-            {activeTab === "rejected" &&
-              "Reddedilen ve daha fazla işlem gerektirmeyen etkinlikler."}
-            {activeTab === "completed" &&
-              "Tamamlanmış etkinlikler. Süresi dolduğu için otomatik olarak tamamlandı olarak işaretlenen etkinlikler burada görüntülenir."}
-            {activeTab === "all" && "Sistemdeki tüm etkinlikler gösteriliyor."}
-          </div>
+          <TabsList className="flex">
+            <TabsTrigger
+              value="pending"
+              className="relative font-medium bg-amber-50 text-amber-800 hover:bg-amber-100 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-900 data-[state=active]:border-b-2 data-[state=active]:border-amber-500 data-[state=active]:shadow-sm"
+            >
+              <span className="flex items-center">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                Onay Bekleyen
+                <Badge
+                  variant="outline"
+                  className="ml-2 px-1.5 py-0 text-xs bg-amber-100 border-amber-300"
+                >
+                  {eventCountsByStatus.pending}
+                </Badge>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="today"
+              className="relative bg-blue-50 text-blue-800 hover:bg-blue-100 data-[state=active]:bg-blue-200 data-[state=active]:text-blue-900 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:shadow-sm"
+            >
+              <span className="flex items-center">
+                <CalendarClock className="h-4 w-4 mr-1" />
+                Bugünkü
+                <Badge
+                  variant="outline"
+                  className="ml-2 px-1.5 py-0 text-xs bg-blue-100 border-blue-300"
+                >
+                  {eventCountsByStatus.today}
+                </Badge>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="upcoming"
+              className="relative bg-green-50 text-green-800 hover:bg-green-100 data-[state=active]:bg-green-200 data-[state=active]:text-green-900 data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:shadow-sm"
+            >
+              <span className="flex items-center">
+                <CalendarDays className="h-4 w-4 mr-1" />
+                Gelecek
+                <Badge
+                  variant="outline"
+                  className="ml-2 px-1.5 py-0 text-xs bg-green-100 border-green-300"
+                >
+                  {eventCountsByStatus.upcoming}
+                </Badge>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="rejected"
+              className="relative bg-red-50 text-red-800 hover:bg-red-100 data-[state=active]:bg-red-200 data-[state=active]:text-red-900 data-[state=active]:border-b-2 data-[state=active]:border-red-500 data-[state=active]:shadow-sm"
+            >
+              <span className="flex items-center">
+                <XCircle className="h-4 w-4 mr-1" />
+                Reddedilen
+                <Badge
+                  variant="outline"
+                  className="ml-2 px-1.5 py-0 text-xs bg-red-100 border-red-300"
+                >
+                  {eventCountsByStatus.rejected}
+                </Badge>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="completed"
+              className="relative bg-blue-50 text-blue-800 hover:bg-blue-100 data-[state=active]:bg-blue-200 data-[state=active]:text-blue-900 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:shadow-sm"
+            >
+              <span className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Tamamlanan
+                <Badge
+                  variant="outline"
+                  className="ml-2 px-1.5 py-0 text-xs bg-blue-100 border-blue-300"
+                >
+                  {eventCountsByStatus.completed}
+                </Badge>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="all"
+              className="relative bg-gray-50 text-gray-600 hover:bg-gray-100 data-[state=active]:bg-gray-200 data-[state=active]:text-gray-900 data-[state=active]:border-b-2 data-[state=active]:border-gray-500 data-[state=active]:shadow-sm"
+            >
+              <span className="flex items-center">
+                <Database className="h-4 w-4 mr-1" />
+                Tümü
+                <Badge
+                  variant="outline"
+                  className="ml-2 px-1.5 py-0 text-xs bg-gray-100 border-gray-300"
+                >
+                  {eventCountsByStatus.all}
+                </Badge>
+              </span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <div className="text-sm text-gray-500 italic flex-1 ml-4">
+          {activeTab === "pending" &&
+            "Onayınızı bekleyen etkinlikler. Onaylayın veya reddedin."}
+          {activeTab === "today" &&
+            "Bugün gerçekleşecek onaylanmış etkinlikler."}
+          {activeTab === "upcoming" &&
+            "Gelecekte gerçekleşecek planlanan tüm etkinlikler."}
+          {activeTab === "rejected" &&
+            "Reddedilen ve daha fazla işlem gerektirmeyen etkinlikler."}
+          {activeTab === "completed" &&
+            "Tamamlanmış etkinlikler. Süresi dolduğu için otomatik olarak tamamlandı olarak işaretlenen etkinlikler burada görüntülenir."}
+          {activeTab === "all" && "Sistemdeki tüm etkinlikler gösteriliyor."}
         </div>
 
         <TabsContent
@@ -1321,12 +1508,12 @@ export default function EventsPage() {
               <AlertCircle className="h-5 w-5 mr-2 text-amber-500" />
               Onay Bekleyen Etkinlikler
             </h2>
-            {activeTab === "pending" && totalItems > 0 && (
+            {eventCountsByStatus.pending > 0 && (
               <Badge
                 variant="outline"
                 className="bg-amber-50 text-amber-800 border-amber-200"
               >
-                İşlem Bekliyor: {totalItems}
+                İşlem Bekliyor: {eventCountsByStatus.pending}
               </Badge>
             )}
           </div>
@@ -1363,6 +1550,9 @@ export default function EventsPage() {
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <CalendarClock className="h-5 w-5 mr-2 text-blue-500" />
             Bugünkü Etkinlikler
+            <Badge className="ml-2 bg-blue-50 text-blue-800 border border-blue-200">
+              {eventCountsByStatus.today}
+            </Badge>
           </h2>
           {tabLoadingStates.today ? (
             <div className="text-center py-4 text-gray-500">
@@ -1426,6 +1616,9 @@ export default function EventsPage() {
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <CalendarDays className="h-5 w-5 mr-2 text-green-500" />
             Gelecek Etkinlikler
+            <Badge className="ml-2 bg-green-50 text-green-800 border border-green-200">
+              {eventCountsByStatus.upcoming}
+            </Badge>
           </h2>
           {tabLoadingStates.upcoming ? (
             <div className="text-center py-4 text-gray-500">
@@ -1460,6 +1653,9 @@ export default function EventsPage() {
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <XCircle className="h-5 w-5 mr-2 text-red-500" />
             Reddedilen Etkinlikler
+            <Badge className="ml-2 bg-red-50 text-red-800 border border-red-200">
+              {eventCountsByStatus.rejected}
+            </Badge>
           </h2>
           {tabLoadingStates.rejected ? (
             <div className="text-center py-4 text-gray-500">
@@ -1494,6 +1690,9 @@ export default function EventsPage() {
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <CheckCircle className="h-5 w-5 mr-2 text-blue-500" />
             Tamamlanan Etkinlikler
+            <Badge className="ml-2 bg-blue-50 text-blue-800 border border-blue-200">
+              {eventCountsByStatus.completed}
+            </Badge>
           </h2>
           {tabLoadingStates.completed ? (
             <div className="text-center py-4 text-gray-500">
@@ -1528,11 +1727,9 @@ export default function EventsPage() {
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Database className="h-5 w-5 mr-2 text-gray-500" />
             Tüm Etkinlikler
-            {activeTab === "all" && totalItems > 0 && (
-              <Badge className="ml-2 bg-gray-100 text-gray-800 border border-gray-300 font-medium">
-                Toplam: {totalItems}
-              </Badge>
-            )}
+            <Badge className="ml-2 bg-gray-100 text-gray-800 border border-gray-300 font-medium">
+              Toplam: {eventCountsByStatus.all}
+            </Badge>
           </h2>
 
           {tabLoadingStates.all ? (
