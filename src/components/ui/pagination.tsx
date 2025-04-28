@@ -18,17 +18,33 @@ const Pagination = ({
   className?: string;
   siblingCount?: number;
 }) => {
-  const totalPages = Math.ceil(totalItems / pageSize);
+  // Ensure we have valid numbers
+  const validTotalItems = Math.max(0, totalItems || 0);
+  const validPageSize = Math.max(1, pageSize || 10);
+  const totalPages = Math.max(1, Math.ceil(validTotalItems / validPageSize));
+  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  // Log debug info
+  console.log(
+    `Pagination: totalItems=${validTotalItems}, pageSize=${validPageSize}, totalPages=${totalPages}, currentPage=${validCurrentPage}`
+  );
 
   const getPageNumbers = () => {
+    if (totalPages <= 1) {
+      return [1];
+    }
+
     const totalPageNumbers = siblingCount * 2 + 3;
 
     if (totalPageNumbers >= totalPages) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
 
-    const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
-    const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages);
+    const leftSiblingIndex = Math.max(validCurrentPage - siblingCount, 1);
+    const rightSiblingIndex = Math.min(
+      validCurrentPage + siblingCount,
+      totalPages
+    );
 
     const showLeftDots = leftSiblingIndex > 2;
     const showRightDots = rightSiblingIndex < totalPages - 1;
@@ -55,11 +71,15 @@ const Pagination = ({
       );
       return [1, "dots", ...middleRange, "dots", totalPages];
     }
+
+    // Fallback
+    return [1];
   };
 
   const pages = getPageNumbers();
 
-  if (totalPages <= 1) {
+  // If we have no items or just one page, don't render pagination
+  if (validTotalItems <= 0 || totalPages <= 1) {
     return null;
   }
 
@@ -71,8 +91,8 @@ const Pagination = ({
       <Button
         variant="outline"
         size="icon"
-        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage === 1}
+        onClick={() => onPageChange(Math.max(1, validCurrentPage - 1))}
+        disabled={validCurrentPage === 1}
         className="h-8 w-8"
         aria-label="Previous page"
       >
@@ -94,15 +114,15 @@ const Pagination = ({
         return (
           <Button
             key={page}
-            variant={currentPage === page ? "default" : "outline"}
+            variant={validCurrentPage === page ? "default" : "outline"}
             size="icon"
             onClick={() => onPageChange(page as number)}
             className={cn(
               "h-8 w-8",
-              currentPage === page ? "pointer-events-none" : ""
+              validCurrentPage === page ? "pointer-events-none" : ""
             )}
             aria-label={`Page ${page}`}
-            aria-current={currentPage === page ? "page" : undefined}
+            aria-current={validCurrentPage === page ? "page" : undefined}
           >
             {page}
           </Button>
@@ -112,8 +132,8 @@ const Pagination = ({
       <Button
         variant="outline"
         size="icon"
-        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage === totalPages}
+        onClick={() => onPageChange(Math.min(totalPages, validCurrentPage + 1))}
+        disabled={validCurrentPage === totalPages}
         className="h-8 w-8"
         aria-label="Next page"
       >

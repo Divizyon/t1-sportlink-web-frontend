@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,9 +14,17 @@ import {
   Newspaper,
 } from "lucide-react";
 import { REPORTS } from "@/mocks/reports";
+import { toast } from "sonner";
+import { NewEventModal } from "@/components/modals/NewEventModal";
 
 export function Sidebar() {
   const [openEvents, setOpenEvents] = useState(false);
+  const [isNewEventModalOpen, setIsNewEventModalOpen] = useState(false);
+
+  const handleNewEventSuccess = (newEvent: any) => {
+    setIsNewEventModalOpen(false);
+    toast.success("Yeni etkinlik başarıyla oluşturuldu");
+  };
 
   return (
     <div className="space-y-1">
@@ -33,31 +43,24 @@ export function Sidebar() {
       </Button>
       {openEvents && (
         <div className="ml-4 space-y-1">
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            asChild
-          >
+          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/dashboard/events">
               <Calendar className="mr-2 h-4 w-4" />
               Tüm Etkinlikler
             </Link>
           </Button>
+
           <Button
             variant="ghost"
+            size="default"
             className="w-full justify-start"
-            asChild
+            onClick={() => setIsNewEventModalOpen(true)}
           >
-            <Link href="/dashboard/events/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Yeni Etkinlik
-            </Link>
+            <Plus className="w-4 h-4 mr-2" />
+            Yeni Etkinlik
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            asChild
-          >
+
+          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/dashboard/reports">
               <Flag className="mr-2 h-4 w-4" />
               Raporlar
@@ -66,31 +69,19 @@ export function Sidebar() {
               </Badge>
             </Link>
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            asChild
-          >
+          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/dashboard/settings">
               <Settings className="mr-2 h-4 w-4" />
               Ayarlar
             </Link>
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            asChild
-          >
+          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/dashboard/security">
               <Shield className="mr-2 h-4 w-4" />
               Güvenlik
             </Link>
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            asChild
-          >
+          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/dashboard/news">
               <Newspaper className="mr-2 h-4 w-4" />
               Haberler
@@ -98,6 +89,13 @@ export function Sidebar() {
           </Button>
         </div>
       )}
+
+      {/* New Event Modal */}
+      <NewEventModal
+        open={isNewEventModalOpen}
+        onOpenChange={setIsNewEventModalOpen}
+        onSuccess={handleNewEventSuccess}
+      />
     </div>
   );
-} 
+}

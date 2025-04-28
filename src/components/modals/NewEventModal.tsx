@@ -118,10 +118,8 @@ export function NewEventModal({
     lat: 90, // Default değer olarak 90 ayarlandı
     long: 180, // Default değer olarak 180 ayarlandı
   });
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const dateButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Bu useEffect, modal kapandığında formu sıfırlar
+  // This useEffect resets the form when the modal is closed
   useEffect(() => {
     if (!open) {
       resetForm();
@@ -320,20 +318,21 @@ export function NewEventModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-full sm:max-w-[600px] md:max-w-[650px] lg:max-w-[900px] xl:max-w-[1100px] h-[90vh] sm:h-[85vh] md:h-[80vh] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader className="mb-4 md:mb-6">
-          <DialogTitle className="text-lg md:text-xl font-semibold">
+      <DialogContent className="max-w-[95vw] w-full sm:max-w-[550px] md:max-w-[600px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader className="mb-4">
+          <DialogTitle className="text-lg font-semibold">
             Yeni Etkinlik Oluştur
           </DialogTitle>
-          <DialogDescription className="text-sm md:text-base">
+          <DialogDescription className="text-sm">
             Oluşturacağınız etkinlik, onaylandıktan sonra kullanıcılar
             tarafından görüntülenebilecek.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-          <div className="space-y-2 md:space-y-4">
-            <Label htmlFor="title" className="text-sm md:text-base font-medium">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Title field */}
+          <div className="space-y-2">
+            <Label htmlFor="title" className="text-sm font-medium">
               Etkinlik Başlığı *
             </Label>
             <Input
@@ -347,11 +346,9 @@ export function NewEventModal({
             />
           </div>
 
-          <div className="space-y-2 md:space-y-4">
-            <Label
-              htmlFor="description"
-              className="text-sm md:text-base font-medium"
-            >
+          {/* Description field */}
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-sm font-medium">
               Etkinlik Açıklaması *
             </Label>
             <Textarea
@@ -360,206 +357,114 @@ export function NewEventModal({
               value={formData.description}
               onChange={handleChange}
               placeholder="Etkinlik hakkında detaylı bilgi verin"
-              className="min-h-[100px] md:min-h-[150px] w-full resize-none"
+              className="min-h-[100px] w-full resize-none"
               required
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="date"
-                className="text-sm md:text-base font-medium"
-              >
-                Tarih *
-              </Label>
-              <div className="relative">
-                {/* Takvim için basit bir input grubu */}
-                <div className="flex">
-                  <div className="relative flex-grow">
-                    <Input
-                      id="date"
-                      name="date"
-                      value={
-                        formData.date ? format(formData.date, "dd.MM.yyyy") : ""
-                      }
-                      readOnly
-                      placeholder="Tarih seçin"
-                      className="pl-10 w-full cursor-pointer"
-                      onClick={() => setDatePickerOpen(true)}
-                    />
-                    <CalendarIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    ref={dateButtonRef}
-                    onClick={() => setDatePickerOpen(true)}
-                    className="ml-1"
-                  >
-                    <CalendarIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Takvim Popup */}
-                {datePickerOpen && (
-                  <div className="absolute z-50 top-full left-0 mt-2 bg-white rounded-md border shadow-lg p-4 w-[300px]">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-medium">Tarih Seçin</h4>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDatePickerOpen(false)}
-                        className="h-6 w-6 rounded-full"
-                      >
-                        ✕
-                      </Button>
-                    </div>
-                    <Calendar
-                      mode="single"
-                      selected={formData.date || undefined}
-                      onSelect={(date) => {
-                        console.log("Seçilen tarih:", date);
-                        if (date) {
-                          setFormData((prev) => ({ ...prev, date }));
-                        }
-                      }}
-                      disabled={(date) => {
-                        // Allow selecting today's date
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        return date < today;
-                      }}
-                      initialFocus
-                    />
-                    <div className="flex justify-end gap-2 mt-4 pt-2 border-t">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setDatePickerOpen(false)}
-                      >
-                        İptal
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => {
-                          if (formData.date) {
-                            setDatePickerOpen(false);
-                          } else {
-                            toast.error("Lütfen bir tarih seçin");
-                          }
-                        }}
-                      >
-                        Seç
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="time"
-                className="text-sm md:text-base font-medium"
-              >
-                Başlangıç Saati *
-              </Label>
-              <div className="flex items-center relative">
-                <Clock className="absolute left-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="time"
-                  name="time"
-                  type="time"
-                  value={formData.time}
-                  onChange={handleChange}
-                  className="pl-10 w-full"
-                  required
-                />
-              </div>
+          {/* Date field (full width) */}
+          <div className="space-y-2">
+            <Label htmlFor="date" className="text-sm font-medium">
+              Tarih *
+            </Label>
+            <div className="mt-1">
+              <Input
+                id="date"
+                name="date"
+                type="date"
+                value={formData.date ? format(formData.date, "yyyy-MM-dd") : ""}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const date = new Date(e.target.value);
+                    setFormData((prev) => ({ ...prev, date }));
+                  } else {
+                    setFormData((prev) => ({ ...prev, date: null }));
+                  }
+                }}
+                min={format(new Date(), "yyyy-MM-dd")}
+                className="w-full"
+                required
+              />
             </div>
           </div>
 
-          <div className="space-y-2 md:space-y-4">
-            <Label
-              htmlFor="endTime"
-              className="text-sm md:text-base font-medium"
-            >
-              Bitiş Saati *
-            </Label>
-            <div className="flex items-center relative">
-              <Clock className="absolute left-3 h-4 w-4 text-muted-foreground" />
+          {/* Time fields in 2 columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Start Time field */}
+            <div className="space-y-2">
+              <Label htmlFor="time" className="text-sm font-medium">
+                Başlangıç Saati *
+              </Label>
+              <Input
+                id="time"
+                name="time"
+                type="time"
+                value={formData.time}
+                onChange={handleChange}
+                className="w-full"
+                required
+              />
+            </div>
+
+            {/* End Time field */}
+            <div className="space-y-2">
+              <Label htmlFor="endTime" className="text-sm font-medium">
+                Bitiş Saati *
+              </Label>
               <Input
                 id="endTime"
                 name="endTime"
                 type="time"
                 value={formData.endTime}
                 onChange={handleChange}
-                className="pl-10 w-full"
+                className="w-full"
                 required
               />
             </div>
           </div>
 
-          <div className="space-y-2 md:space-y-4">
-            <Label
-              htmlFor="location"
-              className="text-sm md:text-base font-medium"
-            >
+          {/* Location field (full width) */}
+          <div className="space-y-2">
+            <Label htmlFor="location" className="text-sm font-medium">
               Konum *
             </Label>
-            <div className="flex items-center relative">
-              <MapPin className="absolute left-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="Etkinlik konumu"
-                className="pl-10 w-full"
-                required
-              />
-            </div>
+            <Input
+              id="location"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              placeholder="Etkinlik konumu"
+              className="w-full"
+              required
+            />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Category and Max Participants in 2 columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Category field */}
             <div className="space-y-2">
-              <Label
-                htmlFor="category"
-                className="text-sm md:text-base font-medium"
-              >
+              <Label htmlFor="category" className="text-sm font-medium">
                 Kategori *
               </Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => {
-                  // ID ve kategori adını birlikte ayarla
+                  // Find the selected category object
                   const selectedCategory = SPORT_CATEGORIES.find(
-                    (cat) => cat.name === value
+                    (category) => category.name === value
                   );
-                  console.log("Seçilen kategori:", value);
-                  console.log("Bulunan kategori objesi:", selectedCategory);
-
-                  const categoryId = selectedCategory?.id || 0;
-                  console.log("Ayarlanacak kategori ID:", categoryId);
 
                   setFormData((prev) => ({
                     ...prev,
                     category: value,
-                    categoryId: categoryId,
+                    categoryId: selectedCategory ? selectedCategory.id : 0,
                   }));
-                  console.log("Form state güncellendi");
                 }}
-                required
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger id="category" className="w-full">
                   <SelectValue placeholder="Kategori seçin" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" className="min-w-[220px]">
                   {SPORT_CATEGORIES.map((category) => (
                     <SelectItem key={category.id} value={category.name}>
                       {category.name}
@@ -569,38 +474,31 @@ export function NewEventModal({
               </Select>
             </div>
 
+            {/* Max Participants field */}
             <div className="space-y-2">
-              <Label
-                htmlFor="maxParticipants"
-                className="text-sm md:text-base font-medium"
-              >
-                Maksimum Katılımcı Sayısı *
+              <Label htmlFor="maxParticipants" className="text-sm font-medium">
+                Maksimum Katılımcı
               </Label>
-              <div className="flex items-center relative">
-                <Users className="absolute left-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="maxParticipants"
-                  name="maxParticipants"
-                  type="number"
-                  min={1}
-                  max={1000}
-                  value={formData.maxParticipants}
-                  onChange={handleChange}
-                  className="pl-10 w-full"
-                  required
-                />
-              </div>
+              <Input
+                id="maxParticipants"
+                name="maxParticipants"
+                type="number"
+                min="1"
+                max="100"
+                value={formData.maxParticipants}
+                onChange={handleChange}
+                className="w-full"
+              />
             </div>
           </div>
 
-          <DialogFooter className="mt-6 sm:mt-8">
+          {/* Form Actions */}
+          <DialogFooter className="mt-6 flex flex-col sm:flex-row sm:justify-end gap-2">
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                resetForm();
-                onOpenChange(false);
-              }}
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
               className="w-full sm:w-auto"
             >
               İptal
@@ -610,7 +508,14 @@ export function NewEventModal({
               disabled={loading}
               className="w-full sm:w-auto"
             >
-              {loading ? "Oluşturuluyor..." : "Oluştur"}
+              {loading ? (
+                <>
+                  <span className="mr-2">Oluşturuluyor...</span>
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                </>
+              ) : (
+                "Etkinlik Oluştur"
+              )}
             </Button>
           </DialogFooter>
         </form>

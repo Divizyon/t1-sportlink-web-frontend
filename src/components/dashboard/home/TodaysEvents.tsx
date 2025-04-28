@@ -3,7 +3,14 @@
 import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, Users } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  CalendarPlus,
+  SquareIcon,
+} from "lucide-react";
 import {
   Event,
   EventStatus,
@@ -24,6 +31,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import api from "@/services/api";
+import { NewEventModal } from "@/components/modals/NewEventModal";
 
 // Define a more comprehensive ApiEvent interface to handle different API response formats
 interface ApiEvent {
@@ -100,83 +108,93 @@ export function TodaysEvents({
     null
   );
   const router = useRouter();
+  const [isNewEventModalOpen, setIsNewEventModalOpen] = useState(false);
 
   const toggleEventExpand = (eventId: string | number, e: React.MouseEvent) => {
     e.stopPropagation();
     setExpandedEvent(expandedEvent === eventId ? null : eventId);
   };
 
-  // Fetch events from the API
-  useEffect(() => {
-    const fetchEvents = async () => {
-      setLoading(true);
-      try {
-        // Call the today's events API endpoint
-        console.log("Fetching today's events from API...");
+  // Handle successful event creation
+  const handleNewEventSuccess = (newEvent: any) => {
+    setIsNewEventModalOpen(false);
+    toast.success("Yeni etkinlik başarıyla oluşturuldu");
+    // Refresh events after creating a new one
+    fetchEvents();
+  };
 
-        // Use our API service with the correct endpoint
-        const eventsEndpoint = "/events/today";
-        console.log("Using events endpoint:", eventsEndpoint);
+  // Refactor the fetchEvents function into a named function so we can reuse it
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      // Call the today's events API endpoint
+      console.log("Fetching today's events from API...");
 
-        const response = await api.get(eventsEndpoint);
+      // Use our API service with the correct endpoint
+      const eventsEndpoint = "/events/today";
+      console.log("Using events endpoint:", eventsEndpoint);
 
-        console.log("Raw API response:", response);
-        console.log("Response data:", response.data);
+      const response = await api.get(eventsEndpoint);
 
-        if (
-          response.data.status === "success" &&
-          Array.isArray(response.data.data)
-        ) {
-          // Map the API response to our Event type
-          const apiEvents: ApiEvent[] = response.data.data;
-          console.log("API events array:", apiEvents);
+      console.log("Raw API response:", response);
+      console.log("Response data:", response.data);
 
-          if (apiEvents.length === 0) {
-            console.log("No events returned from API");
-            setEvents([]);
-          } else {
-            // Check the format of the first event to debug
-            console.log("First event sample:", apiEvents[0]);
+      if (
+        response.data.status === "success" &&
+        Array.isArray(response.data.data)
+      ) {
+        // Map the API response to our Event type
+        const apiEvents: ApiEvent[] = response.data.data;
+        console.log("API events array:", apiEvents);
 
-            const frontendEvents: Event[] = apiEvents.map(mapApiEventToEvent);
-
-            console.log("Mapped frontend events:", frontendEvents);
-
-            // Filter events by category if categories are provided
-            const filteredEvents =
-              categories.length > 0
-                ? frontendEvents.filter((event) =>
-                    categories.includes(event.category)
-                  )
-                : frontendEvents;
-
-            console.log("Final filtered events:", filteredEvents);
-            setEvents(filteredEvents);
-          }
-        } else {
-          console.error("API response format was unexpected:", response.data);
+        if (apiEvents.length === 0) {
+          console.log("No events returned from API");
           setEvents([]);
-          toast.error("Etkinlikler yüklenirken bir hata oluştu");
+        } else {
+          // Check the format of the first event to debug
+          console.log("First event sample:", apiEvents[0]);
+
+          const frontendEvents: Event[] = apiEvents.map(mapApiEventToEvent);
+
+          console.log("Mapped frontend events:", frontendEvents);
+
+          // Filter events by category if categories are provided
+          const filteredEvents =
+            categories.length > 0
+              ? frontendEvents.filter((event) =>
+                  categories.includes(event.category)
+                )
+              : frontendEvents;
+
+          console.log("Final filtered events:", filteredEvents);
+          setEvents(filteredEvents);
         }
-      } catch (error: any) {
-        console.error("Error fetching today's events:", error);
-        // More detailed error reporting
-        if (error.response) {
-          console.error(
-            "API error response:",
-            error.response.status,
-            error.response.data
-          );
-        } else if (error.request) {
-          console.error("No response received:", error.request);
-        }
+      } else {
+        console.error("API response format was unexpected:", response.data);
         setEvents([]);
         toast.error("Etkinlikler yüklenirken bir hata oluştu");
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error: any) {
+      console.error("Error fetching today's events:", error);
+      // More detailed error reporting
+      if (error.response) {
+        console.error(
+          "API error response:",
+          error.response.status,
+          error.response.data
+        );
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+      }
+      setEvents([]);
+      toast.error("Etkinlikler yüklenirken bir hata oluştu");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Use the fetchEvents function in the useEffect
+  useEffect(() => {
     fetchEvents();
   }, [categories]);
 
@@ -273,17 +291,26 @@ export function TodaysEvents({
 
   if (events.length === 0) {
     return (
-      <div className="flex h-[240px] items-center justify-center border rounded-md">
+      <div className="flex flex-col h-[240px] items-center justify-center border rounded-md">
         <div className="text-center">
           <Calendar className="mx-auto h-10 w-10 text-muted-foreground opacity-30" />
           <h3 className="mt-2 text-lg font-medium">
             Bugün için etkinlik bulunamadı
           </h3>
           <p className="text-sm text-muted-foreground">
-            {categories.length > 0
-              ? "Filtreyi değiştirmeyi deneyin"
-              : "Bugün için etkinlik planlanmamış"}
+            Bugün için etkinlik planlanmamış
           </p>
+
+          <div className="mt-4">
+            <Button
+              variant="outline"
+              className="w-full border-gray-200"
+              onClick={() => router.push("/dashboard/events")}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Tüm Etkinlikleri Gör
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -401,6 +428,13 @@ export function TodaysEvents({
           Tüm Etkinlikleri Gör
         </Button>
       </div>
+
+      {/* Add the modal at the bottom of the component */}
+      <NewEventModal
+        open={isNewEventModalOpen}
+        onOpenChange={setIsNewEventModalOpen}
+        onSuccess={handleNewEventSuccess}
+      />
     </div>
   );
 }

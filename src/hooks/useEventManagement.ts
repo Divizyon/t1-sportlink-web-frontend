@@ -115,6 +115,7 @@ export interface FetchEventsOptions {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   dateFilter?: "today" | "upcoming"; // Add dateFilter parameter
+  includeAll?: boolean; // Whether to include all events (even past ones) for today
 }
 
 // Cache interface
@@ -136,6 +137,12 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [totalCount, setTotalCount] = useState<number>(0);
   const lastRefreshTimeRef = React.useRef<number>(0);
+  const [lastActionTime, setLastActionTime] = useState<number>(0);
+
+  // Add a function to trigger refresh
+  const triggerRefresh = useCallback(() => {
+    setLastActionTime(Date.now());
+  }, []);
 
   // Format time from various formats with timezone adjustment
   const formatTime = (timeStr?: string): string => {
@@ -530,8 +537,9 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
                 `Rejected event "${event.title}": Start in ${minutesDiff} minutes`
               );
 
-              // If start time is now or in the past, or within 30 minutes, mark it as timed out
-              if (minutesDiff <= 30) {
+              // Only mark as timed out if the event was rejected due to timeout
+              // (i.e., if it was pending and its start time passed)
+              if (minutesDiff <= 0) {
                 isExpiringSoon = true;
                 timeUntilStart = "Süresi doldu";
                 console.log(
@@ -641,6 +649,9 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
         // Clear the cache to force a refresh on next fetch
         eventsCache = {};
 
+        // Trigger refresh
+        triggerRefresh();
+
         toast.success(
           `Etkinlik durumu başarıyla güncellendi: ${
             newStatus === "ACTIVE" ? "Onaylandı" : "Reddedildi"
@@ -655,34 +666,40 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
         return false;
       }
     },
-    []
+    [triggerRefresh]
   );
 
   // Delete an event
-  const deleteEvent = useCallback(async (eventId: string): Promise<boolean> => {
-    try {
-      console.log(`Deleting event ${eventId}`);
+  const deleteEvent = useCallback(
+    async (eventId: string): Promise<boolean> => {
+      try {
+        console.log(`Deleting event ${eventId}`);
 
-      // Make the API request
-      await api.delete(`/events/${eventId}`);
+        // Make the API request
+        await api.delete(`/events/${eventId}`);
 
-      // Update the local state by removing the event
-      setEvents((prevEvents) =>
-        prevEvents.filter((event) => event.id !== eventId)
-      );
+        // Update the local state by removing the event
+        setEvents((prevEvents) =>
+          prevEvents.filter((event) => event.id !== eventId)
+        );
 
-      // Clear the cache to force a refresh on next fetch
-      eventsCache = {};
+        // Clear the cache to force a refresh on next fetch
+        eventsCache = {};
 
-      toast.success("Etkinlik başarıyla silindi");
-      return true;
-    } catch (error) {
-      console.error("Error deleting event:", error);
-      setError(error as Error);
-      toast.error("Etkinlik silinirken bir hata oluştu");
-      return false;
-    }
-  }, []);
+        // Trigger refresh
+        triggerRefresh();
+
+        toast.success("Etkinlik başarıyla silindi");
+        return true;
+      } catch (error) {
+        console.error("Error deleting event:", error);
+        setError(error as Error);
+        toast.error("Etkinlik silinirken bir hata oluştu");
+        return false;
+      }
+    },
+    [triggerRefresh]
+  );
 
   // Update event details
   const updateEvent = useCallback(
@@ -733,6 +750,9 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
         // Clear the cache to force a refresh on next fetch
         eventsCache = {};
 
+        // Trigger refresh
+        triggerRefresh();
+
         toast.success("Etkinlik başarıyla güncellendi");
         return true;
       } catch (error) {
@@ -742,7 +762,7 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
         return false;
       }
     },
-    []
+    [triggerRefresh]
   );
 
   // Auto fetch on mount if enabled
@@ -961,6 +981,17 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
     [events]
   );
 
+  // Add effect to automatically refresh when lastActionTime changes
+  useEffect(() => {
+    if (lastActionTime > 0) {
+      const currentStatus = lastFetchedStatus;
+      if (currentStatus) {
+        console.log(`Auto-refreshing data for status: ${currentStatus}`);
+        fetchByStatus(currentStatus);
+      }
+    }
+  }, [lastActionTime, fetchByStatus]);
+
   return {
     events,
     loading,
@@ -976,5 +1007,6 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
     upcomingEvents,
     rejectedEvents,
     totalCount,
+    triggerRefresh, // Export the refresh function
   };
 };
