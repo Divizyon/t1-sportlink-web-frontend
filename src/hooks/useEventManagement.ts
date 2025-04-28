@@ -686,14 +686,19 @@ export const useEventManagement = (options: EventManagementOptions = {}) => {
 
         // Format time to ISO format
         const [hours, minutes] = updatedEvent.time.split(":");
-        const today = new Date();
+
+        // Parse the event date instead of using today's date
+        const [year, month, day] = formattedDate.split("-").map(Number);
+
+        // Create date using the event date (not today)
         const timeDate = new Date(
-          today.getFullYear(),
-          today.getMonth(),
-          today.getDate(),
+          year,
+          month - 1, // JavaScript months are 0-indexed
+          day,
           parseInt(hours),
           parseInt(minutes)
         );
+
         const formattedTime = timeDate.toISOString();
 
         // Transform frontend model to backend model
