@@ -1,16 +1,40 @@
-"use client"
+"use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNews } from "@/hooks/useNews";
 import { NewsTable } from "@/components/news/NewsTable";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { toast as sonnerToast } from "sonner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { 
-  RssIcon, GlobeIcon, ArrowRightIcon, CheckIcon, XIcon, EditIcon, 
-  RefreshCwIcon, FilterIcon, CheckSquareIcon, Pencil, Link, Calendar, Trash2Icon, CalendarIcon, BellIcon, Edit, MoreVertical, PlusIcon 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import {
+  RssIcon,
+  GlobeIcon,
+  ArrowRightIcon,
+  CheckIcon,
+  XIcon,
+  EditIcon,
+  RefreshCwIcon,
+  FilterIcon,
+  CheckSquareIcon,
+  Pencil,
+  Link,
+  Calendar,
+  Trash2Icon,
+  CalendarIcon,
+  BellIcon,
+  Edit,
+  MoreVertical,
+  PlusIcon,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,15 +53,108 @@ import {
 import { AnnouncementCard } from "@/components/cards/AnnouncementCard";
 
 export default function NewsPage() {
-  const { news, filteredNews, loading, filters, setFilters, pendingCount, setNews, approveNews, rejectNews, deleteNews, updateNews } = useNews();
+  const {
+    news,
+    filteredNews,
+    loading,
+    filters,
+    setFilters,
+    pendingCount,
+    setNews,
+    approveNews,
+    rejectNews,
+    deleteNews,
+    updateNews,
+    pagination,
+    handlePageChange,
+    handlePageSizeChange,
+    loadNewsNow,
+  } = useNews();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("announcements");
+  const [activeTab, setActiveTab] = useState("pending");
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const newsUrlInputRef = useRef<HTMLFormElement>(null);
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState<NewsItem | null>(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] =
+    useState<NewsItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Track if component has been initialized
+  const isInitialized = useRef(false);
+  const forceLoadComplete = useRef(false);
+  const [isPageInitialized, setIsPageInitialized] = useState(false);
+
+  // Force reset loading state if stuck for more than 5 seconds
+  useEffect(() => {
+    if (loading && !forceLoadComplete.current) {
+      const timer = setTimeout(() => {
+        forceLoadComplete.current = true;
+
+        // Explicitly load news for the selected tab
+        const targetStatus =
+          activeTab === "approved"
+            ? "approved"
+            : activeTab === "rejected"
+            ? "rejected"
+            : "pending";
+
+        // Force immediate load with explicit API call
+        loadNewsNow(targetStatus);
+      }, 5000); // Increased from 3000 to 5000ms for more reliability
+
+      return () => clearTimeout(timer);
+    } else if (!loading) {
+      // Reset force load flag when loading completes naturally
+      forceLoadComplete.current = false;
+    }
+  }, [loading, activeTab, loadNewsNow]);
+
+  // Component initialization - only runs once
+  useEffect(() => {
+    // If already initialized, skip
+    if (isInitialized.current) return;
+
+    // Set initialization flag
+    isInitialized.current = true;
+
+    // Initialize with pending tab
+    const initialTab = "pending";
+    setActiveTab(initialTab);
+
+    // Force an immediate load with a slight delay to ensure component is fully mounted
+    setTimeout(() => {
+      loadNewsNow(initialTab);
+      // Mark page as initialized after first load
+      setIsPageInitialized(true);
+    }, 200);
+  }, [loadNewsNow]);
+
+  // Handle tab changes
+  const handleTabChange = useCallback(
+    (newTab: string) => {
+      // Skip if tab hasn't actually changed
+      if (newTab === activeTab) return;
+
+      // Update the active tab
+      setActiveTab(newTab);
+
+      // Reset selection when switching tabs
+      setSelectedIds([]);
+
+      // Map tab to status
+      const newStatus =
+        newTab === "approved"
+          ? "approved"
+          : newTab === "rejected"
+          ? "rejected"
+          : "pending";
+
+      // Force load with the new status - more reliable than relying on filter changes
+      loadNewsNow(newStatus);
+    },
+    [activeTab, loadNewsNow, setSelectedIds]
+  );
 
   // Onay bekleyen haber sayısını takip et
   useEffect(() => {
@@ -52,24 +169,29 @@ export default function NewsPage() {
 
   // URL girişi sonrası otomatik olarak onay bekleyenler sekmesine geçiş yapar
   const handleNewsAdded = () => {
-    setActiveTab("pending");
+    handleTabChange("pending");
   };
 
-  // Tab değişikliğini izle
+  // Debug effect to log news data when it changes
   useEffect(() => {
-    console.log("Aktif tab:", activeTab);
-  }, [activeTab]);
+    console.log(`News data updated for status (${filters.status}):`, {
+      count: filteredNews.length,
+      totalInPagination: pagination.total,
+      firstItem: filteredNews[0] ? filteredNews[0].title : "none",
+    });
+  }, [filteredNews, filters.status, pagination.total]);
 
   // Haberi onaylama fonksiyonu - sekme değişimi olmadan
   const handleApproveNews = async (id: string) => {
     try {
       const result = await approveNews(id);
-      
+
       if (result.success) {
         // Başarılı haber onaylandığında daha belirgin bir bildirim göster
         toast({
           title: "✅ Haber Başarıyla Onaylandı",
-          description: "Haber onaylandı ve yayına alındı. Onaylanmış haberleri görmek için üstteki sekmeleri kullanabilirsiniz.",
+          description:
+            "Haber onaylandı ve yayına alındı. Onaylanmış haberleri görmek için üstteki sekmeleri kullanabilirsiniz.",
           variant: "success",
         });
 
@@ -78,9 +200,9 @@ export default function NewsPage() {
           description: "Haber başarıyla onaylandı ve yayına alındı.",
           position: "top-right",
           duration: 4000,
-          icon: "✅"
+          icon: "✅",
         });
-        
+
         // Sekme değişimi yapılmayacak
       } else {
         toast({
@@ -126,7 +248,7 @@ export default function NewsPage() {
         description: "Haber başarıyla silindi ve listeden kaldırıldı.",
         position: "top-right",
         duration: 4000,
-        icon: "🗑️"
+        icon: "🗑️",
       });
     } catch (error) {
       toast({
@@ -168,15 +290,15 @@ export default function NewsPage() {
 
       for (const id of selectedIds) {
         const promise = approveNews(id)
-          .then(result => {
+          .then((result) => {
             if (result.success) {
               approvedCount++;
             }
           })
-          .catch(error => {
+          .catch((error) => {
             console.error(`${id} ID'li haber onaylanırken hata oluştu:`, error);
           });
-        
+
         promises.push(promise);
       }
 
@@ -190,15 +312,15 @@ export default function NewsPage() {
         description: `Seçilen haberler başarıyla onaylandı ve yayına alındı. Onaylanmış haberleri görmek için üstteki "Onaylanmış Haberler" sekmesine geçebilirsiniz.`,
         variant: "success",
       });
-      
+
       // Sonner toast bildirimi
       sonnerToast.success(`${approvedCount} Haber Onaylandı`, {
         description: "Seçilen haberler başarıyla onaylandı ve yayına alındı.",
         position: "top-right",
         duration: 4000,
-        icon: "✅"
+        icon: "✅",
       });
-      
+
       // Sekme değişimi yapmıyoruz
     } catch (error) {
       toast({
@@ -229,10 +351,8 @@ export default function NewsPage() {
 
   // Haber seçimi işlemleri
   const toggleSelectNews = (id: string) => {
-    setSelectedIds(prev => 
-      prev.includes(id) 
-        ? prev.filter(itemId => itemId !== id) 
-        : [...prev, id]
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
     );
   };
 
@@ -243,7 +363,7 @@ export default function NewsPage() {
       setSelectedIds([]);
     } else {
       // Tümünü seç
-      setSelectedIds(pendingNews.map(item => item.id));
+      setSelectedIds(pendingNews.map((item) => item.id));
     }
   };
 
@@ -264,11 +384,13 @@ export default function NewsPage() {
       let validUrl;
       try {
         validUrl = new URL(url);
-        if (!validUrl.protocol.startsWith('http')) {
-          throw new Error('Geçersiz protokol');
+        if (!validUrl.protocol.startsWith("http")) {
+          throw new Error("Geçersiz protokol");
         }
       } catch {
-        throw new Error("Lütfen geçerli bir URL girin (örn: https://www.example.com)");
+        throw new Error(
+          "Lütfen geçerli bir URL girin (örn: https://www.example.com)"
+        );
       }
 
       // Toast bildirimi göster
@@ -279,18 +401,34 @@ export default function NewsPage() {
       });
 
       // Backend bağlantısı simüle ediliyor
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       // Domain adını al ve mock haber başlıklarında kullan
-      const domain = validUrl.hostname.replace('www.', '');
-      
+      const domain = validUrl.hostname.replace("www.", "");
+
       // Mock haberler oluştur
       const newsCount = Math.floor(Math.random() * 5) + 5; // 5-9 arası haber
       const newsItems: NewsItem[] = [];
-      
-      const categories = ["Futbol", "Basketbol", "Voleybol", "Formula 1", "Tenis", "Motorsporları", "Güreş"];
-      const tags = ["Süper Lig", "Şampiyonlar Ligi", "Transfer", "Milli Takım", "Avrupa Kupası", "Galibiyet", "Maç Sonucu"];
-      
+
+      const categories = [
+        "Futbol",
+        "Basketbol",
+        "Voleybol",
+        "Formula 1",
+        "Tenis",
+        "Motorsporları",
+        "Güreş",
+      ];
+      const tags = [
+        "Süper Lig",
+        "Şampiyonlar Ligi",
+        "Transfer",
+        "Milli Takım",
+        "Avrupa Kupası",
+        "Galibiyet",
+        "Maç Sonucu",
+      ];
+
       const titles = [
         `${domain} - Süper Lig'de haftanın maç sonuçları`,
         `Fenerbahçe'den son dakika transfer hamlesi`,
@@ -301,19 +439,19 @@ export default function NewsPage() {
         `Şampiyonlar Ligi'nde dev eşleşmeler!`,
         `${domain}'dan bomba iddia: Yıldız oyuncu Türkiye'ye geliyor`,
         `Formula 1'de sezonun son yarışı heyecanı`,
-        `${domain}: Basketbol Süper Ligi'nde şampiyonluk favorileri`
+        `${domain}: Basketbol Süper Ligi'nde şampiyonluk favorileri`,
       ];
-      
+
       const contents = [
         `Süper Lig'de bu hafta oynanan karşılaşmalarda sonuçlar belli oldu. Lider takım deplasmanda kazanarak puanını 45'e yükseltti. Takipçisi ise evinde berabere kalarak puan kaybetti. Kümede kalma mücadelesi veren ekipler arasındaki zorlu mücadelede kazanan çıkmadı.`,
-        
+
         `Kulüpten yapılan açıklamaya göre, dünyaca ünlü yıldız ile prensip anlaşmasına varıldı. Oyuncu, yarın İstanbul'a gelerek sağlık kontrolünden geçecek ve resmi sözleşmeyi imzalayacak. Transfer ücreti ise 15 milyon euro olarak açıklandı.`,
-        
+
         `Son maçta alınan kötü sonuçların ardından teknik direktör ile yollar ayrıldı. Kulüp başkanı yarın yapacağı basın toplantısında yeni teknik direktörü açıklayacak. İddiaya göre, Avrupa'nın önde gelen takımlarında görev yapmış deneyimli bir isimle anlaşmaya varıldı.`,
-        
+
         `Tecrübeli orta saha oyuncusu, dün akşam İstanbul'a geldi ve bu sabah sağlık kontrolünden geçti. 3 yıllık imzayı atan oyuncu, "Kariyerimin en doğru kararını verdim. Bu forma altında şampiyonluklar yaşamak istiyorum" dedi. Transferin maliyeti açıklanmazken, bonservis bedelinin 7 milyon euro olduğu tahmin ediliyor.`,
-        
-        `Milli takımlar teknik direktörü, önümüzdeki ay oynanacak önemli maçlar için 26 kişilik aday kadroyu duyurdu. Kadroda 3 yeni isim dikkat çekerken, sakatlığı süren yıldız oyuncu kadroya dahil edilmedi. Tecrübeli teknik adam, "Hedefimiz gruptan lider çıkmak" dedi.`
+
+        `Milli takımlar teknik direktörü, önümüzdeki ay oynanacak önemli maçlar için 26 kişilik aday kadroyu duyurdu. Kadroda 3 yeni isim dikkat çekerken, sakatlığı süren yıldız oyuncu kadroya dahil edilmedi. Tecrübeli teknik adam, "Hedefimiz gruptan lider çıkmak" dedi.`,
       ];
 
       // Spor haberleri için örnek fotoğraf URL'leri
@@ -327,16 +465,19 @@ export default function NewsPage() {
         "https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=800", // Spor salonu
         "https://images.unsplash.com/photo-1629285483773-6b5cde2171d1?q=80&w=800", // Futbol antrenman
         "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=800", // Basketbol sahası
-        "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?q=80&w=800"  // Spor ekipmanları
+        "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?q=80&w=800", // Spor ekipmanları
       ];
 
       // Her bir haber için rasgele içerik oluştur
       for (let i = 0; i < newsCount; i++) {
         const randomTitle = titles[Math.floor(Math.random() * titles.length)];
-        const randomContent = contents[Math.floor(Math.random() * contents.length)];
-        const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-        const randomImage = sampleImages[Math.floor(Math.random() * sampleImages.length)];
-        
+        const randomContent =
+          contents[Math.floor(Math.random() * contents.length)];
+        const randomCategory =
+          categories[Math.floor(Math.random() * categories.length)];
+        const randomImage =
+          sampleImages[Math.floor(Math.random() * sampleImages.length)];
+
         // Rasgele 1-3 etiket seç
         const randomTags: string[] = [];
         const tagCount = Math.floor(Math.random() * 3) + 1;
@@ -346,33 +487,37 @@ export default function NewsPage() {
             randomTags.push(randomTag);
           }
         }
-        
+
         // Rastgele bir tarih oluştur (son 7 gün içinde)
         const randomDate = new Date();
-        randomDate.setDate(randomDate.getDate() - Math.floor(Math.random() * 7));
-        
+        randomDate.setDate(
+          randomDate.getDate() - Math.floor(Math.random() * 7)
+        );
+
         newsItems.push({
           id: Math.random().toString(36).substring(2) + Date.now().toString(36),
           title: randomTitle,
           content: randomContent,
           category: randomCategory,
           image: randomImage,
-          date: randomDate.toISOString(),
+          publishDate: randomDate.toISOString(),
           tags: randomTags,
           status: "pending",
           type: "news",
           hasImage: true,
-          sendNotification: false
+          contentLength: randomContent.length,
+          imageStatus: "available",
+          sendNotification: false,
         });
       }
-      
+
       // Haberleri state'e ekle
       setNews((prev: NewsItem[]) => [...prev, ...newsItems]);
-      
+
       // Onay bekleyen sekmeye geç
       handleNewsAdded();
       setUrl("");
-      
+
       toast({
         title: "Haberler Başarıyla Alındı",
         description: `${newsItems.length} yeni haber eklendi ve onaya düştü.`,
@@ -393,30 +538,36 @@ export default function NewsPage() {
   // Habere tıklandığında detay sayfasına yönlendir
   const handleNewsClick = (id: string) => {
     // Seçilen haberin durumunu değiştirerek detay göstermeyi toggle et
-    setNews(prevNews => 
-      prevNews.map(item => 
-        item.id === id 
-          ? { ...item, showDetails: !item.showDetails } 
-          : item
+    setNews((prevNews) =>
+      prevNews.map((item) =>
+        item.id === id ? { ...item, showDetails: !item.showDetails } : item
       )
     );
-    
+
     // Kullanıcıya bildirim göster
-    const newsItem = news.find(item => item.id === id);
+    const newsItem = news.find((item) => item.id === id);
     if (newsItem) {
       toast({
-        title: newsItem.showDetails ? "Detaylar Gizlendi" : "Detaylar Gösteriliyor",
-        description: `"${newsItem.title.substring(0, 40)}${newsItem.title.length > 40 ? '...' : ''}" için detaylar ${newsItem.showDetails ? 'gizlendi' : 'gösteriliyor'}.`,
+        title: newsItem.showDetails
+          ? "Detaylar Gizlendi"
+          : "Detaylar Gösteriliyor",
+        description: `"${newsItem.title.substring(0, 40)}${
+          newsItem.title.length > 40 ? "..." : ""
+        }" için detaylar ${
+          newsItem.showDetails ? "gizlendi" : "gösteriliyor"
+        }.`,
         variant: "info",
       });
 
       // Sonner toast bildirimi - Ayrı bir bildirim olarak eklemek yerine güncelledim
       if (!newsItem.showDetails) {
         sonnerToast.info("Haber Detayları", {
-          description: `"${newsItem.title.substring(0, 40)}${newsItem.title.length > 40 ? '...' : ''}" için detaylar genişletildi.`,
+          description: `"${newsItem.title.substring(0, 40)}${
+            newsItem.title.length > 40 ? "..." : ""
+          }" için detaylar genişletildi.`,
           position: "bottom-right",
           duration: 3000,
-          icon: "ℹ️"
+          icon: "ℹ️",
         });
       }
     }
@@ -444,95 +595,138 @@ export default function NewsPage() {
   const handleUpdateAnnouncement = (updatedAnnouncement: NewsItem) => {
     try {
       updateNews(updatedAnnouncement);
-      toast("Duyuru başarıyla güncellendi");
+      toast({
+        title: "Başarılı",
+        description: "Duyuru başarıyla güncellendi",
+        variant: "default",
+      });
     } catch (error) {
-      toast("Duyuru güncellenirken bir hata oluştu");
-                }
+      toast({
+        title: "Hata",
+        description: "Duyuru güncellenirken bir hata oluştu",
+        variant: "destructive",
+      });
+    }
   };
 
   // Duyuruyu sil
   const handleDeleteAnnouncement = (id: string) => {
-                  try {
-                    deleteNews(id);
-      toast("Duyuru başarıyla silindi");
-                  } catch (error) {
-      toast("Duyuru silinirken bir hata oluştu");
+    try {
+      deleteNews(id);
+      toast({
+        title: "Başarılı",
+        description: "Duyuru başarıyla silindi",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Duyuru silinirken bir hata oluştu",
+        variant: "destructive",
+      });
     }
   };
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6 px-2 sm:px-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Haberler ve Duyurular</h1>
-        <Button onClick={() => handleEditAnnouncement({
-          id: Date.now().toString(),
-          title: "",
-          content: "",
-          type: "announcement",
-          status: "approved",
-          date: new Date().toISOString(),
-          sendNotification: false,
-          tags: [],
-          hasImage: false,
-        })}>
-          <PlusIcon className="mr-2 h-4 w-4" />
+        <h1 className="text-2xl sm:text-3xl font-bold">
+          Haberler ve Duyurular
+        </h1>
+        <Button
+          onClick={() =>
+            handleEditAnnouncement({
+              id: Date.now().toString(),
+              title: "",
+              content: "",
+              category: "Genel",
+              type: "announcement",
+              status: "approved",
+              publishDate: new Date().toISOString(),
+              tags: [],
+              hasImage: false,
+              contentLength: 0,
+              imageStatus: "error",
+              sendNotification: false,
+            })
+          }
+          size="sm"
+        >
+          <PlusIcon className="mr-1 h-4 w-4" />
           İçerik Yayınla
         </Button>
       </div>
 
-        {/* URL Girişi */}
-      <Card className="mb-6">
-        <CardHeader>
-            <CardTitle className="text-lg flex items-center">
-              <GlobeIcon className="h-5 w-5 mr-2 text-primary" />
-              Haber Sitesi URL'si Girin
-            </CardTitle>
-            <CardDescription>
-              Haber kaynağı URL'sini girerek haberleri otomatik olarak sisteme ekleyin
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-3">
-              <Input
-                type="url"
-                placeholder="https://www.sporhaberleri.com"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              className="flex-1"
-              />
-              <Button 
-                onClick={fetchNewsFromUrl}
-                disabled={isLoading || !url.trim()}
-              >
-                {isLoading ? (
-                  <>
-                    <RefreshCwIcon className="mr-2 h-4 w-4 animate-spin" />
-                    İşleniyor...
-                  </>
-                ) : (
-                  <>
-                    Haberleri Çek
-                    <ArrowRightIcon className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* URL Girişi */}
+      <Card className="mb-4">
+        <CardHeader className="pb-2 px-3">
+          <CardTitle className="text-base sm:text-lg flex items-center">
+            <GlobeIcon className="h-4 w-4 mr-2 text-primary" />
+            Haber Sitesi URL'si Girin
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            Haber kaynağı URL'sini girerek haberleri otomatik olarak sisteme
+            ekleyin
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-3 pb-3">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              type="url"
+              placeholder="https://www.sporhaberleri.com"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="flex-1 text-sm"
+            />
+            <Button
+              onClick={fetchNewsFromUrl}
+              disabled={isLoading || !url.trim()}
+              className="whitespace-nowrap text-xs sm:text-sm"
+              size="sm"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCwIcon className="mr-1 h-3 w-3 animate-spin" />
+                  İşleniyor...
+                </>
+              ) : (
+                <>
+                  Haberleri Çek
+                  <ArrowRightIcon className="ml-1 h-3 w-3" />
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="announcements">Duyurular</TabsTrigger>
-          <TabsTrigger value="pending">
-                  Onay Bekleyenler
-                  {pendingCount > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                      {pendingCount}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-          <TabsTrigger value="approved">Onaylananlar</TabsTrigger>
-              </TabsList>
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="w-full max-w-full overflow-hidden"
+      >
+        <TabsList className="w-full flex justify-between">
+          <TabsTrigger
+            value="announcements"
+            className="text-xs sm:text-sm flex-1"
+          >
+            Duyurular
+          </TabsTrigger>
+          <TabsTrigger value="pending" className="text-xs sm:text-sm flex-1">
+            Onay Bekleyenler
+            {pendingCount > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {pendingCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="approved" className="text-xs sm:text-sm flex-1">
+            Onaylananlar
+          </TabsTrigger>
+          <TabsTrigger value="rejected" className="text-xs sm:text-sm flex-1">
+            Reddedilenler
+          </TabsTrigger>
+        </TabsList>
 
         <TabsContent value="announcements" className="space-y-4">
           {announcements.map((item) => (
@@ -542,111 +736,100 @@ export default function NewsPage() {
               onEdit={() => handleEditAnnouncement(item)}
             />
           ))}
-              </TabsContent>
+        </TabsContent>
 
         <TabsContent value="pending" className="space-y-4">
-          {selectedIds.length > 0 && (
-            <div className="flex justify-between items-center p-4 bg-white rounded-lg shadow-sm mb-4">
-              <span>{selectedIds.length} haber seçildi</span>
+          <Card className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3">
+              <div>
+                <CardTitle className="text-base">
+                  Onay Bekleyen Haberler
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Onayınızı bekleyen haberler burada listelenir.
+                </CardDescription>
+              </div>
               <div className="flex gap-2">
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={handleApproveSelected}
-                  disabled={isLoading}
+                  disabled={loading || isLoading || selectedIds.length === 0}
+                  className="flex items-center gap-1 text-xs"
+                  size="sm"
                 >
-                  <CheckIcon className="mr-2 h-4 w-4" />
-                  Seçilenleri Onayla
+                  <CheckIcon className="h-3 w-3" />
+                  <span>Seçilenleri Onayla</span>
+                  {isLoading && (
+                    <Loader2 className="ml-1 h-3 w-3 animate-spin" />
+                  )}
                 </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                  onClick={() => {
-                    selectedIds.forEach(id => handleDeleteNews(id));
-                    setSelectedIds([]);
-                  }}
-                  disabled={isLoading}
-                >
-                  <Trash2Icon className="mr-2 h-4 w-4" />
-                  Seçilenleri Sil
-                        </Button>
-                      </div>
-                    </div>
-          )}
-          {pendingNews.map((item) => (
-            <div key={item.id} className="flex items-center space-x-4 bg-white p-4 rounded-lg shadow-sm">
-              <Checkbox
-                checked={selectedIds.includes(item.id)}
-                onCheckedChange={() => toggleSelectNews(item.id)}
+              </div>
+            </CardHeader>
+            <CardContent className="px-0 py-0">
+              <NewsTable
+                news={filteredNews}
+                loading={loading}
+                showActions={true}
+                showSelect={true}
+                totalCount={pagination.total}
+                currentPage={pagination.page}
+                pageSize={pagination.limit}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
               />
-              {item.hasImage && item.image && (
-                <div className="w-[120px] h-[80px] relative overflow-hidden rounded">
-                              <img 
-                                src={item.image} 
-                                alt={item.title} 
-                                className="h-full w-full object-cover"
-                                onError={(e) => {
-                                  const imgElement = e.target as HTMLImageElement;
-                      imgElement.src = "https://via.placeholder.com/120x80?text=Görsel+Yok";
-                                }}
-                              />
-                </div>
-              )}
-              <div className="flex-1">
-                <h3 className="font-medium">{item.title}</h3>
-                <p className="text-sm text-gray-500 line-clamp-2">{item.content}</p>
-                {item.tags && item.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {item.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                            )}
-                          </div>
-              <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                  onClick={() => handleApproveNews(item.id)}
-                            >
-                  <CheckIcon className="mr-2 h-4 w-4" />
-                  Onayla
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleDeleteNews(item.id)}
-                            >
-                  <Trash2Icon className="mr-2 h-4 w-4" />
-                              Sil
-                            </Button>
-                          </div>
-                        </div>
-          ))}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="approved" className="space-y-4">
-          {approvedNews.map((item) => (
-            <div key={item.id} className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">{item.title}</h3>
-                  <p className="text-sm text-gray-500 mt-1">{item.content}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteNews(item.id)}
-                >
-                  <Trash2Icon className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
+          <Card className="overflow-hidden">
+            <CardHeader className="px-3 pb-2">
+              <CardTitle className="text-base">Onaylanmış Haberler</CardTitle>
+              <CardDescription className="text-xs">
+                Onaylanmış ve yayınlanmış haberler burada listelenir.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-0 py-0">
+              <NewsTable
+                news={filteredNews}
+                loading={loading}
+                showActions={false}
+                showSelect={false}
+                totalCount={pagination.total}
+                currentPage={pagination.page}
+                pageSize={pagination.limit}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
-          </Tabs>
+
+        <TabsContent value="rejected" className="space-y-4">
+          <Card className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3">
+              <div>
+                <CardTitle className="text-base">Reddedilen Haberler</CardTitle>
+                <CardDescription className="text-xs">
+                  Reddedilmiş haberler burada listelenir.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="px-0 py-0">
+              <NewsTable
+                news={filteredNews}
+                loading={loading}
+                showActions={true}
+                showSelect={false}
+                totalCount={pagination.total}
+                currentPage={pagination.page}
+                pageSize={pagination.limit}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <AnnouncementModal
         announcement={selectedAnnouncement}
@@ -660,4 +843,4 @@ export default function NewsPage() {
       />
     </div>
   );
-} 
+}

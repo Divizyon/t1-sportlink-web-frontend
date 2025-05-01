@@ -58,10 +58,18 @@ export function AnnouncementModal({
     try {
       // Duyuruyu güncelle
       onSave(formData);
-      toast("Duyuru başarıyla güncellendi");
+      toast.success("Duyuru başarıyla güncellendi", {
+        description: "Duyuru bilgileri kaydedildi.",
+        position: "top-right",
+        duration: 3000,
+      });
       onClose();
     } catch (error) {
-      toast("Duyuru güncellenirken bir hata oluştu");
+      toast.error("Duyuru güncellenirken bir hata oluştu", {
+        description: "Lütfen daha sonra tekrar deneyin.",
+        position: "top-right",
+        duration: 3000,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -75,10 +83,18 @@ export function AnnouncementModal({
     try {
       // Duyuruyu sil
       onDelete(formData.id);
-      toast("Duyuru başarıyla silindi");
+      toast.success("Duyuru başarıyla silindi", {
+        description: "Duyuru listeden kaldırıldı.",
+        position: "top-right",
+        duration: 3000,
+      });
       onClose();
     } catch (error) {
-      toast("Duyuru silinirken bir hata oluştu");
+      toast.error("Duyuru silinirken bir hata oluştu", {
+        description: "Lütfen daha sonra tekrar deneyin.",
+        position: "top-right",
+        duration: 3000,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -139,9 +155,7 @@ export function AnnouncementModal({
                   size="icon"
                   onClick={() =>
                     setFormData((prev) =>
-                      prev
-                        ? { ...prev, image: "", hasImage: false }
-                        : null
+                      prev ? { ...prev, image: "", hasImage: false } : null
                     )
                   }
                 >
@@ -172,4 +186,4 @@ export function AnnouncementModal({
       </DialogContent>
     </Dialog>
   );
-} 
+}
