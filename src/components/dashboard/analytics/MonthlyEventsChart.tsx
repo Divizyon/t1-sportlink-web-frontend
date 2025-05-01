@@ -10,14 +10,30 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
-import { MONTHLY_EVENT_DATA } from "@/mocks/analytics";
 import { COLORS } from "@/constants";
 import { formatNumber } from "@/lib/uiUtils";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Define valid data keys
+// Type for the incoming data from the hook
+interface MonthlyStat {
+  month: string; // Matches API response
+  onaylanan: number;
+  bekleyen: number;
+  reddedilen: number;
+  tamamlanan: number;
+}
+
+// Type for the props the component accepts
+interface MonthlyEventsChartProps {
+  data: MonthlyStat[] | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+// Define valid data keys used in the chart
 type DataKey = "onaylanan" | "bekleyen" | "reddedilen" | "tamamlanan";
 
-export function MonthlyEventsChart() {
+export function MonthlyEventsChart({ data, isLoading, error }: MonthlyEventsChartProps) {
   // Labels for the data keys
   const labels: Record<DataKey, string> = {
     onaylanan: "Onaylanan",
@@ -26,9 +42,36 @@ export function MonthlyEventsChart() {
     tamamlanan: "Tamamlanan",
   };
 
+  // Prepare data for the chart by mapping 'month' to 'name'
+  const chartData = data?.map(item => ({ ...item, name: item.month })) || [];
+
+  if (isLoading) {
+    return (
+      <div className="h-[350px] w-full flex items-center justify-center">
+        <Skeleton className="h-full w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-[350px] w-full flex items-center justify-center text-destructive">
+        <p>Hata: {error}</p>
+      </div>
+    );
+  }
+
+  if (!chartData || chartData.length === 0) {
+    return (
+      <div className="h-[350px] w-full flex items-center justify-center text-muted-foreground">
+        <p>Gösterilecek veri bulunamadı.</p>
+      </div>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={MONTHLY_EVENT_DATA}>
+      <BarChart data={chartData}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis
           dataKey="name"
@@ -46,7 +89,6 @@ export function MonthlyEventsChart() {
         />
         <Tooltip
           formatter={(value, name: string) => {
-            // Cast name to DataKey if it's a valid key
             const key = name as DataKey;
             return [
               `${formatNumber(value as number)} Etkinlik`,
@@ -62,7 +104,6 @@ export function MonthlyEventsChart() {
         />
         <Legend
           formatter={(value: string) => {
-            // Cast value to DataKey if it's a valid key
             return labels[value as DataKey] || value;
           }}
         />
@@ -99,5 +140,5 @@ export function MonthlyEventsChart() {
   );
 }
 
-// Export with the old name as well for backwards compatibility
+// Keep the export for backwards compatibility if needed, though it might be confusing
 export const Overview = MonthlyEventsChart;
