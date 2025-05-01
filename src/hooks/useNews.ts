@@ -6,8 +6,71 @@ import type { NewsItem } from "@/types/news";
 import type { NewsFilters } from "@/types/news";
 import { useSingleFetch } from "@/hooks";
 
-// Mock haberler
+// Admin duyuruları için mock data
+export const ADMIN_ANNOUNCEMENTS: NewsItem[] = [
+  {
+    id: "announcement1",
+    title: "Platform Bakım Duyurusu",
+    content: "Değerli üyelerimiz, 25 Mart 2024 tarihinde 02:00-04:00 saatleri arasında planlı bakım çalışması yapılacaktır. Bu süre zarfında platform hizmet vermeyecektir.",
+    category: "Duyuru",
+    publishDate: new Date("2024-03-20").toISOString(),
+    tags: ["bakım", "sistem"],
+    status: "approved",
+    hasImage: false,
+    contentLength: 150,
+    imageStatus: "error",
+    type: "announcement",
+    sendNotification: true
+  },
+  {
+    id: "announcement2",
+    title: "Yeni Özellik: Grup Etkinlikleri",
+    content: "Platformumuza yeni eklenen grup etkinlikleri özelliği ile artık arkadaşlarınızla birlikte özel etkinlikler oluşturabileceksiniz. Detaylı bilgi için etkinlikler sayfasını ziyaret edebilirsiniz.",
+    category: "Duyuru",
+    publishDate: new Date("2024-03-18").toISOString(),
+    tags: ["yenilik", "özellik", "etkinlik"],
+    status: "approved",
+    hasImage: true,
+    contentLength: 200,
+    imageStatus: "available",
+    image: "https://example.com/new-feature.jpg",
+    type: "announcement",
+    sendNotification: true
+  },
+  {
+    id: "announcement3",
+    title: "Önemli Güvenlik Güncellemesi",
+    content: "Platformumuzun güvenliğini artırmak için yeni güvenlik önlemleri devreye alınmıştır. Tüm kullanıcılarımızın bir sonraki girişlerinde şifrelerini güncellemeleri gerekmektedir.",
+    category: "Duyuru",
+    publishDate: new Date("2024-03-15").toISOString(),
+    tags: ["güvenlik", "güncelleme"],
+    status: "approved",
+    hasImage: false,
+    contentLength: 180,
+    imageStatus: "error",
+    type: "announcement",
+    sendNotification: true
+  }
+];
+
+// Mevcut MOCK_NEWS array'ine admin duyurularını ekle
 export const MOCK_NEWS: NewsItem[] = [
+  ...ADMIN_ANNOUNCEMENTS,
+  {
+    id: "4",
+    title: "Voleybol Milli Takımı'ndan başarı",
+    content:
+      "Türkiye Voleybol Milli Takımı, Avrupa Şampiyonası'nda grup maçlarını lider tamamladı. Milliler, çeyrek finalde güçlü rakibiyle karşılaşacak.",
+    category: "Spor",
+    image: "https://example.com/voleybol-basari.jpg",
+    publishDate: new Date().toISOString(),
+    tags: ["voleybol", "milli takım"],
+    status: "pending",
+    hasImage: true,
+    contentLength: 167,
+    imageStatus: "available",
+    showDetails: false,
+  },
   {
     id: "1",
     title: "Fenerbahçe'den muhteşem galibiyet",
@@ -53,21 +116,6 @@ export const MOCK_NEWS: NewsItem[] = [
     imageStatus: "available",
     showDetails: false,
   },
-  {
-    id: "4",
-    title: "Voleybol Milli Takımı'ndan başarı",
-    content:
-      "Türkiye Voleybol Milli Takımı, Avrupa Şampiyonası'nda grup maçlarını lider tamamladı. Milliler, çeyrek finalde güçlü rakibiyle karşılaşacak.",
-    category: "Spor",
-    image: "https://example.com/voleybol-basari.jpg",
-    publishDate: new Date().toISOString(),
-    tags: ["voleybol", "milli takım"],
-    status: "pending",
-    hasImage: true,
-    contentLength: 167,
-    imageStatus: "available",
-    showDetails: false,
-  },
 ];
 
 // Kalıcı depolama için localStorage anahtarı
@@ -78,18 +126,48 @@ const loadNewsFromStorage = (): NewsItem[] => {
   if (typeof window === "undefined") return [];
   const stored = localStorage.getItem(STORAGE_KEY);
   console.log("Stored news:", stored);
-  if (!stored) {
-    console.log("No stored news found, using mock news");
-    return [...MOCK_NEWS];
+  
+  // Eğer localStorage'da veri varsa
+  if (stored) {
+    const storedNews = JSON.parse(stored);
+    
+    // Mock duyuruları kontrol et ve eksik olanları ekle
+    const storedAnnouncements = storedNews.filter((item: NewsItem) => item.type === "announcement");
+    const missingAnnouncements = ADMIN_ANNOUNCEMENTS.filter(
+      announcement => !storedAnnouncements.some((stored: NewsItem) => stored.id === announcement.id)
+    );
+    
+    if (missingAnnouncements.length > 0) {
+      // Eksik duyuruları ekle
+      const updatedNews = [...storedNews, ...missingAnnouncements];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedNews));
+      return updatedNews;
+    }
+    
+    return storedNews;
   }
-  return JSON.parse(stored);
+  
+  // LocalStorage boşsa mock datayı kullan
+  console.log("No stored news found, using mock news");
+  return [...MOCK_NEWS];
 };
 
 // Haberleri localStorage'a kaydet
 const saveNewsToStorage = (news: NewsItem[]) => {
   if (typeof window === "undefined") return;
-  console.log("Saving news to storage:", news);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(news));
+  
+  // Mevcut duyuruları koru
+  const existingAnnouncements = news.filter(item => item.type === "announcement");
+  const otherNews = news.filter(item => item.type !== "announcement");
+  
+  // Eksik duyuruları ekle
+  const missingAnnouncements = ADMIN_ANNOUNCEMENTS.filter(
+    announcement => !existingAnnouncements.some(existing => existing.id === announcement.id)
+  );
+  
+  const updatedNews = [...otherNews, ...existingAnnouncements, ...missingAnnouncements];
+  console.log("Saving news to storage:", updatedNews);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedNews));
 };
 
 export const useNews = () => {
@@ -100,7 +178,7 @@ export const useNews = () => {
   const [filters, setFilters] = useState<NewsFilters>({
     category: "",
     searchTerm: "",
-    status: "pending",
+    status: "approved",
   });
 
   // Function to load news from storage or API

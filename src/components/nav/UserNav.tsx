@@ -176,7 +176,7 @@ export function UserNav() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => router.push("/settings")}>
+            <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
               <User className="mr-2 h-4 w-4" />
               <span>Profil</span>
               <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>

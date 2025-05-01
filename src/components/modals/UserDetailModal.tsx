@@ -8,14 +8,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Mail } from "lucide-react";
+import { Mail, Flag, ArrowUpRight } from "lucide-react";
 import { processUserData, CommonUser } from "@/lib/userDataService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
+import { reportService, Report } from "@/services/reportService";
+import { userService, UserDetails } from "@/services/userService";
 
 // Sample data inline for demonstration
 export const sampleUser = {
@@ -102,8 +107,7 @@ interface User {
 interface UserDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user?: User | null;
-  // New prop to identify if this modal is nested inside another modal
+  userId: string;
   isNested?: boolean;
 }
 
@@ -152,16 +156,113 @@ function UserDetailSkeleton() {
 export function UserDetailModal({
   open,
   onOpenChange,
-  user,
+  userId,
   isNested = false,
 }: UserDetailModalProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("profil");
   const [localOpen, setLocalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [userData, setUserData] = useState<UserDetails | null>(null);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [isBanning, setIsBanning] = useState(false);
+  const { toast } = useToast();
 
   // Sync the local state with the prop
   useEffect(() => {
     setLocalOpen(open);
   }, [open]);
+
+  // Load user details
+  useEffect(() => {
+    if (open && userId) {
+      loadUserDetails();
+    }
+  }, [open, userId]);
+
+  // Load reports when reports tab is active
+  useEffect(() => {
+    if (userId && activeTab === "raporlar") {
+      loadReports();
+    }
+  }, [userId, activeTab]);
+
+  const loadUserDetails = async () => {
+    try {
+      setIsLoading(true);
+      const response = await userService.getUserDetails(userId);
+      if (response.data) {
+        setUserData(response.data);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Kullanıcı detayları yüklenirken bir hata oluştu",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadReports = async () => {
+    if (!userId) return;
+    
+    try {
+      setIsLoading(true);
+      console.log('Raporlar yükleniyor... UserId:', userId);
+      const response = await reportService.getUserReports(userId);
+      console.log('Raporlar yanıtı:', response);
+      if (response.data?.reports) {
+        // Sadece seçili kullanıcıya ait raporları filtrele
+        const userReports = response.data.reports.filter(report => 
+          report.raporlanan === userData?.name || // Kullanıcının adıyla eşleştir
+          report.reported_user_id === userId // veya ID ile eşleştir
+        );
+        console.log('Filtrelenmiş raporlar:', userReports);
+        setReports(userReports);
+      }
+    } catch (error: any) {
+      console.error('Raporlar yüklenirken hata:', error);
+      toast({
+        title: "Hata",
+        description: error.message || "Raporlar yüklenirken bir hata oluştu",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBanUser = async (report: Report) => {
+    if (!report.id) return;
+
+    try {
+      setIsBanning(true);
+      const response = await reportService.banUserFromReport(report.id);
+      toast({
+        title: "Başarılı",
+        description: response.message || "Kullanıcı başarıyla banlandı",
+      });
+      handleOpenChange(false); // Modal'ı kapat
+      router.refresh(); // Sayfayı yenile
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Kullanıcı banlanırken bir hata oluştu",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBanning(false);
+    }
+  };
+
+  const handleReportClick = (reportId: string) => {
+    // Önce modalı kapat
+    handleOpenChange(false);
+    // Raporlar sayfasına yönlendir ve rapor ID'sini query param olarak ekle
+    router.push(`/dashboard/reports?reportId=${reportId}`);
+  };
 
   // Handle closing the modal safely
   const handleOpenChange = (newOpenState: boolean) => {
@@ -169,101 +270,61 @@ export function UserDetailModal({
     onOpenChange(newOpenState);
   };
 
-  // Use the sample user data if no user is provided
-  const userData: CommonUser = processUserData(user || sampleUser);
-
-  // Check if data is in loading state
-  const isLoading = user?.isLoading || false;
-
-  // Calculate event counts only if events array exists
-  const completedCount =
-    userData.events?.filter((e) => e.status === "completed").length || 0;
-  const upcomingCount =
-    userData.events?.filter((e) => e.status === "upcoming").length || 0;
-  const canceledCount =
-    userData.events?.filter((e) => e.status === "canceled").length || 0;
-
   const getStatusBadge = (status: string) => {
-    // Normalize status to lowercase for consistent case handling
     const normalizedStatus = status?.toLowerCase();
 
     switch (normalizedStatus) {
       case "active":
       case "aktif":
         return (
-          <Badge
-            variant="outline"
-            className="bg-green-50 text-green-700 border-green-200"
-          >
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
             Aktif
           </Badge>
         );
       case "suspended":
         return (
-          <Badge
-            variant="outline"
-            className="bg-yellow-50 text-yellow-700 border-yellow-200"
-          >
+          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
             Askıya Alınmış
           </Badge>
         );
       case "blocked":
         return (
-          <Badge
-            variant="outline"
-            className="bg-red-50 text-red-700 border-red-200"
-          >
+          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
             Engellendi
           </Badge>
         );
       case "inactive":
         return (
-          <Badge
-            variant="outline"
-            className="bg-gray-50 text-gray-700 border-gray-200"
-          >
+          <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
             Pasif
           </Badge>
         );
       default:
-        // Return unknown status if status is not recognized
         return (
-          <Badge
-            variant="outline"
-            className="bg-gray-50 text-gray-700 border-gray-200"
-          >
+          <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
             Bilinmiyor
           </Badge>
         );
     }
   };
 
-  const getEventStatusBadge = (status: Event["status"]) => {
-    switch (status) {
+  const getEventStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
       case "completed":
         return (
-          <Badge
-            variant="outline"
-            className="bg-blue-50 text-blue-700 border-blue-200"
-          >
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
             Tamamlandı
           </Badge>
         );
       case "upcoming":
         return (
-          <Badge
-            variant="outline"
-            className="bg-purple-50 text-purple-700 border-purple-200"
-          >
+          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
             Yaklaşan
           </Badge>
         );
       case "canceled":
         return (
-          <Badge
-            variant="outline"
-            className="bg-red-50 text-red-700 border-red-200"
-          >
+          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
             İptal Edildi
           </Badge>
         );
@@ -279,59 +340,54 @@ export function UserDetailModal({
   }
 
   return (
-    <Dialog
-      open={localOpen}
-      onOpenChange={handleOpenChange}
-      // Set modal to true to ensure proper stacking behavior
-      modal={true}
-    >
+    <Dialog open={localOpen} onOpenChange={handleOpenChange} modal={true}>
       <DialogContent
         className={`max-w-[95vw] w-full md:max-w-[700px] max-h-[90vh] overflow-y-auto p-4 md:p-6 ${
           isNested ? "z-[100]" : "z-50"
         }`}
         onPointerDownOutside={(e) => {
-          // Prevent closing if nested and clicking outside
           if (isNested) {
             e.preventDefault();
           }
         }}
+        aria-describedby="user-details-description"
       >
-        {isLoading ? (
-          // Render loading skeleton when data is loading
+        <DialogHeader>
+          <DialogTitle>Kullanıcı Detayları</DialogTitle>
+          <DialogDescription id="user-details-description">
+            Kullanıcının profil bilgileri, etkinlikleri ve raporları
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading || !userData ? (
           <UserDetailSkeleton />
         ) : (
-          // Render actual content when data is available
           <>
-            <DialogHeader className="mb-4 md:mb-6">
-              <DialogTitle className="text-lg md:text-xl font-semibold flex items-center gap-2">
+            <div className="mb-4 md:mb-6">
+              <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8 md:h-10 md:w-10">
-                  <AvatarImage src={userData.avatar} alt={userData.name} />
-                  <AvatarFallback>
-                    {userData.name?.charAt(0) || "?"}
-                  </AvatarFallback>
+                  <AvatarImage src={userData.avatar || userData.profile_picture} alt={userData.name} />
+                  <AvatarFallback>{userData.name?.charAt(0) || "?"}</AvatarFallback>
                 </Avatar>
-                <span>{userData.name}</span>
-              </DialogTitle>
-            </DialogHeader>
+                <span className="text-lg md:text-xl font-semibold">{userData.name}</span>
+                {userData.is_watched && (
+                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 ml-2">
+                    İzleniyor
+                  </Badge>
+                )}
+              </div>
+            </div>
 
-            <Tabs
-              defaultValue="profil"
-              className="w-full"
-              value={activeTab}
-              onValueChange={setActiveTab}
-            >
+            <Tabs defaultValue="profil" className="w-full" value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-3 mb-4 md:mb-6">
                 <TabsTrigger value="profil" className="text-sm md:text-base">
                   Profil
                 </TabsTrigger>
-                <TabsTrigger
-                  value="etkinlikler"
-                  className="text-sm md:text-base"
-                >
+                <TabsTrigger value="etkinlikler" className="text-sm md:text-base">
                   Etkinlikler
                 </TabsTrigger>
-                <TabsTrigger value="islemler" className="text-sm md:text-base">
-                  İşlemler
+                <TabsTrigger value="raporlar" className="text-sm md:text-base">
+                  Raporlar
                 </TabsTrigger>
               </TabsList>
 
@@ -341,17 +397,14 @@ export function UserDetailModal({
                     <p className="text-sm md:text-base font-medium text-muted-foreground">
                       E-posta
                     </p>
-                    <p className="text-sm md:text-base flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      {userData.email}
-                    </p>
+                    <p className="text-sm md:text-base">{userData.email}</p>
                   </div>
 
                   <div className="space-y-2 md:space-y-3">
                     <p className="text-sm md:text-base font-medium text-muted-foreground">
                       Durum
                     </p>
-                    {getStatusBadge(userData.status || "")}
+                    {getStatusBadge(userData.status)}
                   </div>
 
                   {userData.registeredDate && (
@@ -360,7 +413,7 @@ export function UserDetailModal({
                         Kayıt Tarihi
                       </p>
                       <p className="text-sm md:text-base">
-                        {userData.registeredDate}
+                        {new Date(userData.registeredDate).toLocaleDateString('tr-TR')}
                       </p>
                     </div>
                   )}
@@ -371,7 +424,7 @@ export function UserDetailModal({
                         Son Aktivite
                       </p>
                       <p className="text-sm md:text-base">
-                        {userData.lastActive}
+                        {new Date(userData.lastActive).toLocaleDateString('tr-TR')}
                       </p>
                     </div>
                   )}
@@ -404,25 +457,24 @@ export function UserDetailModal({
                   </div>
                 )}
 
-                {userData.favoriteCategories &&
-                  userData.favoriteCategories.length > 0 && (
-                    <div className="space-y-2 md:space-y-3">
-                      <p className="text-sm md:text-base font-medium text-muted-foreground">
-                        İlgilendiği Kategoriler
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {userData.favoriteCategories.map((category) => (
-                          <Badge
-                            key={category}
-                            variant="secondary"
-                            className="text-xs md:text-sm"
-                          >
-                            {category}
-                          </Badge>
-                        ))}
-                      </div>
+                {userData.favoriteCategories && userData.favoriteCategories.length > 0 && (
+                  <div className="space-y-2 md:space-y-3">
+                    <p className="text-sm md:text-base font-medium text-muted-foreground">
+                      İlgilendiği Kategoriler
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {userData.favoriteCategories.map((category) => (
+                        <Badge
+                          key={category}
+                          variant="secondary"
+                          className="text-xs md:text-sm"
+                        >
+                          {category}
+                        </Badge>
+                      ))}
                     </div>
-                  )}
+                  </div>
+                )}
               </TabsContent>
 
               {/* Etkinlikler Tab */}
@@ -430,20 +482,11 @@ export function UserDetailModal({
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium">Katıldığı Etkinlikler</h3>
                   <div className="flex gap-2">
-                    <Badge
-                      variant="outline"
-                      className="bg-blue-50 text-blue-700"
-                    >
-                      Tamamlanan: {completedCount}
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                      Tamamlanan: {userData.completedEvents}
                     </Badge>
-                    <Badge
-                      variant="outline"
-                      className="bg-purple-50 text-purple-700"
-                    >
-                      Yaklaşan: {upcomingCount}
-                    </Badge>
-                    <Badge variant="outline" className="bg-red-50 text-red-700">
-                      İptal Edilen: {canceledCount}
+                    <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                      Toplam: {userData.eventCount}
                     </Badge>
                   </div>
                 </div>
@@ -458,9 +501,7 @@ export function UserDetailModal({
                         <div>
                           <p className="font-medium">{event.title}</p>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>{event.date}</span>
-                            <span>•</span>
-                            <span>{event.category}</span>
+                            <span>{new Date(event.date).toLocaleDateString('tr-TR')}</span>
                           </div>
                         </div>
                         <div>{getEventStatusBadge(event.status)}</div>
@@ -476,67 +517,92 @@ export function UserDetailModal({
                 </div>
               </TabsContent>
 
-              {/* İşlemler Tab */}
-              <TabsContent value="islemler" className="space-y-4 pt-4">
-                {userData.eventCount !== undefined &&
-                userData.completedEvents !== undefined ? (
-                  <div className="rounded-md border p-4">
-                    <h3 className="font-medium mb-4">
-                      Kullanıcı İstatistikleri
-                    </h3>
+              {/* Raporlar Tab */}
+              <TabsContent value="raporlar" className="space-y-4 pt-4">
+                <div className="rounded-md border p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium">Kullanıcı Raporları</h3>
+                    {reports.length > 0 && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleBanUser(reports[0])}
+                        disabled={isBanning}
+                      >
+                        {isBanning ? "Banlanıyor..." : "Kullanıcıyı Banla"}
+                      </Button>
+                    )}
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Tamamlanan Etkinlikler
-                        </p>
-                        <p className="font-medium">
-                          {userData.completedEvents} etkinlik
-                        </p>
+                  <div className="space-y-4">
+                    {isLoading ? (
+                      <div className="space-y-4">
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-24 w-full" />
                       </div>
-
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Toplam Etkinlikler
-                        </p>
-                        <p className="font-medium">
-                          {userData.eventCount} etkinlik
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Tamamlama Oranı
-                        </p>
-                        <p className="font-medium">
-                          {userData.eventCount > 0
-                            ? Math.round(
-                                (userData.completedEvents /
-                                  userData.eventCount) *
-                                  100
-                              )
-                            : 0}
-                          %
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Kullanıcı Durumu
-                        </p>
-                        <div className="mt-1">
-                          {getStatusBadge(userData.status)}
+                    ) : reports.length > 0 ? (
+                      reports.map((report) => (
+                        <div 
+                          key={report.id} 
+                          className="border rounded-lg overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
+                          onClick={() => handleReportClick(report.id)}
+                        >
+                          <div className="bg-muted/50 p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="font-medium text-sm">Rapor: {report.konu}</h4>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Raporlayan: {report.raporlayan}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {report.tarih}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-3 space-y-2">
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium">Rapor Türü:</p>
+                              <p className="text-sm text-muted-foreground">
+                                {report.tur}
+                              </p>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t">
+                              <Badge variant="secondary">{report.durum}</Badge>
+                              <Badge variant="outline" className={
+                                report.oncelik === "Yüksek" 
+                                  ? "bg-red-50 text-red-700" 
+                                  : report.oncelik === "Orta"
+                                  ? "bg-yellow-50 text-yellow-700"
+                                  : "bg-blue-50 text-blue-700"
+                              }>
+                                {report.oncelik}
+                              </Badge>
+                            </div>
+                            {report.admin_notes && (
+                              <div className="pt-2 border-t">
+                                <p className="text-sm font-medium text-muted-foreground">Admin Notu:</p>
+                                <p className="mt-1 text-sm whitespace-pre-wrap">{report.admin_notes}</p>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
+                              <ArrowUpRight className="h-4 w-4" />
+                              <span>Detayları görüntülemek için tıklayın</span>
+                            </div>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Flag className="mx-auto h-8 w-8 opacity-30 mb-2" />
+                        <p>Bu kullanıcı için henüz rapor bulunmuyor.</p>
                       </div>
-                    </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="p-8 text-center">
-                    <p className="text-muted-foreground">
-                      Kullanıcı istatistikleri bulunamadı.
-                    </p>
-                  </div>
-                )}
+                </div>
               </TabsContent>
             </Tabs>
 

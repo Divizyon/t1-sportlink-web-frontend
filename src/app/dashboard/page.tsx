@@ -550,7 +550,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Alt Kısım */}
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols">
             {/* Sol Kolon */}
             <div className="space-y-4">
               <Card className="h-[500px]">
@@ -582,60 +582,65 @@ export default function DashboardPage() {
 
             {/* Sağ Kolon */}
             <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{UI_TEXT.SECTION_TITLES.PLATFORM_STATS}</CardTitle>
-                  <CardDescription>
-                    {UI_TEXT.SECTION_DESCRIPTIONS.PLATFORM_STATS}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="border-b pb-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">
-                          {UI_TEXT.STATS.ACTIVE_USERS}
-                        </h3>
-                        <p className="text-2xl font-bold">+573</p>
-                      </div>
-                      <Users className="h-8 w-8 text-muted-foreground opacity-75" />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {UI_TEXT.STATS.NEW_MEMBERS(39)}
-                    </p>
-                  </div>
+              {/* Platform İstatistikleri Card'ı */}
+              {/*
+                 <div className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>{UI_TEXT.SECTION_TITLES.PLATFORM_STATS}</CardTitle>
+                        <CardDescription>
+                          {UI_TEXT.SECTION_DESCRIPTIONS.PLATFORM_STATS}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="border-b pb-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-sm font-medium text-muted-foreground">
+                                {UI_TEXT.STATS.ACTIVE_USERS}
+                              </h3>
+                              <p className="text-2xl font-bold">+573</p>
+                            </div>
+                            <Users className="h-8 w-8 text-muted-foreground opacity-75" />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {UI_TEXT.STATS.NEW_MEMBERS(39)}
+                          </p>
+                        </div>
 
-                  <div className="border-b pb-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">
-                          {UI_TEXT.STATS.TOTAL_PARTICIPANTS}
-                        </h3>
-                        <p className="text-2xl font-bold">1,324</p>
-                      </div>
-                      <Activity className="h-8 w-8 text-muted-foreground opacity-75" />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {UI_TEXT.STATS.MONTHLY_PARTICIPANTS}
-                    </p>
-                  </div>
+                        <div className="border-b pb-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-sm font-medium text-muted-foreground">
+                                {UI_TEXT.STATS.TOTAL_PARTICIPANTS}
+                              </h3>
+                              <p className="text-2xl font-bold">1,324</p>
+                            </div>
+                            <Activity className="h-8 w-8 text-muted-foreground opacity-75" />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {UI_TEXT.STATS.MONTHLY_PARTICIPANTS}
+                          </p>
+                        </div>
 
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">
-                          {UI_TEXT.STATS.EVENT_FILL_RATE}
-                        </h3>
-                        <p className="text-2xl font-bold">%78</p>
-                      </div>
-                      <CreditCard className="h-8 w-8 text-muted-foreground opacity-75" />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {UI_TEXT.STATS.AVG_PARTICIPATION}
-                    </p>
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-sm font-medium text-muted-foreground">
+                                {UI_TEXT.STATS.EVENT_FILL_RATE}
+                              </h3>
+                              <p className="text-2xl font-bold">%78</p>
+                            </div>
+                            <CreditCard className="h-8 w-8 text-muted-foreground opacity-75" />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {UI_TEXT.STATS.AVG_PARTICIPATION}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
-                </CardContent>
-              </Card>
+              */}
             </div>
           </div>
         </TabsContent>

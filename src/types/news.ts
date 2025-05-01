@@ -13,6 +13,8 @@ export type NewsItem = {
   sourceUrl?: string;
   selected?: boolean;
   showDetails?: boolean;
+  type?: "announcement" | "news";
+  sendNotification?: boolean;
   details?: {
     author?: string;
     source?: string;
