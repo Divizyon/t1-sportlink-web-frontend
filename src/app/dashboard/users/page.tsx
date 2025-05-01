@@ -963,12 +963,13 @@ export default function UsersPage({ searchParams }: UsersPageProps) {
         </div>
       </div>
       {/* Render User Details Modal */}
-      <UserDetailModal
-        open={userModalOpen}
-        onOpenChange={handleCloseUserModal}
-        user={selectedUser}
-        isNested={false}
-      />
+      {selectedUser && (
+        <UserDetailModal
+          open={userModalOpen}
+          onOpenChange={handleCloseUserModal}
+          userId={selectedUser.id}
+        />
+      )}
     </div>
   );
 }

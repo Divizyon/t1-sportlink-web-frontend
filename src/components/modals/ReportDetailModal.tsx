@@ -19,6 +19,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { formatDate } from "@/lib/utils";
 import { REPORT_STATUS_LABELS } from "@/lib/constants";
 import { ReportStatus } from "@/types/dashboard";
+import { reportService } from "@/services/reportService";
 
 interface ReportDetailModalProps {
   open: boolean;
@@ -67,7 +68,16 @@ export function ReportDetailModal({
   const handleResolve = async () => {
     try {
       setLoading(true);
-      await onStatusChange(report.id, "resolved", adminNote, banUser);
+      // Önce admin notunu güncelle
+      if (adminNote) {
+        await reportService.addAdminNote(report.id, adminNote);
+      }
+      // Sonra durumu güncelle
+      await reportService.updateReportStatus(report.id, "resolved", adminNote);
+      // Eğer kullanıcı banlanacaksa
+      if (banUser) {
+        await reportService.banUserFromReport(report.id);
+      }
       toast({
         title: "Rapor çözüldü",
         description: "Rapor başarıyla çözüldü.",
@@ -87,7 +97,12 @@ export function ReportDetailModal({
   const handleDismiss = async () => {
     try {
       setLoading(true);
-      await onStatusChange(report.id, "dismissed", adminNote, banUser);
+      // Önce admin notunu güncelle
+      if (adminNote) {
+        await reportService.addAdminNote(report.id, adminNote);
+      }
+      // Sonra durumu güncelle
+      await reportService.updateReportStatus(report.id, "dismissed", adminNote);
       toast({
         title: "Rapor reddedildi",
         description: "Rapor başarıyla reddedildi.",
@@ -210,6 +225,12 @@ export function ReportDetailModal({
           {/* Admin Notu */}
           <div className="space-y-2">
             <h3 className="text-sm md:text-base font-medium">Admin Notu</h3>
+            {report.adminNote && (
+              <div className="rounded-lg border p-3 mb-3 bg-muted/10">
+                <p className="text-sm text-muted-foreground">Mevcut Not:</p>
+                <p className="mt-1 text-sm whitespace-pre-wrap">{report.adminNote}</p>
+              </div>
+            )}
             <Textarea
               placeholder="Rapor hakkında not ekleyin..."
               value={adminNote}

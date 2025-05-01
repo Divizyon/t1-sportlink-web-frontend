@@ -55,9 +55,11 @@ import { formatDate } from "@/lib/utils";
 import Cookies from "js-cookie";
 import React from "react";
 import { useSingleFetch } from "@/hooks";
+import { useSearchParams } from 'next/navigation';
 
 export default function ReportsPage() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   const [filter, setFilter] = useState<"all" | "users" | "events">("all");
   const [priorityFilter, setPriorityFilter] = useState<ReportPriority | "all">(
     "all"
@@ -105,22 +107,19 @@ export default function ReportsPage() {
         // Map backend data to frontend format
         const mappedReports: Report[] = data.data.reports.map(
           (report: any) => ({
-            id: report.id || Math.floor(Math.random() * 1000),
-            entityId: report.entity_id || 0,
-            entityType: report.entity_type === "USER" ? "user" : "event",
-            subject: report.title || report.subject || "No subject",
-            description: report.description || "No description",
-            reportedBy: report.reporter_name || "Unknown User",
-            reportedDate: safeDateFormat(report.created_at),
-            priority: mapReportPriority(report.priority),
-            status: mapReportStatus(report.status),
-            reason: report.reason || report.description || "No reason provided",
-            details:
-              report.details || report.description || "No details provided",
-            adminNote: report.admin_note || "",
-            adminName: report.admin_name || "",
-            adminActionDate: safeDateFormat(report.resolved_at),
-            isBanned: report.is_banned || false,
+            id: report.id,
+            entityType: report.tur.toLowerCase(),
+            subject: report.konu,
+            reportedBy: report.raporlayan,
+            reportedDate: report.tarih,
+            priority: report.oncelik.toLowerCase(),
+            status: report.durum.toLowerCase(),
+            reason: report.report_reason || "Belirtilmemiş",
+            details: report.report_reason || "Detay belirtilmemiş",
+            adminNote: report.admin_notes || "",
+            adminName: "",
+            adminActionDate: "",
+            isBanned: false
           })
         );
 
@@ -413,6 +412,18 @@ export default function ReportsPage() {
       });
     }
   };
+
+  // URL'deki reportId'ye göre raporu otomatik aç
+  useEffect(() => {
+    const reportId = searchParams.get('reportId');
+    if (reportId && allReports.length > 0) {
+      const report = allReports.find(r => r.id === reportId);
+      if (report) {
+        setSelectedReport(report);
+        setIsDetailModalOpen(true);
+      }
+    }
+  }, [searchParams, allReports]);
 
   // Show loading and error states
   const renderContent = () => {
