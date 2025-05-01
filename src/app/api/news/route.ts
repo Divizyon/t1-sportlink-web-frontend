@@ -14,6 +14,7 @@ const initialNews: NewsItem[] = [
     updated_at: new Date().toISOString()
   },
   {
+  
     id: "2",
     title: "Basketbolda büyük başarı",
     content: "Türkiye Basketbol Milli Takımı, Avrupa Şampiyonası'nda çeyrek finale yükseldi. Milliler, son maçında güçlü rakibini uzatmalarda mağlup etmeyi başardı.",
