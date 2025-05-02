@@ -52,7 +52,7 @@ export function Navbar() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/settings">
-                  Profil
+                Profil
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>

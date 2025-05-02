@@ -811,7 +811,7 @@ export function EventDetailModal({
 
       // Construct the API endpoint
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const cancelEndpoint = `${baseUrl}/api/events/${formData.id}/cancel`;
+      const cancelEndpoint = `${baseUrl}/events/${formData.id}/cancel`;
       console.log("Using cancel endpoint:", cancelEndpoint);
 
       const response = await api.post(
@@ -873,7 +873,7 @@ export function EventDetailModal({
 
       // Construct the API endpoint
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const completeEndpoint = `${baseUrl}/api/events/${formData.id}/complete`;
+      const completeEndpoint = `${baseUrl}/events/${formData.id}/complete`;
       console.log("Using complete endpoint:", completeEndpoint);
 
       const response = await api.post(

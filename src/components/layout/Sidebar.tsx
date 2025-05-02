@@ -37,7 +37,7 @@ const routes = [
     color: "text-pink-700",
   },
   {
-    label: "Haberler",
+    label: "Haberler ve Duyurular",
     icon: Newspaper,
     href: "/dashboard/news",
     color: "text-orange-700",

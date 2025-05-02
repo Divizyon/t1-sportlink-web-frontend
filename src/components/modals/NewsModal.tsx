@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
-import { Upload, Image as ImageIcon, Bell, Users, Newspaper, X, Loader2 } from "lucide-react"
+import { Upload, Image as ImageIcon, Bell, Newspaper, X, Loader2 } from "lucide-react"
 
 interface NewsModalProps {
   open: boolean
@@ -33,9 +33,34 @@ interface NewsModalProps {
 const NEWS_TYPES = [
   { id: "announcement", name: "Duyuru" },
   { id: "news", name: "Haber" },
-  { id: "event", name: "Etkinlik Haberi" },
-  { id: "update", name: "Güncelleme" },
 ]
+
+const NEWS_CATEGORIES = [
+  { id: "general", name: "Genel" },
+  { id: "technology", name: "Teknoloji" },
+  { id: "sports", name: "Spor" },
+  { id: "culture", name: "Kültür-Sanat" },
+  { id: "education", name: "Eğitim" },
+]
+
+// API response handlers
+const handleApiResponse = async (response: Response) => {
+    const errorData = await response.json().catch(() => ({}))
+    console.error('API Response:', errorData)
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            throw new Error('Oturum süreniz dolmuş olabilir. Lütfen tekrar giriş yapın.')
+        } else if (response.status === 403) {
+            throw new Error('Bu işlem için yetkiniz bulunmuyor.')
+        } else if (response.status === 400) {
+            throw new Error(errorData.message || 'Lütfen tüm zorunlu alanları doldurun.')
+        } else {
+            throw new Error(errorData.error || errorData.message || 'Sunucu hatası')
+        }
+    }
+    return errorData
+}
 
 export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
   const { toast } = useToast()
@@ -46,7 +71,7 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
     content: "",
     type: "announcement",
     image: null as File | null,
-    sendNotification: true,
+    sport_id: 1,
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -56,10 +81,6 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
 
   const handleTypeChange = (value: string) => {
     setFormData(prev => ({ ...prev, type: value }))
-  }
-
-  const handleNotificationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, sendNotification: e.target.checked }))
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,12 +95,12 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
       content: "",
       type: "announcement",
       image: null,
-      sendNotification: true,
+      sport_id: 1,
     })
     setActiveTab("announcement")
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Form doğrulama
@@ -103,21 +124,73 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
 
     // Form gönderme
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
 
-      toast({
-        title: "Başarılı",
-        description: `${formData.type === "announcement" ? "Duyuru" : formData.type === "organization" ? "Organizasyon Duyurusu" : "Haber"} başarıyla yayınlandı.`,
+    try {
+      const formDataToSend = new FormData()
+      formDataToSend.append('title', formData.title.trim())
+      formDataToSend.append('content', formData.content.trim())
+      formDataToSend.append('type', formData.type)
+      
+      // Sadece haber türünde sport_id gönder
+      if (formData.type === 'news') {
+        formDataToSend.append('sport_id', formData.sport_id.toString())
+      }
+
+      if (formData.image) {
+        formDataToSend.append('image', formData.image)
+      }
+
+      // Debug için form verilerini konsola yazdır
+      console.log('Gönderilen veriler:')
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(key, ':', value)
+      }
+
+      // API'ye gönder
+      const response = await fetch('http://localhost:3001/api/news', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${document.cookie
+            .split('; ')
+            .find(row => row.startsWith('accessToken='))
+            ?.split('=')[1] || ''}`
+        },
+        body: formDataToSend,
       })
 
+      // Debug için response'u yazdır
+      console.log('Response status:', response.status)
+      const responseData = await response.json()
+      console.log('Response data:', responseData)
+
+      if (!response.ok) {
+        throw new Error(responseData.message || responseData.error || 'Bir hata oluştu')
+      }
+
+      setLoading(false)
+      toast({
+        title: "Başarılı",
+        description: responseData.message || "İçerik başarıyla yayınlandı.",
+      })
       resetForm()
       onOpenChange(false)
-      
-      if (onSuccess) {
-        onSuccess()
+      if (onSuccess) onSuccess()
+
+    } catch (error: any) {
+      console.error('Error:', error)
+      setLoading(false)
+      toast({
+        title: "Hata",
+        description: error.message || "Bir hata oluştu",
+        variant: "destructive",
+      })
+
+      // Token hatası durumunda kullanıcıyı login sayfasına yönlendir
+      if (error.message?.includes('token') || error.message?.includes('oturum')) {
+        window.location.href = '/auth/login'
       }
-    }, 1000)
+    }
   }
 
   return (
@@ -155,12 +228,6 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
                       <span>Duyuru</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value="organization">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span>Organizasyon Duyurusu</span>
-                    </div>
-                  </SelectItem>
                   <SelectItem value="news">
                     <div className="flex items-center gap-2">
                       <Newspaper className="h-4 w-4" />
@@ -170,6 +237,27 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.type === 'news' && (
+              <div className="space-y-2">
+                <Label htmlFor="sport" className="text-sm sm:text-base">Spor Kategorisi</Label>
+                <Select
+                  value={formData.sport_id.toString()}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, sport_id: parseInt(value) }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Spor kategorisi seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Futbol</SelectItem>
+                    <SelectItem value="2">Basketbol</SelectItem>
+                    <SelectItem value="3">Voleybol</SelectItem>
+                    <SelectItem value="4">Tenis</SelectItem>
+                    <SelectItem value="5">Yüzme</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="title" className="text-sm sm:text-base">Başlık</Label>
@@ -227,19 +315,6 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
                   />
                 </div>
               )}
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="sendNotification"
-                checked={formData.sendNotification}
-                onChange={handleNotificationChange}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <Label htmlFor="sendNotification" className="text-sm sm:text-base font-normal">
-                Bildirim olarak gönder
-              </Label>
             </div>
           </div>
 

@@ -5,91 +5,67 @@ import { useToast } from "@/components/ui/use-toast";
 import type { NewsItem } from "@/types/news";
 import type { NewsFilters } from "@/types/news";
 import { useSingleFetch } from "@/hooks";
+import {
+  SPORTS_CATEGORIES,
+  getNews,
+  getNewsById,
+  updateNewsStatus,
+  deleteNews as apiDeleteNews,
+  scrapeNewsFromUrl,
+  updateNewsItem,
+  getPendingNews,
+  getRejectedNews,
+} from "@/services/newsService";
+import { PAGINATION_DEFAULTS } from "@/constants/dashboard";
 
-// Mock haberler
-export const MOCK_NEWS: NewsItem[] = [
-  {
-    id: "1",
-    title: "Fenerbahçe'den muhteşem galibiyet",
-    content:
-      "Fenerbahçe, Süper Lig'de oynadığı son maçta rakibini 3-0 mağlup etti. Sarı-lacivertliler, bu galibiyetle puanını 65'e yükseltti.",
-    category: "Spor",
-    image: "https://example.com/fb-galibiyet.jpg",
-    publishDate: new Date().toISOString(),
-    tags: ["futbol", "süper lig"],
-    status: "pending",
-    hasImage: true,
-    contentLength: 123,
-    imageStatus: "available",
-    showDetails: false,
-  },
-  {
-    id: "2",
-    title: "Basketbolda büyük başarı",
-    content:
-      "Türkiye Basketbol Milli Takımı, Avrupa Şampiyonası'nda çeyrek finale yükseldi. Milliler, son maçında güçlü rakibini uzatmalarda mağlup etmeyi başardı.",
-    category: "Spor",
-    image: "https://example.com/basket-basari.jpg",
-    publishDate: new Date().toISOString(),
-    tags: ["basketbol", "milli takım"],
-    status: "pending",
-    hasImage: true,
-    contentLength: 156,
-    imageStatus: "available",
-    showDetails: false,
-  },
-  {
-    id: "3",
-    title: "Galatasaray'da transfer hareketliliği",
-    content:
-      "Galatasaray, transfer döneminde önemli hamleler yapmaya hazırlanıyor. Teknik direktör, kadroya yeni yüzler katmak için çalışmalara başladı.",
-    category: "Spor",
-    image: "https://example.com/gs-transfer.jpg",
-    publishDate: new Date().toISOString(),
-    tags: ["futbol", "transfer"],
-    status: "pending",
-    hasImage: true,
-    contentLength: 145,
-    imageStatus: "available",
-    showDetails: false,
-  },
-  {
-    id: "4",
-    title: "Voleybol Milli Takımı'ndan başarı",
-    content:
-      "Türkiye Voleybol Milli Takımı, Avrupa Şampiyonası'nda grup maçlarını lider tamamladı. Milliler, çeyrek finalde güçlü rakibiyle karşılaşacak.",
-    category: "Spor",
-    image: "https://example.com/voleybol-basari.jpg",
-    publishDate: new Date().toISOString(),
-    tags: ["voleybol", "milli takım"],
-    status: "pending",
-    hasImage: true,
-    contentLength: 167,
-    imageStatus: "available",
-    showDetails: false,
-  },
-];
+// Local storage key for announcements
+const STORAGE_KEY = "sportlink-announcements";
 
-// Kalıcı depolama için localStorage anahtarı
-const STORAGE_KEY = "sportlink-news";
-
-// Haberleri localStorage'dan yükle
-const loadNewsFromStorage = (): NewsItem[] => {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem(STORAGE_KEY);
-  console.log("Stored news:", stored);
-  if (!stored) {
-    console.log("No stored news found, using mock news");
-    return [...MOCK_NEWS];
-  }
-  return JSON.parse(stored);
+// Save announcements to localStorage
+const saveAnnouncementsToStorage = (announcements: NewsItem[]) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(announcements));
 };
 
-// Haberleri localStorage'a kaydet
-const saveNewsToStorage = (news: NewsItem[]) => {
-  if (typeof window === "undefined") return;
-  console.log("Saving news to storage:", news);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(news));
+// Load announcements from localStorage
+const loadAnnouncementsFromStorage = (): NewsItem[] => {
+  if (typeof window === "undefined") return [];
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) return [];
+  try {
+    return JSON.parse(stored);
+  } catch (error) {
+    console.error("Error parsing announcements from storage:", error);
+    return [];
+  }
+};
+
+// Load locally rejected news from localStorage
+const loadRejectedNewsFromStorage = (): NewsItem[] => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    // Get all localStorage keys
+    const keys = Object.keys(localStorage);
+    // Filter for rejected news items
+    const rejectedKeys = keys.filter((key) => key.startsWith("rejected-news-"));
+
+    if (rejectedKeys.length === 0) return [];
+
+    // Get all rejected news items
+    return rejectedKeys
+      .map((key) => {
+        try {
+          return JSON.parse(localStorage.getItem(key) || "");
+        } catch (e) {
+          return null;
+        }
+      })
+      .filter(Boolean) as NewsItem[];
+  } catch (error) {
+    console.error("Error loading rejected news from storage:", error);
+    return [];
+  }
 };
 
 export const useNews = () => {
@@ -100,149 +76,431 @@ export const useNews = () => {
   const [filters, setFilters] = useState<NewsFilters>({
     category: "",
     searchTerm: "",
-    status: "pending",
+    status: "approved",
   });
 
-  // Function to load news from storage or API
-  const loadNews = useCallback(async () => {
-    try {
-      const loadedNews = loadNewsFromStorage();
-      setNews(loadedNews);
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    page: PAGINATION_DEFAULTS.defaultPage,
+    limit: PAGINATION_DEFAULTS.defaultLimit,
+    total: 0,
+  });
 
-      // Here we would typically also fetch from API if needed
-      // This is where you would add your API fetch logic
-    } catch (error) {
-      console.error("Error loading news:", error);
-      // Fallback to mock data in case of error
-      setNews([...MOCK_NEWS]);
-    }
+  // Ref to track if component is mounted
+  const isMounted = useRef(true);
+  // Use a ref to track the current call to avoid race conditions
+  const currentLoadNewsCall = useRef<number>(0);
+  // Track if we have an active request to prevent duplicates
+  const hasActiveRequest = useRef(false);
+  // Track last successful load timestamp for each status type
+  const lastSuccessfulLoad = useRef<Record<string, number>>({});
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
-  // Use our pattern to prevent multiple fetches
-  useSingleFetch(loadNews);
+  // Function to load news from API with optional status filtering and pagination
+  const loadNews = useCallback(async () => {
+    // If we're already loading, don't start another request
+    if (hasActiveRequest.current) {
+      return;
+    }
 
-  // Haberler değiştiğinde localStorage'a kaydet
+    // Skip if there's no status filter (prevents unnecessary API calls)
+    if (!filters.status) {
+      return;
+    }
+
+    // Check if we've loaded this status recently (debounce)
+    const now = Date.now();
+    const lastLoad = lastSuccessfulLoad.current[filters.status] || 0;
+    if (now - lastLoad < 300 && lastLoad > 0) {
+      // 300ms debounce
+      return;
+    }
+
+    try {
+      // Generate a unique call ID
+      const callId = Date.now();
+      currentLoadNewsCall.current = callId;
+      hasActiveRequest.current = true;
+
+      setLoading(true);
+      setError(null);
+
+      // First we'll load announcements from storage to preserve them
+      let localAnnouncements: NewsItem[] = [];
+      if (typeof window !== "undefined") {
+        localAnnouncements = loadAnnouncementsFromStorage();
+      }
+
+      // Check for locally stored rejected news if we're on the rejected tab
+      let localRejectedNews: NewsItem[] = [];
+      if (filters.status === "rejected" && typeof window !== "undefined") {
+        localRejectedNews = loadRejectedNewsFromStorage();
+      }
+
+      try {
+        // If this call has been superseded by a newer one, exit early
+        if (currentLoadNewsCall.current !== callId || !isMounted.current)
+          return;
+
+        let apiNews: NewsItem[] = [];
+        let totalCount = 0;
+
+        // Calculate offset from page and limit
+        const offset = (pagination.page - 1) * pagination.limit;
+
+        // Use status-specific endpoints for better performance and filtering
+        if (filters.status === "pending") {
+          const { data, count } = await getPendingNews({
+            limit: pagination.limit,
+            offset,
+          });
+
+          // If this call has been superseded, exit early
+          if (currentLoadNewsCall.current !== callId || !isMounted.current)
+            return;
+
+          // Force the correct status - override whatever the API returns
+          apiNews = data.map((item) => ({
+            ...item,
+            status: "pending" as const,
+          }));
+          totalCount = count;
+        } else if (filters.status === "rejected") {
+          const { data, count } = await getRejectedNews({
+            limit: pagination.limit,
+            offset,
+          });
+
+          // If this call has been superseded, exit early
+          if (currentLoadNewsCall.current !== callId || !isMounted.current)
+            return;
+
+          // Force the correct status - override whatever the API returns
+          apiNews = data.map((item) => ({
+            ...item,
+            status: "rejected" as const,
+          }));
+          totalCount = count;
+        } else {
+          // For approved or all news, use the general getNews endpoint
+          const apiParams: any = {
+            limit: pagination.limit,
+            offset,
+          };
+
+          if (filters.status) {
+            apiParams.status = filters.status;
+          }
+
+          const { data, count } = await getNews(apiParams);
+
+          // If this call has been superseded, exit early
+          if (currentLoadNewsCall.current !== callId || !isMounted.current)
+            return;
+
+          // Force the correct status - override whatever the API returns
+          apiNews = data.map((item) => ({
+            ...item,
+            status: "approved" as const,
+          }));
+          totalCount = count;
+        }
+
+        // Update pagination with total count
+        if (isMounted.current) {
+          let adjustedTotalCount = totalCount;
+
+          // Adjust the total count to include local items if needed
+          if (filters.status === "rejected") {
+            adjustedTotalCount += localRejectedNews.length;
+          }
+
+          setPagination((prev) => ({
+            ...prev,
+            total: adjustedTotalCount,
+          }));
+
+          // For announcements, only include them in the appropriate tab (approved)
+          // and combine them with apiNews only when needed
+          let combinedNews = [...apiNews];
+
+          if (filters.status === "approved") {
+            // Only add announcements to approved news
+            combinedNews = [
+              ...apiNews,
+              ...localAnnouncements.filter(
+                (item) => item.status === "approved"
+              ),
+            ];
+          } else if (
+            filters.status === "rejected" &&
+            localRejectedNews.length > 0
+          ) {
+            // Add locally stored rejected news
+            combinedNews = [...apiNews, ...localRejectedNews];
+          }
+
+          // Make sure all news items have the correct status
+          combinedNews = combinedNews.map((item) => ({
+            ...item,
+            status: filters.status as "approved" | "pending" | "rejected",
+          }));
+
+          // Set news directly to the filtered results based on current status
+          setNews(combinedNews);
+
+          // Record the successful load timestamp for this status
+          lastSuccessfulLoad.current[filters.status] = Date.now();
+        }
+      } catch (apiError) {
+        // Only update state if component is still mounted and this is the latest call
+        if (currentLoadNewsCall.current === callId && isMounted.current) {
+          // If API fails, just show announcements if any
+          setNews(filters.status === "approved" ? localAnnouncements : []);
+          setError(
+            "Sunucudan haberler yüklenemedi. Lütfen daha sonra tekrar deneyin."
+          );
+        }
+      }
+    } catch (error) {
+      if (isMounted.current) {
+        setError("Haberler yüklenirken bir hata oluştu.");
+      }
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+      // Always reset active request flag after a short delay to prevent rapid re-calls
+      setTimeout(() => {
+        hasActiveRequest.current = false;
+      }, 200);
+    }
+  }, [filters.status, pagination.page, pagination.limit]);
+
+  // Load news when filters or pagination change
   useEffect(() => {
-    saveNewsToStorage(news);
+    // Skip early loading while component is getting initialized
+    if (!filters.status) {
+      return;
+    }
+
+    // Reset news array when filters change to prevent showing stale data
+    setNews([]);
+
+    // Use a small timeout to debounce rapid changes
+    const timeoutId = setTimeout(() => {
+      loadNews();
+    }, 50);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [filters.status, pagination.page, pagination.limit, loadNews]);
+
+  // Handle page change
+  const handlePageChange = useCallback(
+    (page: number) => {
+      // Only update if actually changing pages
+      if (pagination.page !== page) {
+        setPagination((prev) => ({
+          ...prev,
+          page,
+        }));
+      }
+    },
+    [pagination.page]
+  );
+
+  // Handle page size change
+  const handlePageSizeChange = useCallback(
+    (pageSize: number) => {
+      // Only update if actually changing page size
+      if (pagination.limit !== pageSize) {
+        setPagination((prev) => ({
+          ...prev,
+          limit: pageSize,
+          page: 1, // Reset to first page when changing page size
+        }));
+      }
+    },
+    [pagination.limit]
+  );
+
+  // Save announcements when news changes
+  useEffect(() => {
+    const announcements = news.filter((item) => item.type === "announcement");
+    if (announcements.length > 0) {
+      saveAnnouncementsToStorage(announcements);
+    }
   }, [news]);
 
-  // Haberi sil
+  // Haberi sil - now uses API for non-announcement items
   const deleteNews = useCallback(
-    (id: string) => {
-      setNews((prevNews) => {
-        const updatedNews = prevNews.filter((item) => item.id !== id);
-        saveNewsToStorage(updatedNews);
-        return updatedNews;
-      });
+    async (id: string) => {
+      try {
+        const newsItem = news.find((item) => item.id === id);
 
-      toast({
-        title: "Haber Silindi",
-        description: "Haber başarıyla silindi.",
-        variant: "default",
-      });
+        // If it's an announcement, just remove locally
+        if (newsItem?.type === "announcement") {
+          setNews((prevNews) => {
+            const updatedNews = prevNews.filter((item) => item.id !== id);
+            return updatedNews;
+          });
+
+          // Update announcements in storage
+          const announcements = news.filter(
+            (item) => item.type === "announcement" && item.id !== id
+          );
+          saveAnnouncementsToStorage(announcements);
+        } else {
+          // For regular news, call the API
+          await apiDeleteNews(id);
+
+          // Also try to remove from localStorage if it was stored there
+          if (typeof window !== "undefined") {
+            localStorage.removeItem(`rejected-news-${id}`);
+          }
+
+          // Then update local state
+          setNews((prevNews) => prevNews.filter((item) => item.id !== id));
+        }
+
+        toast({
+          title: "Haber Silindi",
+          description: "Haber başarıyla silindi.",
+          variant: "default",
+        });
+      } catch (error) {
+        console.error("Error deleting news:", error);
+        toast({
+          title: "Hata",
+          description: "Haber silinirken bir hata oluştu.",
+          variant: "destructive",
+        });
+      }
     },
-    [toast]
+    [toast, news]
   );
 
   // Toplu haber silme
   const deleteSelectedNews = useCallback(() => {
-    setNews((prevNews) => {
-      const updatedNews = prevNews.filter((item) => !item.selected);
-      saveNewsToStorage(updatedNews);
-      return updatedNews;
-    });
+    // Get selected news items
+    const selectedItems = news.filter((item) => item.selected);
+    if (selectedItems.length === 0) return;
 
-    toast({
-      title: "Haberler Silindi",
-      description: "Seçili haberler başarıyla silindi.",
-      variant: "default",
-    });
-  }, [toast]);
+    // Group by type (announcement vs regular news)
+    const announcements = selectedItems.filter(
+      (item) => item.type === "announcement"
+    );
+    const regularNews = selectedItems.filter(
+      (item) => item.type !== "announcement"
+    );
 
-  // Filtrelenmiş haberler
-  const filteredNews = useMemo(() => {
-    console.log("Filtreleme yapılıyor:", { filters, news });
-
-    const filtered = news.filter((item) => {
-      // Kategori filtresi
-      if (filters.category) {
-        if (Array.isArray(filters.category)) {
-          if (
-            filters.category.length > 0 &&
-            !filters.category.includes(item.category)
-          ) {
-            return false;
-          }
-        } else if (
-          filters.category !== "all" &&
-          item.category !== filters.category
-        ) {
-          return false;
+    // Process regular news items through API
+    const processRegularItems = async () => {
+      for (const item of regularNews) {
+        try {
+          await apiDeleteNews(item.id);
+        } catch (error) {
+          console.error(`Error deleting news item ${item.id}:`, error);
         }
       }
+    };
 
-      // Durum filtresi
-      if (filters.status) {
-        // Status filtresindeki değeri ve haberin durumunu logla
-        console.log(
-          `Haber ID: ${item.id}, Status: ${item.status}, Filtre: ${filters.status}`
-        );
-        if (item.status !== filters.status) {
-          return false;
-        }
-      }
+    // Process all
+    Promise.resolve(processRegularItems()).then(() => {
+      // Update local state
+      setNews((prevNews) => prevNews.filter((item) => !item.selected));
 
-      // Arama filtresi
-      if (filters.searchTerm && filters.searchTerm.trim() !== "") {
-        const searchTerm = filters.searchTerm.toLowerCase();
-        return (
-          item.title.toLowerCase().includes(searchTerm) ||
-          item.content.toLowerCase().includes(searchTerm) ||
-          (item.tags &&
-            item.tags.some((tag) => tag.toLowerCase().includes(searchTerm)))
-        );
-      }
+      // Update announcements in storage
+      const remainingAnnouncements = news.filter(
+        (item) => item.type === "announcement" && !item.selected
+      );
+      saveAnnouncementsToStorage(remainingAnnouncements);
 
-      return true;
+      toast({
+        title: "Haberler Silindi",
+        description: "Seçili haberler başarıyla silindi.",
+        variant: "default",
+      });
     });
-
-    console.log(`Filtreleme sonucu: ${filtered.length} haber bulundu`);
-    return filtered;
-  }, [news, filters]);
-
-  // Onay bekleyen haber sayısı
-  const pendingCount = useMemo(() => {
-    return news.filter((item) => item.status === "pending").length;
-  }, [news]);
+  }, [toast, news]);
 
   // URL'den haber ekle
   const addNewsFromUrl = useCallback(
-    async (mockNews: any[] = [], url: string = "") => {
+    async (mockNews: any[] = [], url: string = "", sport_id?: number) => {
       try {
         setLoading(true);
         setError(null);
 
-        // Gelen haberleri kontrol et
-        const newsData =
-          Array.isArray(mockNews) && mockNews.length > 0 ? mockNews : [];
-
-        if (newsData.length > 0) {
-          // Haberleri onay bekleyen olarak ekle
-          const pendingNews = newsData.map((news) => ({
-            ...news,
-            status: "pending",
-            sourceUrl: url || news.sourceUrl || "",
-            addedAt: new Date().toISOString(),
-            selected: false,
-          }));
-
-          // Yeni haberleri mevcut haberlere ekle
-          setNews((prevNews) => [...prevNews, ...pendingNews]);
-
-          return { count: newsData.length };
-        } else {
-          return { error: "Haber bulunamadı" };
+        // Check if the URL contains category information to auto-detect sport ID
+        let effectiveSportId = sport_id;
+        if (!effectiveSportId && url) {
+          // Auto-detect sport from URL if possible
+          const lowerUrl = url.toLowerCase();
+          if (
+            lowerUrl.includes("basketbol") ||
+            lowerUrl.includes("basketball")
+          ) {
+            effectiveSportId = SPORTS_CATEGORIES.BASKETBALL;
+          } else if (
+            lowerUrl.includes("futbol") ||
+            lowerUrl.includes("football")
+          ) {
+            effectiveSportId = SPORTS_CATEGORIES.FOOTBALL;
+          } else if (
+            lowerUrl.includes("voleybol") ||
+            lowerUrl.includes("volleyball")
+          ) {
+            effectiveSportId = SPORTS_CATEGORIES.VOLLEYBALL;
+          } else if (
+            lowerUrl.includes("tenis") ||
+            lowerUrl.includes("tennis")
+          ) {
+            effectiveSportId = SPORTS_CATEGORIES.TENNIS;
+          } else {
+            // Default to football if can't determine
+            effectiveSportId = SPORTS_CATEGORIES.FOOTBALL;
+          }
         }
+
+        // If we're scraping from URL, call the scraping API
+        if (url && url.trim() !== "") {
+          try {
+            // Call the scraping API with the detected sport ID
+            const response = await scrapeNewsFromUrl(
+              url,
+              effectiveSportId || SPORTS_CATEGORIES.FOOTBALL
+            );
+            if (response.data && response.data.length > 0) {
+              // Add scraped news to the state
+              const scrapedNews = response.data.map((news: any) => ({
+                ...news,
+                status: "pending",
+                sourceUrl: url,
+                addedAt: new Date().toISOString(),
+                selected: false,
+              }));
+
+              setNews((prevNews) => [...prevNews, ...scrapedNews]);
+              return { count: scrapedNews.length };
+            } else {
+              return { error: "Haber bulunamadı veya çekilemedi" };
+            }
+          } catch (error) {
+            console.error("News scraping error:", error);
+            throw new Error("Haber kaynağından veri çekilemedi");
+          }
+        }
+
+        // No URL provided
+        return { error: "Lütfen bir URL girin" };
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Bir hata oluştu";
@@ -265,31 +523,75 @@ export const useNews = () => {
   }, []);
 
   // Tüm haberleri seç/seçimi kaldır
-  const toggleSelectAll = useCallback((select: boolean) => {
-    setNews((prevNews) =>
-      prevNews.map((item) => ({ ...item, selected: select }))
-    );
-  }, []);
+  const toggleSelectAll = useCallback(
+    (select: boolean, targetIds?: string[]) => {
+      setNews((prevNews: NewsItem[]) => {
+        // If targetIds is provided, only toggle those specific IDs
+        // Otherwise toggle all news items
+        if (targetIds && targetIds.length > 0) {
+          return prevNews.map((item) =>
+            targetIds.includes(item.id) ? { ...item, selected: select } : item
+          );
+        } else {
+          // Toggle all news items if no specific IDs are provided
+          return prevNews.map((item) => ({ ...item, selected: select }));
+        }
+      });
+    },
+    []
+  );
 
-  // Haberi onayla
+  // Haberi onayla - now uses API
   const approveNews = useCallback(
     async (id: string) => {
       try {
-        console.log(`${id} ID'li haber onaylanıyor...`);
+        const newsItem = news.find((item) => item.id === id);
 
-        setNews((prevNews) => {
-          const updatedNews = prevNews.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  status: "approved" as const,
-                  approvedAt: new Date().toISOString(),
-                }
-              : item
-          );
-          console.log("Onaylamadan sonra haberler:", updatedNews);
-          return updatedNews;
-        });
+        // If it's an announcement, just update locally
+        if (newsItem?.type === "announcement") {
+          setNews((prevNews) => {
+            return prevNews.map((item) =>
+              item.id === id
+                ? {
+                    ...item,
+                    status: "approved" as const,
+                    approvedAt: new Date().toISOString(),
+                  }
+                : item
+            );
+          });
+
+          // Update announcements in storage
+          const announcements = news
+            .filter((item) => item.type === "announcement")
+            .map((item) =>
+              item.id === id
+                ? {
+                    ...item,
+                    status: "approved" as const,
+                    approvedAt: new Date().toISOString(),
+                  }
+                : item
+            );
+
+          saveAnnouncementsToStorage(announcements);
+        } else {
+          // For regular news, call the API
+          await updateNewsStatus(id, "approved");
+
+          // Then update local state
+          setNews((prevNews) => {
+            return prevNews.map((item) =>
+              item.id === id
+                ? {
+                    ...item,
+                    status: "approved" as const,
+                    approvedAt: new Date().toISOString(),
+                  }
+                : item
+            );
+          });
+        }
 
         toast({
           title: "Haber Onaylandı",
@@ -302,27 +604,83 @@ export const useNews = () => {
         const errorMessage =
           error instanceof Error ? error.message : "Bir hata oluştu";
         setError(errorMessage);
+
+        toast({
+          title: "Hata",
+          description: errorMessage,
+          variant: "destructive",
+        });
+
         return { error: errorMessage };
       }
     },
-    [toast]
+    [toast, news]
   );
 
-  // Haberi reddet
+  // Haberi reddet - now uses API
   const rejectNews = useCallback(
     async (id: string) => {
       try {
-        setNews((prevNews) =>
-          prevNews.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  status: "rejected",
+        const newsItem = news.find((item) => item.id === id);
+
+        // If it's an announcement, just update locally
+        if (newsItem?.type === "announcement") {
+          setNews((prevNews) =>
+            prevNews.map((item) =>
+              item.id === id
+                ? {
+                    ...item,
+                    status: "rejected" as const,
+                    rejectedAt: new Date().toISOString(),
+                  }
+                : item
+            )
+          );
+
+          // Update announcements in storage
+          const announcements = news
+            .filter((item) => item.type === "announcement")
+            .map((item) =>
+              item.id === id
+                ? {
+                    ...item,
+                    status: "rejected" as const,
+                    rejectedAt: new Date().toISOString(),
+                  }
+                : item
+            );
+
+          saveAnnouncementsToStorage(announcements);
+        } else {
+          // For regular news, call the API
+          await updateNewsStatus(id, "rejected");
+
+          // Update local state regardless of API response
+          // The backend might delete instead of updating status
+          setNews((prevNews) => {
+            // First remove the item with matching ID (in case it's being deleted on backend)
+            const filteredNews = prevNews.filter((item) => item.id !== id);
+
+            // If we still want to keep a record of the rejected item, add it back with rejected status
+            const rejectedItem = prevNews.find((item) => item.id === id);
+            if (rejectedItem) {
+              // Store the item in localStorage for rejected tab
+              console.log(
+                `Manually updating status for news ID ${id} to rejected`
+              );
+              localStorage.setItem(
+                `rejected-news-${id}`,
+                JSON.stringify({
+                  ...rejectedItem,
+                  status: "rejected" as const,
                   rejectedAt: new Date().toISOString(),
-                }
-              : item
-          )
-        );
+                })
+              );
+            }
+
+            return filteredNews;
+          });
+        }
 
         toast({
           title: "Haber Reddedildi",
@@ -335,27 +693,275 @@ export const useNews = () => {
         const errorMessage =
           error instanceof Error ? error.message : "Bir hata oluştu";
         setError(errorMessage);
+
+        toast({
+          title: "Hata",
+          description: errorMessage,
+          variant: "destructive",
+        });
+
         return { error: errorMessage };
       }
     },
-    [toast]
+    [toast, news]
+  );
+
+  // Update a news item - uses API for non-announcement items
+  const updateNews = useCallback(
+    async (updatedItem: NewsItem) => {
+      try {
+        // If it's an announcement, just update locally
+        if (updatedItem.type === "announcement") {
+          setNews((prevNews) =>
+            prevNews.map((item) =>
+              item.id === updatedItem.id ? updatedItem : item
+            )
+          );
+
+          // Update announcements in storage
+          const announcements = news
+            .map((item) =>
+              item.type === "announcement" && item.id === updatedItem.id
+                ? updatedItem
+                : item
+            )
+            .filter((item) => item.type === "announcement");
+
+          saveAnnouncementsToStorage(announcements);
+        } else {
+          // For regular news, call the API
+          // Use a PUT request to update news item
+          await updateNewsItem(updatedItem.id, {
+            title: updatedItem.title,
+            content: updatedItem.content,
+            sport_id: parseInt(updatedItem.category) || undefined,
+            type: updatedItem.type,
+            end_time: updatedItem.details?.publishedAt,
+          });
+
+          // Then update local state
+          setNews((prevNews) =>
+            prevNews.map((item) =>
+              item.id === updatedItem.id ? updatedItem : item
+            )
+          );
+        }
+
+        toast({
+          title: "Haber Güncellendi",
+          description: "Haber başarıyla güncellendi.",
+          variant: "default",
+        });
+
+        return { success: true };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Bir hata oluştu";
+        setError(errorMessage);
+
+        toast({
+          title: "Hata",
+          description: errorMessage,
+          variant: "destructive",
+        });
+
+        return { error: errorMessage };
+      }
+    },
+    [toast, news]
+  );
+
+  // Updated setFilters function with page reset
+  const setFiltersWithPageReset = useCallback(
+    (newFilters: Partial<NewsFilters>) => {
+      // Skip redundant updates
+      if (
+        "status" in newFilters &&
+        newFilters.status === filters.status &&
+        "category" in newFilters &&
+        newFilters.category === filters.category &&
+        "searchTerm" in newFilters &&
+        newFilters.searchTerm === filters.searchTerm
+      ) {
+        return;
+      }
+
+      // If changing status, also reset to page 1
+      if ("status" in newFilters && newFilters.status !== filters.status) {
+        setPagination((prev) => ({
+          ...prev,
+          page: 1,
+        }));
+      }
+
+      // Update the filters
+      setFilters((prev) => ({
+        ...prev,
+        ...newFilters,
+      }));
+    },
+    [filters.status, filters.category, filters.searchTerm]
+  );
+
+  // Function to force immediate loading of news with a specific status
+  const loadNewsNow = useCallback(
+    async (status: "approved" | "pending" | "rejected") => {
+      // Never call loadNewsNow if an active request is in progress
+      if (hasActiveRequest.current) {
+        return;
+      }
+
+      // Set the correct filters first - but don't force update if already set to this status
+      if (filters.status !== status) {
+        setFilters({
+          ...filters,
+          status: status,
+        });
+      }
+
+      // Clear any existing news to ensure UI updates
+      setNews([]);
+
+      try {
+        hasActiveRequest.current = true;
+        setLoading(true);
+        setError(null);
+
+        // First we'll load announcements from storage to preserve them
+        let localAnnouncements: NewsItem[] = [];
+        if (typeof window !== "undefined") {
+          localAnnouncements = loadAnnouncementsFromStorage();
+        }
+
+        // Check for locally stored rejected news if we're loading rejected
+        let localRejectedNews: NewsItem[] = [];
+        if (status === "rejected" && typeof window !== "undefined") {
+          localRejectedNews = loadRejectedNewsFromStorage();
+        }
+
+        let apiNews: NewsItem[] = [];
+        let totalCount = 0;
+
+        try {
+          // Use status-specific endpoints for better performance and filtering
+          if (status === "pending") {
+            const { data, count } = await getPendingNews({
+              limit: pagination.limit,
+              offset: 0, // Always start at the first page for direct loading
+            });
+
+            // Force the correct status - override whatever the API returns
+            apiNews = data.map((item) => ({
+              ...item,
+              status: "pending" as const,
+            }));
+            totalCount = count;
+          } else if (status === "rejected") {
+            const { data, count } = await getRejectedNews({
+              limit: pagination.limit,
+              offset: 0, // Always start at the first page for direct loading
+            });
+
+            // Force the correct status - override whatever the API returns
+            apiNews = data.map((item) => ({
+              ...item,
+              status: "rejected" as const,
+            }));
+            totalCount = count;
+          } else {
+            // For approved news
+            const { data, count } = await getNews({
+              status: "approved",
+              limit: pagination.limit,
+              offset: 0, // Always start at the first page for direct loading
+            });
+
+            // Force the correct status - override whatever the API returns
+            apiNews = data.map((item) => ({
+              ...item,
+              status: "approved" as const,
+            }));
+            totalCount = count;
+          }
+
+          // Reset pagination to first page
+          setPagination({
+            page: 1,
+            limit: pagination.limit,
+            total: totalCount,
+          });
+
+          // For announcements, only include them in the approved tab
+          let combinedNews = [...apiNews];
+
+          if (status === "approved") {
+            // Only add announcements to approved news
+            combinedNews = [
+              ...apiNews,
+              ...localAnnouncements.filter(
+                (item) => item.status === "approved"
+              ),
+            ];
+          } else if (status === "rejected" && localRejectedNews.length > 0) {
+            // Add locally stored rejected news
+            combinedNews = [...apiNews, ...localRejectedNews];
+          }
+
+          // Make sure all news items have the correct status
+          combinedNews = combinedNews.map((item) => ({
+            ...item,
+            status: status as "approved" | "pending" | "rejected",
+          }));
+
+          // Set news directly to the filtered results based on the selected status
+          setNews(combinedNews);
+
+          // Record the successful load timestamp for this status
+          lastSuccessfulLoad.current[status] = Date.now();
+        } catch (apiError) {
+          // If API fails, show appropriate message
+          setError(
+            "Sunucudan haberler yüklenemedi. Lütfen daha sonra tekrar deneyin."
+          );
+        }
+      } catch (error) {
+        setError("Haberler yüklenirken bir hata oluştu.");
+      } finally {
+        setLoading(false);
+        // Reset active request flag after a delay
+        setTimeout(() => {
+          hasActiveRequest.current = false;
+        }, 200);
+      }
+    },
+    [filters, pagination.limit]
   );
 
   return {
     news,
-    filteredNews,
+    setNews,
     loading,
     error,
     filters,
-    setFilters,
-    pendingCount,
-    addNewsFromUrl,
-    deleteNews,
-    deleteSelectedNews,
-    approveNews,
-    rejectNews,
+    setFilters: setFiltersWithPageReset,
+    filteredNews: useMemo(() => {
+      // Return only news with matching status to avoid mixing status types
+      return news.filter((item) => item.status === filters.status);
+    }, [news, filters.status]), // Only depend on news and status
+    pendingCount: useMemo(() => {
+      return news.filter((item) => item.status === "pending").length;
+    }, [news]),
     toggleNewsSelection,
     toggleSelectAll,
-    setNews,
+    approveNews,
+    rejectNews,
+    deleteNews,
+    deleteSelectedNews,
+    updateNews,
+    addNewsFromUrl,
+    pagination,
+    handlePageChange,
+    handlePageSizeChange,
+    loadNewsNow,
   };
 };
