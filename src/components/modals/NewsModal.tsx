@@ -43,6 +43,7 @@ const NEWS_TYPES = [
   { id: "news", name: "Haber" },
 ]
 
+
 const NEWS_CATEGORIES = [
   { id: "general", name: "Genel" },
   { id: "technology", name: "Teknoloji" },
