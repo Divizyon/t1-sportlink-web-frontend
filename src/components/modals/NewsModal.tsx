@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -23,11 +23,19 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
 import { Upload, Image as ImageIcon, Bell, Newspaper, X, Loader2 } from "lucide-react"
+import Cookies from "js-cookie"
 
 interface NewsModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
+}
+
+interface Sport {
+  id: number
+  name: string
+  description: string
+  icon: string
 }
 
 const NEWS_TYPES = [
@@ -66,13 +74,37 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("announcement")
+  const [sports, setSports] = useState<Sport[]>([])
   const [formData, setFormData] = useState({
     title: "",
     content: "",
     type: "announcement",
     image: null as File | null,
-    sport_id: 1,
+    sport_id: 4, // Varsayılan olarak Futbol
   })
+
+  // Spor kategorilerini yükle
+  useEffect(() => {
+    const fetchSports = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/sports')
+        if (!response.ok) {
+          throw new Error('Spor kategorileri yüklenemedi')
+        }
+        const data = await response.json()
+        setSports(data.data)
+      } catch (error) {
+        console.error('Spor kategorileri yüklenirken hata:', error)
+        toast({
+          title: "Hata",
+          description: "Spor kategorileri yüklenemedi",
+          variant: "destructive",
+        })
+      }
+    }
+
+    fetchSports()
+  }, [toast])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -95,7 +127,7 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
       content: "",
       type: "announcement",
       image: null,
-      sport_id: 1,
+      sport_id: 4,
     })
     setActiveTab("announcement")
   }
@@ -146,15 +178,18 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
         console.log(key, ':', value)
       }
 
+      // Token'ı al
+      const token = Cookies.get('accessToken')
+      if (!token) {
+        throw new Error('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.')
+      }
+
       // API'ye gönder
       const response = await fetch('http://localhost:3001/api/news', {
         method: 'POST',
-        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${document.cookie
-            .split('; ')
-            .find(row => row.startsWith('accessToken='))
-            ?.split('=')[1] || ''}`
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
         },
         body: formDataToSend,
       })
@@ -165,7 +200,13 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
       console.log('Response data:', responseData)
 
       if (!response.ok) {
-        throw new Error(responseData.message || responseData.error || 'Bir hata oluştu')
+        if (response.status === 401) {
+          throw new Error('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.')
+        } else if (response.status === 403) {
+          throw new Error('Bu işlem için yetkiniz bulunmuyor.')
+        } else {
+          throw new Error(responseData.message || responseData.error || 'Bir hata oluştu')
+        }
       }
 
       setLoading(false)
@@ -249,11 +290,14 @@ export function NewsModal({ open, onOpenChange, onSuccess }: NewsModalProps) {
                     <SelectValue placeholder="Spor kategorisi seçin" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Futbol</SelectItem>
-                    <SelectItem value="2">Basketbol</SelectItem>
-                    <SelectItem value="3">Voleybol</SelectItem>
-                    <SelectItem value="4">Tenis</SelectItem>
-                    <SelectItem value="5">Yüzme</SelectItem>
+                    {sports.map((sport) => (
+                      <SelectItem key={sport.id} value={sport.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <span>{sport.icon}</span>
+                          <span>{sport.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
