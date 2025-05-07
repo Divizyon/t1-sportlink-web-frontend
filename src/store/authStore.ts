@@ -36,24 +36,13 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: null });
 
       // API URL'i kontrol et
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiUrl) {
-        const errorMsg = 'API URL tanımlanmamış';
-        console.error(errorMsg);
-        toast.error(errorMsg);
-        throw new Error(errorMsg);
-      }
-
-      console.log('Login isteği gönderiliyor:', `${apiUrl}/auth/login`);
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      console.log('Login isteği gönderiliyor:', `${baseUrl}/auth/login`);
       
-      const response = await axios.post(`${apiUrl}/auth/login`, {
+      // Use the API service instead of direct axios
+      const response = await api.post('/auth/login', {
         email,
         password,
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
       });
       
       console.log('Login yanıtı:', response.data);
@@ -148,15 +137,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const token = Cookies.get('accessToken');
       if (token) {
-        await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
+        await api.post('/auth/logout');
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -188,11 +169,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw new Error('Token bulunamadı');
       }
 
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      console.log('Loading profile with API service');
+      
+      // Use the API service which already has the correct URL configuration
+      const response = await api.get('/profile');
 
       const userData = response.data;
       set((state) => ({
