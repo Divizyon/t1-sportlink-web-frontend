@@ -1,31 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SportLink
 
-## Getting Started
+Bu proje, spor etkinliklerini yönetmek ve takip etmek için geliştirilmiş bir web uygulamasıdır.
 
-First, run the development server:
+## Teknoloji Yığını
+
+### Temel Teknolojiler
+
+- **TypeScript**: Ana programlama dili
+- **Next.js 15.3.0**: Server-side rendering ve routing için React framework'ü
+- **React 18.2.0**: UI library
+- **Node.js**: JavaScript runtime
+
+### Frontend
+
+- **Tailwind CSS 4**: Utility-first CSS framework
+- **Shadcn UI**: Component sistemi
+- **Lucide React**: Icon library
+- **date-fns**: JavaScript date utility library
+- **Recharts**: Data visualization için chart library
+- **React Hook Form**: Form state management
+- **Zod**: Schema validation
+- **Sonner**: Toast notifications
+
+### UI Components
+
+- **Radix UI**: Unstyled, accessible components:
+  - Dialog, Dropdown menu, Alert dialog, Avatar
+  - Checkbox, Label, Popover, Progress
+  - Scroll area, Select, Separator, Slot, Tabs
+
+### State Management ve Utilities
+
+- **React Context API**: State management için
+- **Custom Hooks**: Tekrar kullanılabilir logic için
+- **clsx/tailwind-merge**: Conditional class yönetimi
+- **js-cookie**: Cookie yönetimi
+
+### Development Tools
+
+- **ESLint 9**: Code linting
+- **PostCSS**: CSS processing
+- **tw-animate-css**: Tailwind için animasyon utilities
+
+### Mimari
+
+- **App Router**: Next.js App Router ile routing
+- **Middleware**: Authentication ve route protection
+- **Component-based Architecture**: Organize component yapısı
+- **Mock Data Support**: Local testing için
+- **Type-driven Development**: Kapsamlı type tanımlamaları
+
+### Authentication
+
+- **Cookie-based Authentication**: Middleware ile implemente edilmiş
+
+## Kurulum
 
 ```bash
+# Bağımlılıkları yükleyin
+npm install
+
+# Geliştirme sunucusunu başlatın
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Lisans
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
+[MIT](https://choosealicense.com/licenses/mit/)
