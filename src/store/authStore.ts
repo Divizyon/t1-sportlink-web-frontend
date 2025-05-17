@@ -188,7 +188,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw new Error('Token bulunamadı');
       }
 
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/profile`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/profile`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
